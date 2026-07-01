@@ -516,18 +516,18 @@ export class AdminQuestionsComponent {
     this.loadCategories(instId);
   }
 
-  loadCategories(instId?: string){
-    this.loader.show();
+  loadCategories(instId?: string, showLoader: boolean = true){
+    if (showLoader) this.loader.show();
     if (!instId) {
       this.categories = [];
       this.selectedCategory = null;
       try { if (this.questions && this.questions[0]) this.questions[0].category_id = ''; } catch(e) {}
       try { this.categoryCtrl.setValue(''); } catch(e) {}
-      this.loader.hide();
+      if (showLoader) this.loader.hide();
       return;
     }
     let url = this.categoriesUrl;
-    if (instId) url += `?institute_id=${encodeURIComponent(instId)}`;
+    if (instId) url += `?institute_id=${encodeURIComponent(instId)}&_ts=${Date.now()}`;
     this.http.get<any>(url).subscribe({
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
@@ -550,11 +550,18 @@ export class AdminQuestionsComponent {
           }
         } catch(e) {}
       },
-      complete: () => { this.loader.hide(); },
-      error: (err) => { this.loader.hide();
+      complete: () => { if (showLoader) this.loader.hide(); },
+      error: (err) => { if (showLoader) this.loader.hide();
         console.warn('Failed to load categories', err);
       }
     });
+  }
+
+  refreshCategoriesOnCategoryOpen(opened: boolean) {
+    if (!opened) return;
+    const instId = this.questions && this.questions[0] && this.questions[0].institute_id;
+    if (!instId) return;
+    this.loadCategories(instId, false);
   }
   onCategoryAutocompleteSelected(cat: any){
     if (!cat) { this.selectedCategory = null; this.questions[0].category_id = ''; return; }

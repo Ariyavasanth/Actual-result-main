@@ -51,6 +51,7 @@
                   <mat-icon matPrefix>assignment</mat-icon>
                   <mat-label>Category</mat-label>
                   <mat-select [value]="questions[0].category_id" [disabled]="!questions[0].institute_id || !categories.length"
+                     (openedChange)="refreshCategoriesOnCategoryOpen($event)"
                      (selectionChange)="onCategorySelected($event.value)">
                      <mat-option value="">Select category</mat-option>
                      <mat-option *ngFor="let cat of categories" [value]="cat.category_id">{{cat.name}}</mat-option>

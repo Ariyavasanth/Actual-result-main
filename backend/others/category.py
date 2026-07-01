@@ -18,6 +18,7 @@ def get_categories_list(request):
         return None
     filter = []
     args = getattr(request, "args", {})
+    filter.append(func.coalesce(Categories.is_deleted, False) == False)
     if args.get("institute_id"):
         filter.append(Categories.institute_id == args.get("institute_id"))
     if args.get("created_after"):
