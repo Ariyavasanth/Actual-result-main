@@ -37,6 +37,7 @@ export class CategoryCreateComponent {
   isEditing = false;
   editId: string | null = null;
   formSubmitted = false;
+  categoryInfoSubmitted = false;
 
   // option lists (replace with API calls as needed)
   institutesList = [ { id: '1', name: 'Default Institute' } ];
@@ -151,6 +152,7 @@ export class CategoryCreateComponent {
 
   save(){
     this.formSubmitted = true;
+    this.categoryInfoSubmitted = true;
     this.loader.show();
     if (this.isNameInvalid()){
       this.loader.hide();
@@ -213,6 +215,7 @@ export class CategoryCreateComponent {
        this.selectedTeams = [];
         this.publicAccess = false;
         this.formSubmitted = false;
+        this.categoryInfoSubmitted = false;
      }
   cancel(){ this.router.navigate(['/category']); }
   setName(v: string){ this.name = v || ''; }
@@ -225,6 +228,19 @@ export class CategoryCreateComponent {
   setMark(v: string){ const n = Number(v); this.markForEachQuestion = isNaN(n) ? null : n; }
   setDepartments(v: string[]){ this.selectedDepartments = this.onlyAvailableIds(v, this.departments); }
   setTeams(v: string[]){ this.selectedTeams = this.onlyAvailableIds(v, this.teams); }
+
+  goToAccessStep(stepper: any): void {
+    this.categoryInfoSubmitted = true;
+    if (this.isNameInvalid()) {
+      this.snack.open('Name is required.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' });
+      return;
+    }
+    if (this.isTypeInvalid()) {
+      this.snack.open('Type is required.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' });
+      return;
+    }
+    stepper.next();
+  }
 
   isNameInvalid(): boolean { return !this.name || !this.name.trim(); }
   isInstituteInvalid(): boolean { return !this.institute; }

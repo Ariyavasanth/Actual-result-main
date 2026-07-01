@@ -33,7 +33,7 @@
                                 <mat-icon matPrefix>edit</mat-icon>
                                 <input matInput required [value]="name" (input)="setName($any($event.target).value)"
                                     placeholder="Category name" />
-                                <mat-hint class="field-error" *ngIf="formSubmitted && isNameInvalid()">Name is required.</mat-hint>
+                                <mat-hint class="field-error" *ngIf="(formSubmitted || categoryInfoSubmitted) && isNameInvalid()">Name is required.</mat-hint>
                             </mat-form-field>
 
                             <mat-form-field appearance="outline" class="field-half">
@@ -62,14 +62,14 @@
                                 <mat-select required [value]="type" (selectionChange)="setType($event.value)">
                                     <mat-option *ngFor="let t of typeOptions" [value]="t.id">{{t.name}}</mat-option>
                                 </mat-select>
-                                <mat-hint class="field-error" *ngIf="formSubmitted && isTypeInvalid()">Type is required.</mat-hint>
+                                <mat-hint class="field-error" *ngIf="(formSubmitted || categoryInfoSubmitted) && isTypeInvalid()">Type is required.</mat-hint>
                             </mat-form-field>
                         </div>
                     </div>
 
                     <div class="form-actions">
                         <span></span>
-                        <button mat-button matStepperNext type="button" class="next-btn">
+                        <button mat-button type="button" class="next-btn" (click)="goToAccessStep(stepper)">
                             <span>Next</span>
                             <mat-icon>arrow_forward</mat-icon>
                         </button>
