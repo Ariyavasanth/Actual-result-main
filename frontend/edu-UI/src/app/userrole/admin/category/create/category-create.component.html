@@ -29,20 +29,18 @@
 
                         <div class="field-row">
                             <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Name</mat-label>
+                                <mat-icon matPrefix>edit</mat-icon>
+                                <input matInput [value]="name" (input)="setName($any($event.target).value)"
+                                    placeholder="Category name" />
+                            </mat-form-field>
+
+                            <mat-form-field appearance="outline" class="field-half">
                                 <mat-label>Institute</mat-label>
                                 <mat-icon matPrefix>school</mat-icon>
                                 <mat-select [value]="institute" [disabled]="!isSuperAdmin || isEditing"
                                     (selectionChange)="setInstitute($event.value)">
                                     <mat-option *ngFor="let i of institutesList" [value]="i.id">{{i.name}}</mat-option>
-                                </mat-select>
-                            </mat-form-field>
-
-                            <mat-form-field appearance="outline" class="field-half">
-                                <mat-label>Category</mat-label>
-                                <mat-icon matPrefix>category</mat-icon>
-                                <mat-select [value]="selectedCategoryId" [disabled]="!institute || !categoriesList.length"
-                                    (selectionChange)="setCategory($event.value)">
-                                    <mat-option *ngFor="let c of categoriesList" [value]="c.id">{{c.name}}</mat-option>
                                 </mat-select>
                             </mat-form-field>
                         </div>
@@ -188,7 +186,7 @@
                                     <mat-icon>category</mat-icon> Basic Info
                                 </h4>
                                 <div class="review-items">
-                                    <div class="review-item"><span class="review-label">Category</span><span class="review-value">{{ getCategoryName(selectedCategoryId) || '—' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Name</span><span class="review-value">{{ name || '—' }}</span></div>
                                     <div class="review-item"><span class="review-label">Institute</span><span class="review-value">{{ getInstituteName(institute) || '—' }}</span></div>
                                     <div class="review-item"><span class="review-label">Type</span><span class="review-value">{{ getOptionName(typeOptions, type) || '—' }}</span></div>
                                     <div class="review-item"><span class="review-label">Description</span><span class="review-value">{{ description || '—' }}</span></div>

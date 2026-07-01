@@ -31,7 +31,6 @@ export class CategoryCreateComponent {
   status = '';
   markForEachQuestion: number | null = null;
   readonly ALL_OPTION_VALUE = '__all__';
-  selectedCategoryId = '';
   selectedDepartments: string[] = [];
   selectedTeams: string[] = [];
   publicAccess = false; // default No
@@ -40,7 +39,6 @@ export class CategoryCreateComponent {
 
   // option lists (replace with API calls as needed)
   institutesList = [ { id: '1', name: 'Default Institute' } ];
-  categoriesList: Array<{ id: string; name: string; description?: string }> = [];
   typeOptions = [ { id: 'objective', name: 'Objective' }, { id: 'descriptive', name: 'Descriptive' } ];
   whoInputOptions = [ { id: 'instructor', name: 'Instructor' }, { id: 'student', name: 'Student' } ];
   evaluationOptions = [ { id: 'auto', name: 'Automatic' }, { id: 'manual', name: 'Manual' } ];
@@ -76,7 +74,6 @@ export class CategoryCreateComponent {
         // indicate edit mode
         this.isEditing = true;
         this.editId = c.category_id || c.id || c._id || null;
-        this.selectedCategoryId = this.editId || '';
         // map fields where available
         this.name = c.name || c.category_name || '';
         this.description = c.description || '';
@@ -139,28 +136,6 @@ export class CategoryCreateComponent {
       const data = res?.data || res || [];
       this.departments = (Array.isArray(data) ? data : []).map((d:any)=> ({ id: d.department_id || d.id || d.code, name: d.department_name || d.name }));
     }, error: () => { /* keep defaults */ } });
-  }
-
-  loadCategories(instituteId: string = this.institute){
-    if (!instituteId) {
-      this.categoriesList = [];
-      this.selectedCategoryId = '';
-      return;
-    }
-
-    const url = `${API_BASE}/get-categories-list`;
-    this.http.get<any>(url, { params: { institute_id: instituteId } }).subscribe({ next: (res) => {
-      const data = res?.data || res || [];
-      this.categoriesList = (Array.isArray(data) ? data : []).map((c:any)=> ({
-        id: String(c.category_id || c.id || c._id || ''),
-        name: c.name || c.category_name || c.title || '',
-        description: c.description || c.desc || ''
-      })).filter(c => !!c.id && !!c.name);
-      this.reconcileSelectedCategory();
-    }, error: () => {
-      this.categoriesList = [];
-      this.selectedCategoryId = '';
-    } });
   }
 
   loadTeams(){
@@ -226,8 +201,6 @@ export class CategoryCreateComponent {
        this.name = '';
        this.description = '';
        this.institute = '';
-       this.selectedCategoryId = '';
-       this.categoriesList = [];
        this.type = '';
        this.whoInputs = '';
        this.evaluation = '';
@@ -240,25 +213,7 @@ export class CategoryCreateComponent {
   cancel(){ this.router.navigate(['/category']); }
   setName(v: string){ this.name = v || ''; }
   setDescription(v: string){ this.description = v || ''; }
-  setInstitute(v: string){
-    const nextInstitute = v || '';
-    const changed = String(this.institute || '') !== String(nextInstitute || '');
-    this.institute = nextInstitute;
-    if (changed) {
-      this.name = '';
-      this.description = '';
-      this.selectedCategoryId = '';
-    }
-    this.loadDepartments();
-    this.loadTeams();
-    this.loadCategories(this.institute);
-  }
-  setCategory(v: string){
-    this.selectedCategoryId = v || '';
-    const category = this.categoriesList.find(c => String(c.id) === String(this.selectedCategoryId));
-    this.name = category?.name || '';
-    if (category?.description) this.description = category.description;
-  }
+  setInstitute(v: string){ this.institute = v || ''; this.loadDepartments(); this.loadTeams(); }
   setType(v: string){ this.type = v || ''; }
   setWhoInputs(v: string){ this.whoInputs = v || ''; }
   setEvaluation(v: string){ this.evaluation = v || ''; }
@@ -320,21 +275,6 @@ export class CategoryCreateComponent {
     return Array.from(selectedIds);
   }
 
-  private reconcileSelectedCategory(): void {
-    const categories = this.categoriesList || [];
-    if (!categories.length) {
-      this.selectedCategoryId = '';
-      return;
-    }
-
-    const currentId = this.selectedCategoryId || this.editId || '';
-    const byId = currentId ? categories.find(c => String(c.id) === String(currentId)) : null;
-    const byName = this.name ? categories.find(c => String(c.name).toLowerCase() === String(this.name).toLowerCase()) : null;
-    const selected = byId || byName || null;
-    this.selectedCategoryId = selected ? selected.id : '';
-    if (selected) this.name = selected.name;
-  }
-
   // Helper: get display name for institute id
   getInstituteName(id: string | null | undefined): string {
     if (!id) return '';
@@ -359,11 +299,5 @@ export class CategoryCreateComponent {
     if (!id) return '';
     const f = (this.teams || []).find(t => String(t.id) === String(id));
     return f ? f.name : String(id);
-  }
-
-  getCategoryName(id: string | null | undefined): string {
-    if (!id) return this.name || '';
-    const f = (this.categoriesList || []).find(c => String(c.id) === String(id));
-    return f ? f.name : (this.name || String(id));
   }
 }
