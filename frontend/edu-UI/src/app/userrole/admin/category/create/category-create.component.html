@@ -92,17 +92,22 @@
                             <mat-form-field appearance="outline" class="field-half">
                                 <mat-label>Departments (required)</mat-label>
                                 <mat-icon matPrefix>apartment</mat-icon>
-                                <mat-select multiple [value]="selectedDepartments"
-                                    (selectionChange)="setDepartments($event.value)">
-                                    <mat-option *ngFor="let d of departments" [value]="d.id">{{d.name}}</mat-option>
+                                <mat-select multiple [value]="departmentSelectValue">
+                                    <mat-option [value]="ALL_OPTION_VALUE"
+                                        (onSelectionChange)="toggleAllDepartments($event)">All</mat-option>
+                                    <mat-option *ngFor="let d of departments" [value]="d.id"
+                                        (onSelectionChange)="setDepartmentOption(d.id, $event)">{{d.name}}</mat-option>
                                 </mat-select>
                             </mat-form-field>
 
                             <mat-form-field appearance="outline" class="field-half">
                                 <mat-label>Teams (required)</mat-label>
                                 <mat-icon matPrefix>group</mat-icon>
-                                <mat-select multiple [value]="selectedTeams" (selectionChange)="setTeams($event.value)">
-                                    <mat-option *ngFor="let t of teams" [value]="t.id">{{t.name}}</mat-option>
+                                <mat-select multiple [value]="teamSelectValue">
+                                    <mat-option [value]="ALL_OPTION_VALUE"
+                                        (onSelectionChange)="toggleAllTeams($event)">All</mat-option>
+                                    <mat-option *ngFor="let t of teams" [value]="t.id"
+                                        (onSelectionChange)="setTeamOption(t.id, $event)">{{t.name}}</mat-option>
                                 </mat-select>
                             </mat-form-field>
                         </div>

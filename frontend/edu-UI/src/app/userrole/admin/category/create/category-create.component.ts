@@ -30,6 +30,7 @@ export class CategoryCreateComponent {
   evaluation = '';
   status = '';
   markForEachQuestion: number | null = null;
+  readonly ALL_OPTION_VALUE = '__all__';
   selectedDepartments: string[] = [];
   selectedTeams: string[] = [];
   publicAccess = false; // default No
@@ -218,8 +219,61 @@ export class CategoryCreateComponent {
   setEvaluation(v: string){ this.evaluation = v || ''; }
   setStatus(v: string){ this.status = v || ''; }
   setMark(v: string){ const n = Number(v); this.markForEachQuestion = isNaN(n) ? null : n; }
-  setDepartments(v: string[]){ this.selectedDepartments = Array.isArray(v) ? v : []; }
-  setTeams(v: string[]){ this.selectedTeams = Array.isArray(v) ? v : []; }
+  setDepartments(v: string[]){ this.selectedDepartments = this.onlyAvailableIds(v, this.departments); }
+  setTeams(v: string[]){ this.selectedTeams = this.onlyAvailableIds(v, this.teams); }
+
+  get departmentSelectValue(): string[] {
+    return this.withAllOption(this.selectedDepartments, this.departments);
+  }
+
+  get teamSelectValue(): string[] {
+    return this.withAllOption(this.selectedTeams, this.teams);
+  }
+
+  toggleAllDepartments(event: any) {
+    if (!event?.isUserInput) return;
+    this.selectedDepartments = event?.source?.selected ? this.getOptionIds(this.departments) : [];
+  }
+
+  toggleAllTeams(event: any) {
+    if (!event?.isUserInput) return;
+    this.selectedTeams = event?.source?.selected ? this.getOptionIds(this.teams) : [];
+  }
+
+  setDepartmentOption(id: string, event: any) {
+    if (!event?.isUserInput) return;
+    this.selectedDepartments = this.updateOptionSelection(this.selectedDepartments, id, !!event?.source?.selected);
+  }
+
+  setTeamOption(id: string, event: any) {
+    if (!event?.isUserInput) return;
+    this.selectedTeams = this.updateOptionSelection(this.selectedTeams, id, !!event?.source?.selected);
+  }
+
+  private getOptionIds(options: Array<{ id: string; name: string }>): string[] {
+    return (options || []).map(o => String(o.id)).filter(id => !!id);
+  }
+
+  private onlyAvailableIds(values: string[], options: Array<{ id: string; name: string }>): string[] {
+    const allowed = new Set(this.getOptionIds(options));
+    return (Array.isArray(values) ? values : []).map(v => String(v)).filter(v => allowed.has(v));
+  }
+
+  private withAllOption(selected: string[], options: Array<{ id: string; name: string }>): string[] {
+    const selectedIds = this.onlyAvailableIds(selected, options);
+    const optionIds = this.getOptionIds(options);
+    const allSelected = optionIds.length > 0 && optionIds.every(id => selectedIds.includes(id));
+    return allSelected ? [this.ALL_OPTION_VALUE, ...selectedIds] : selectedIds;
+  }
+
+  private updateOptionSelection(selected: string[], id: string, isSelected: boolean): string[] {
+    const selectedIds = new Set((selected || []).map(v => String(v)).filter(v => v !== this.ALL_OPTION_VALUE));
+    const optionId = String(id || '');
+    if (!optionId) return Array.from(selectedIds);
+    if (isSelected) selectedIds.add(optionId);
+    else selectedIds.delete(optionId);
+    return Array.from(selectedIds);
+  }
 
   // Helper: get display name for institute id
   getInstituteName(id: string | null | undefined): string {
