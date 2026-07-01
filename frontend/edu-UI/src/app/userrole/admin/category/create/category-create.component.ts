@@ -36,6 +36,7 @@ export class CategoryCreateComponent {
   publicAccess = false; // default No
   isEditing = false;
   editId: string | null = null;
+  formSubmitted = false;
 
   // option lists (replace with API calls as needed)
   institutesList = [ { id: '1', name: 'Default Institute' } ];
@@ -149,19 +150,21 @@ export class CategoryCreateComponent {
   }
 
   save(){
+    this.formSubmitted = true;
     this.loader.show();
-    // Validation: Institute, Departments and Teams are OPTIONAL
-    // All other fields are required: name, type, whoInputs, evaluation, status, markForEachQuestion
-    if (!this.name || !this.name.trim()){
+    if (this.isNameInvalid()){
       this.loader.hide();
       this.snack.open('Name is required.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' });
       return;
     }
+    if (this.isInstituteInvalid()) { this.loader.hide(); this.snack.open('Institute is required.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' }); return; }
     if (!this.type) { this.loader.hide(); this.snack.open('Type is required.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' }); return; }
+    if (this.isDepartmentsInvalid()) { this.loader.hide(); this.snack.open('Please select at least one department.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' }); return; }
+    if (this.isTeamsInvalid()) { this.loader.hide(); this.snack.open('Please select at least one team.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' }); return; }
     // if (!this.whoInputs) { this.loader.hide(); this.snack.open('Who inputs the answer is required.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' }); return; }
     // if (!this.evaluation) { this.loader.hide(); this.snack.open('Evaluation is required.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' }); return; }
     if (!this.status) { this.loader.hide(); this.snack.open('Status is required.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' }); return; }
-    if (this.markForEachQuestion === null || isNaN(Number(this.markForEachQuestion))){ this.loader.hide(); this.snack.open('Mark for each question is required and must be a number.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' }); return; }
+    if (this.isMarkInvalid()){ this.loader.hide(); this.snack.open('Mark for each question is required and must be a number.', 'Close', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'top' }); return; }
 
     const payload: any = {
       name: String(this.name).trim(),
@@ -209,6 +212,7 @@ export class CategoryCreateComponent {
        this.selectedDepartments = [];
        this.selectedTeams = [];
         this.publicAccess = false;
+        this.formSubmitted = false;
      }
   cancel(){ this.router.navigate(['/category']); }
   setName(v: string){ this.name = v || ''; }
@@ -221,6 +225,14 @@ export class CategoryCreateComponent {
   setMark(v: string){ const n = Number(v); this.markForEachQuestion = isNaN(n) ? null : n; }
   setDepartments(v: string[]){ this.selectedDepartments = this.onlyAvailableIds(v, this.departments); }
   setTeams(v: string[]){ this.selectedTeams = this.onlyAvailableIds(v, this.teams); }
+
+  isNameInvalid(): boolean { return !this.name || !this.name.trim(); }
+  isInstituteInvalid(): boolean { return !this.institute; }
+  isTypeInvalid(): boolean { return !this.type; }
+  isDepartmentsInvalid(): boolean { return !this.selectedDepartments || this.selectedDepartments.length === 0; }
+  isTeamsInvalid(): boolean { return !this.selectedTeams || this.selectedTeams.length === 0; }
+  isStatusInvalid(): boolean { return !this.status; }
+  isMarkInvalid(): boolean { return this.markForEachQuestion === null || isNaN(Number(this.markForEachQuestion)); }
 
   get departmentSelectValue(): string[] {
     return this.withAllOption(this.selectedDepartments, this.departments);
