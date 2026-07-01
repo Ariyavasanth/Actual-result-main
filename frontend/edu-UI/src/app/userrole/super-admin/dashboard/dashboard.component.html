@@ -1,0 +1,334 @@
+<div class="page dashboard super-admin-dashboard">
+
+  <!-- ── Under Development Banner ── -->
+  <div class="dev-banner">
+    <div class="dev-banner-inner">
+      <mat-icon class="dev-icon">construction</mat-icon>
+      <div class="dev-text">
+        <strong>Dashboard Under Development</strong>
+        <span>Some features and data visualizations are still being built. Data shown may be incomplete.</span>
+      </div>
+      <span class="dev-badge">PREVIEW</span>
+    </div>
+  </div>
+
+  <!-- ── Header Actions ── -->
+  <header class="dash-header">
+    <div class="header-content">
+      <div class="header-actions">
+        <div class="last-updated" *ngIf="summary.totalUsers > 0">
+          <mat-icon>schedule</mat-icon>
+          <span>Updated just now</span>
+        </div>
+        <button mat-icon-button class="refresh-btn" (click)="loadDashboard()" aria-label="Refresh dashboard data">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── KPI Cards ── -->
+  <section class="kpi-section">
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-card--gradient kpi-card--blue">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>business</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-val">{{ summary.totalInstitutes }}</div>
+            <div class="kpi-label">Total Institutes</div>
+          </div>
+          <div class="kpi-decoration"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--purple">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>groups</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-val">{{ summary.totalUsers }}</div>
+            <div class="kpi-label">Total Users</div>
+          </div>
+          <div class="kpi-decoration"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--green">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>play_circle</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-val">{{ summary.activeTests }}</div>
+            <div class="kpi-label">Active Tests</div>
+          </div>
+          <div class="kpi-decoration"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--amber">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>event_note</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-val">{{ summary.upcomingTests }}</div>
+            <div class="kpi-label">Upcoming Tests</div>
+          </div>
+          <div class="kpi-decoration"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--teal">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-val">{{ summary.completedTests }}</div>
+            <div class="kpi-label">Completed Tests</div>
+          </div>
+          <div class="kpi-decoration"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--rose">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-val">{{ summary.avgScore ?? '--' }}<small *ngIf="summary.avgScore">%</small></div>
+            <div class="kpi-label">Avg. Score</div>
+          </div>
+          <div class="kpi-decoration"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--indigo">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>quiz</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-val">{{ summary.totalExams }}</div>
+            <div class="kpi-label">Total Exams</div>
+          </div>
+          <div class="kpi-decoration"></div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--cyan">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>help_outline</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-val">{{ summary.totalQuestions }}</div>
+            <div class="kpi-label">Total Questions</div>
+          </div>
+          <div class="kpi-decoration"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Charts Section ── -->
+  <section class="charts-section">
+    <div class="section-header">
+      <div class="section-title-wrap">
+        <h2 class="section-title">
+          <mat-icon>insights</mat-icon>
+          Analytics Overview
+        </h2>
+        <span class="section-badge live-badge">
+          <span class="live-dot"></span>
+          Live
+        </span>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <ng-container *ngFor="let c of charts; let i = index">
+        <div class="chart-card" [class.chart-card--wide]="c.type === 'line'">
+          <div class="chart-card-header">
+            <div class="chart-title-wrap">
+              <h4>{{ c.title || (c.type | titlecase) + ' Chart' }}</h4>
+              <span class="chart-type-badge" [ngClass]="'badge--' + c.type">{{ c.type | titlecase }}</span>
+            </div>
+            <button mat-icon-button class="chart-menu-btn">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+          </div>
+          <div class="chart-body">
+            <app-dynamic-chart [type]="c.type" [data]="c.data" [animated]="true"></app-dynamic-chart>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Empty state -->
+      <div class="chart-card chart-card--empty" *ngIf="charts.length === 0">
+        <div class="empty-state">
+          <div class="empty-icon-wrap">
+            <mat-icon class="empty-icon">bar_chart</mat-icon>
+          </div>
+          <h4>No Analytics Data Yet</h4>
+          <p>Charts and visualizations will appear here once platform activity begins.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Bottom Grid: Table + Quick Actions ── -->
+  <section class="bottom-section">
+    <div class="bottom-grid">
+      <!-- Institute Stats Table -->
+      <div class="data-card table-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <mat-icon class="card-icon">domain</mat-icon>
+            <h3>Institute Statistics</h3>
+          </div>
+          <span class="badge count-badge" *ngIf="instituteStats.length">{{ instituteStats.length }} institutes</span>
+        </div>
+        
+        <div class="card-body">
+          <table class="modern-table" *ngIf="instituteStats.length > 0">
+            <thead>
+              <tr>
+                <th>Institute</th>
+                <th>Users</th>
+                <th>Scheduled</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let i of instituteStats; let idx = index" [style.--row-delay]="idx * 0.05 + 's'">
+                <td>
+                  <div class="inst-cell">
+                    <div class="inst-avatar">{{ i.name.charAt(0) }}</div>
+                    <span class="inst-name">{{ i.name }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="user-count">
+                    <mat-icon>person</mat-icon>
+                    {{ i.users }}
+                  </span>
+                </td>
+                <td>
+                  <span class="test-badge">{{ i.scheduledTests }} tests</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div class="empty-table" *ngIf="instituteStats.length === 0">
+            <mat-icon>domain_disabled</mat-icon>
+            <span>No institute data available</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="data-card actions-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <mat-icon class="card-icon">bolt</mat-icon>
+            <h3>Quick Reports</h3>
+          </div>
+        </div>
+        
+        <div class="card-body">
+          <div class="action-grid">
+            <button class="action-btn" mat-button>
+              <div class="action-icon-wrap action-icon--blue">
+                <mat-icon>file_download</mat-icon>
+              </div>
+              <div class="action-content">
+                <div class="action-text">
+                  <span class="action-title">Export Users</span>
+                  <span class="action-desc">CSV format</span>
+                </div>
+                <mat-icon class="action-arrow">arrow_forward</mat-icon>
+              </div>
+            </button>
+            
+            <button class="action-btn" mat-button>
+              <div class="action-icon-wrap action-icon--purple">
+                <mat-icon>calendar_month</mat-icon>
+              </div>
+              <div class="action-content">
+                <div class="action-text">
+                  <span class="action-title">Test Schedule</span>
+                  <span class="action-desc">View report</span>
+                </div>
+                <mat-icon class="action-arrow">arrow_forward</mat-icon>
+              </div>
+            </button>
+            
+            <button class="action-btn" mat-button>
+              <div class="action-icon-wrap action-icon--green">
+                <mat-icon>assessment</mat-icon>
+              </div>
+              <div class="action-content">
+                <div class="action-text">
+                  <span class="action-title">Results Report</span>
+                  <span class="action-desc">By institute</span>
+                </div>
+                <mat-icon class="action-arrow">arrow_forward</mat-icon>
+              </div>
+            </button>
+            
+            <button class="action-btn" mat-button>
+              <div class="action-icon-wrap action-icon--amber">
+                <mat-icon>history</mat-icon>
+              </div>
+              <div class="action-content">
+                <div class="action-text">
+                  <span class="action-title">Activity Logs</span>
+                  <span class="action-desc">View attempts</span>
+                </div>
+                <mat-icon class="action-arrow">arrow_forward</mat-icon>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Recent Activity Feed ── -->
+  <section class="activity-section" *ngIf="recentActivity.length > 0">
+    <div class="data-card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <mat-icon class="card-icon">notifications_active</mat-icon>
+          <h3>Recent Activity</h3>
+        </div>
+        <span class="badge count-badge">{{ recentActivity.length }} events</span>
+      </div>
+      <div class="card-body">
+        <div class="activity-list">
+          <div class="activity-item" *ngFor="let a of recentActivity; let idx = index" [style.--row-delay]="idx * 0.06 + 's'">
+            <div class="activity-icon-wrap" [ngClass]="a.type === 'user_registered' ? 'activity-icon--user' : 'activity-icon--exam'">
+              <mat-icon>{{ a.type === 'user_registered' ? 'person_add' : 'note_add' }}</mat-icon>
+            </div>
+            <div class="activity-body">
+              <span class="activity-text" *ngIf="a.type === 'user_registered'">
+                <strong>{{ a.user }}</strong> registered
+              </span>
+              <span class="activity-text" *ngIf="a.type !== 'user_registered'">
+                Exam <strong>{{ a.exam }}</strong> created
+              </span>
+              <span class="activity-time">{{ a.timestamp || 'Recently' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>

@@ -1,0 +1,655 @@
+<div class="page institute-register">
+
+  <!-- ── Top Toolbar ── -->
+  <div class="toolbar">
+    <div class="title">
+
+    </div>
+    <div class="form-actions">
+      <button mat-flat-button color="accent" type="button" class="btn-cancel" routerLink="/view-institutes">
+        <mat-icon svgIcon="arrow_back"></mat-icon>
+        <span>View Institutes</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Form Card ── -->
+  <div class="form-card">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <mat-horizontal-stepper linear #stepper>
+
+        <!-- ═══ Step 1: Basic Info ═══ -->
+        <mat-step [stepControl]="form.controls['name']">
+          <ng-template matStepLabel>Institute</ng-template>
+          <div class="step-content">
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">domain</mat-icon>
+                <div>
+                  <h2 class="section-heading">Institute Information</h2>
+                  <p class="section-desc">Basic details about the institute and primary contact.</p>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Name</mat-label>
+                  <mat-icon matPrefix>domain</mat-icon>
+                  <input matInput formControlName="name" placeholder="Full institute name" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Short Name</mat-label>
+                  <mat-icon matPrefix>badge</mat-icon>
+                  <input matInput formControlName="short_name" placeholder="Short name / code" />
+                  <mat-error *ngIf="form.controls['short_name'].hasError('required')">Short name is required</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Primary Contact Person (Admin)</mat-label>
+                  <mat-icon matPrefix>person</mat-icon>
+                  <input matInput formControlName="primary_contact_person" placeholder="Enter your number" />
+                  <mat-error *ngIf="form.controls['primary_contact_person'].hasError('required')">Contact person is required</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Primary Contact Email (Admin)</mat-label>
+                  <mat-icon matPrefix>email</mat-icon>
+                  <input matInput formControlName="primary_contact_email" placeholder="admin@example.com" />
+                  <mat-error *ngIf="form.controls['primary_contact_email'].hasError('required')">Email is required</mat-error>
+                  <mat-error *ngIf="form.controls['primary_contact_email'].hasError('email')">Enter a valid email</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Primary Contact Phone</mat-label>
+                  <mat-icon matPrefix>phone</mat-icon>
+                  <input matInput formControlName="primary_contact_phone" placeholder="+1 555 555 5555" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Website</mat-label>
+                  <mat-icon matPrefix>language</mat-icon>
+                  <input matInput formControlName="website" placeholder="https://example.com" />
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <span></span>
+              <button type="button" mat-button matStepperNext class="next-btn">
+                <span>Next</span>
+                <mat-icon svgIcon="arrow_forward"></mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+        <!-- ═══ Step 2: Industry & Org & Billing ═══ -->
+        <mat-step>
+          <ng-template matStepLabel>Industry-Org & Billing</ng-template>
+          <div class="step-content">
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">business</mat-icon>
+                <div>
+                  <h2 class="section-heading">Industry & Organization</h2>
+                  <p class="section-desc">Industry classification and organizational structure.</p>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Industry Type</mat-label>
+                  <mat-icon matPrefix>business</mat-icon>
+                  <mat-select formControlName="industry_type">
+                    <mat-option *ngFor="let t of industryTypes" [value]="t">{{t}}</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="form.controls['industry_type'].hasError('required')">Select industry type</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Industry Sector</mat-label>
+                  <mat-icon matPrefix>category</mat-icon>
+                  <!-- Disabled until Industry Type provides valid sector options. -->
+                  <mat-select formControlName="industry_sector" [disabled]="!sectorOptions.length">
+                    <mat-option *ngFor="let s of sectorOptions" [value]="s">{{s}}</mat-option>
+                    <mat-option *ngIf="!sectorOptions.length" disabled>-- Select industry type first --</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="form.controls['industry_sector'].hasError('required')">Select industry sector</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="field-row">
+                <div class="field-half">
+                  <label class="chip-label">Department / Grade</label>
+                  <mat-form-field appearance="outline" class="field-full">
+                    <mat-label>Departments</mat-label>
+                    <mat-icon matPrefix>layers</mat-icon>
+                    <mat-chip-grid #deptChipGrid aria-label="Enter departments" formControlName="department">
+                      <mat-chip-row *ngFor="let d of departmentList" (removed)="removeDepartment(d)">
+                        {{ d }}
+                        <button type="button" matChipRemove [attr.aria-label]="'Remove department ' + d">
+                          <mat-icon>cancel</mat-icon>
+                        </button>
+                      </mat-chip-row>
+                    </mat-chip-grid>
+                    <input placeholder="New department" [matChipInputFor]="deptChipGrid"
+                      [matChipInputSeparatorKeyCodes]="separatorKeysCodes" [matChipInputAddOnBlur]="true"
+                      (matChipInputTokenEnd)="addDepartmentFromChip($event)" />
+                  </mat-form-field>
+                </div>
+
+                <div class="field-half">
+                  <label class="chip-label">Team / Batch / Group / Section</label>
+                  <mat-form-field appearance="outline" class="field-full">
+                    <mat-label>Teams</mat-label>
+                    <mat-icon matPrefix>group</mat-icon>
+                    <mat-chip-grid #teamChipGrid aria-label="Enter teams" formControlName="team">
+                      <mat-chip-row *ngFor="let t of teamList" (removed)="removeTeam(t)">
+                        {{ t }}
+                        <button type="button" matChipRemove [attr.aria-label]="'Remove team ' + t">
+                          <mat-icon>cancel</mat-icon>
+                        </button>
+                      </mat-chip-row>
+                    </mat-chip-grid>
+                    <input placeholder="New team" [matChipInputFor]="teamChipGrid"
+                      [matChipInputSeparatorKeyCodes]="separatorKeysCodes" [matChipInputAddOnBlur]="true"
+                      (matChipInputTokenEnd)="addTeamFromChip($event)" />
+                  </mat-form-field>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">receipt_long</mat-icon>
+                <div>
+                  <h2 class="section-heading">Billing & Subscription</h2>
+                  <p class="section-desc">User limits and subscription period.</p>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Max Users Limit</mat-label>
+                  <mat-icon matPrefix>person_add</mat-icon>
+                  <input matInput type="number" formControlName="max_users" placeholder="e.g. 500" (keydown.enter)="$event.preventDefault()" />
+                  <mat-error *ngIf="form.controls['max_users'].hasError('min')">Value must be at least 1</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Status</mat-label>
+                  <mat-icon matPrefix>check_circle</mat-icon>
+                  <mat-select formControlName="active">
+                    <mat-option [value]="true">
+                      <mat-icon color="primary" class="status-icon" aria-label="Active">check_circle</mat-icon>
+                      Active
+                    </mat-option>
+                    <mat-option [value]="false">
+                      <mat-icon color="warn" class="status-icon" aria-label="Inactive">cancel</mat-icon>
+                      Inactive
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Subscription Start Date</mat-label>
+                  <mat-icon matPrefix>calendar_today</mat-icon>
+                  <input matInput [matDatepicker]="startPicker" formControlName="subscription_start" placeholder="YYYY-MM-DD"
+                    title="Subscription start date" aria-label="Subscription start date" />
+                  <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #startPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Subscription End Date</mat-label>
+                  <mat-icon matPrefix>calendar_today</mat-icon>
+                  <input matInput [matDatepicker]="endPicker" formControlName="subscription_end" placeholder="YYYY-MM-DD"
+                    title="Subscription end date" aria-label="Subscription end date" />
+                  <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #endPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" mat-button matStepperPrevious class="prev-btn">
+                <mat-icon svgIcon="arrow_back"></mat-icon>
+                <span>Back</span>
+              </button>
+              <!-- Custom handler prevents moving forward until Industry Type and Sector are valid. -->
+              <button type="button" mat-button class="next-btn" (click)="goToLocations(stepper)">
+                <span>Next</span>
+                <mat-icon svgIcon="arrow_forward"></mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+        <!-- ═══ Step 3: Locations ═══ -->
+        <mat-step>
+          <ng-template matStepLabel>Locations</ng-template>
+          <div class="step-content">
+
+            <!-- Head Office -->
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">apartment</mat-icon>
+                <div>
+                  <h2 class="section-heading">Head Office</h2>
+                  <p class="section-desc">Main office address and contact information.</p>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field-half tall">
+                  <div [formGroupName]="'headOffice'">
+                    <!-- Alignment fix: textarea uses a scoped class so the prefix icon sits at the top. -->
+                    <mat-form-field appearance="outline" class="field-full head-office-address">
+                      <mat-label>Head Office Address</mat-label>
+                      <mat-icon matPrefix>location_on</mat-icon>
+                      <textarea matInput formControlName="address" rows="2" placeholder="Street, landmark, postal code"></textarea>
+                    </mat-form-field>
+                  </div>
+                </div>
+
+                <div class="field-half">
+                  <div [formGroupName]="'headOffice'">
+                    <div class="field-row compact-row head-office-location-row">
+                      <!-- Alignment fix: all right-side fields share the same control class. -->
+                      <mat-form-field appearance="outline" class="field-third head-office-control">
+                        <mat-label>Country</mat-label>
+                        <mat-icon matPrefix>public</mat-icon>
+                        <mat-select formControlName="country" (openedChange)="onHeadOfficeCountryOpened($event)">
+                          <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+                            <input matInput class="select-search-input" placeholder="Search country"
+                              [(ngModel)]="headOfficeCountrySearch"
+                              [ngModelOptions]="{standalone: true}"
+                              (click)="$event.stopPropagation()"
+                              (keydown)="stopLocationSearchEvent($event)"
+                              (keyup)="stopLocationSearchEvent($event)"
+                              (input)="stopLocationSearchEvent($event)" />
+                          </mat-option>
+                          <mat-option *ngFor="let c of filteredHeadOfficeCountries" [value]="c.id">{{ c.name }}</mat-option>
+                        </mat-select>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="field-third head-office-control">
+                        <mat-label>State</mat-label>
+                        <mat-icon matPrefix>map</mat-icon>
+                        <mat-select formControlName="state"
+                          [disabled]="!form.get('headOffice.country')?.value || !stateOptions.length || loadingStates"
+                          (openedChange)="onHeadOfficeStateOpened($event)">
+                          <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+                            <input matInput class="select-search-input" placeholder="Search state"
+                              [(ngModel)]="headOfficeStateSearch"
+                              [ngModelOptions]="{standalone: true}"
+                              (click)="$event.stopPropagation()"
+                              (keydown)="stopLocationSearchEvent($event)"
+                              (keyup)="stopLocationSearchEvent($event)"
+                              (input)="stopLocationSearchEvent($event)" />
+                          </mat-option>
+                          <mat-option *ngFor="let s of filteredHeadOfficeStates" [value]="s.id">{{ s.name }}</mat-option>
+                        </mat-select>
+                        <mat-hint *ngIf="!loadingStates && !form.get('headOffice.country')?.value">Select country first</mat-hint>
+                        <mat-hint *ngIf="!loadingStates && form.get('headOffice.country')?.value && !stateOptions.length">No states available</mat-hint>
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="field-third head-office-control head-office-city">
+                        <mat-label>City</mat-label>
+                        <mat-icon matPrefix>location_city</mat-icon>
+                        <!-- Changed from dropdown to text input so users can type the city directly. -->
+                        <input matInput type="text" formControlName="city" placeholder="City" />
+                      </mat-form-field>
+                    </div>
+
+                    <div class="field-row compact-row">
+                      <mat-form-field appearance="outline" class="field-third head-office-control">
+                        <mat-label>Pincode</mat-label>
+                        <mat-icon matPrefix>pin_drop</mat-icon>
+                        <input matInput formControlName="pincode" placeholder="Pincode / ZIP" />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="field-third head-office-control">
+                        <mat-label>Head Office Email</mat-label>
+                        <mat-icon matPrefix>email</mat-icon>
+                        <input matInput formControlName="email" placeholder="info@example.com" />
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline" class="field-third head-office-control">
+                        <mat-label>Head Office Phone</mat-label>
+                        <mat-icon matPrefix>phone</mat-icon>
+                        <input matInput formControlName="phone" placeholder="Phone" />
+                      </mat-form-field>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campuses -->
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">location_city</mat-icon>
+                <div class="section-header-text">
+                  <h2 class="section-heading">Campuses / Branches</h2>
+                  <p class="section-desc">Add and manage campus locations.</p>
+                </div>
+                <button mat-flat-button color="primary" type="button" (click)="addCampus()" class="add-campus-btn">
+                  <mat-icon>add</mat-icon>
+                  <span>Add Campus</span>
+                </button>
+              </div>
+
+              <div formArrayName="campuses">
+                <mat-accordion *ngIf="campuses && campuses.length > 0" multi>
+                  <mat-expansion-panel *ngFor="let c of campuses.controls; let i = index" [expanded]="expandedIndex === i" class="campus-panel">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title>{{ c.get('name')?.value || ('Campus ' + (i+1)) }}</mat-panel-title>
+                      <mat-panel-description>
+                        <div class="panel-actions">
+                          <button mat-flat-button color="warn" type="button" (click)="$event.stopPropagation(); removeCampus(i)">
+                            <mat-icon>delete</mat-icon>
+                            <span>Remove</span>
+                          </button>
+                          <button *ngIf="!c.get('isPrimary')?.value" mat-flat-button color="primary" type="button" (click)="$event.stopPropagation(); setPrimaryCampus(i)">
+                            <mat-icon>star</mat-icon>
+                            <span>Set Primary</span>
+                          </button>
+                        </div>
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+
+                    <div [formGroupName]="i" class="campus-form">
+                      <div class="field-row">
+                        <div class="field-half">
+                          <mat-form-field appearance="outline" class="field-full">
+                            <mat-label>Campus Name</mat-label>
+                            <mat-icon matPrefix>location_city</mat-icon>
+                            <input matInput formControlName="name" placeholder="Campus name" />
+                          </mat-form-field>
+
+                          <mat-form-field appearance="outline" class="field-full">
+                            <mat-label>Campus Address</mat-label>
+                            <mat-icon matPrefix>location_on</mat-icon>
+                            <textarea matInput formControlName="address" rows="2" placeholder="Street, landmark, postal code"></textarea>
+                          </mat-form-field>
+
+                          <div class="field-row">
+                            <mat-form-field appearance="outline" class="field-half">
+                              <mat-label>Contact Email</mat-label>
+                              <mat-icon matPrefix>email</mat-icon>
+                              <input matInput formControlName="email" placeholder="email@example.com" />
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="field-half">
+                              <mat-label>Contact Phone</mat-label>
+                              <mat-icon matPrefix>phone</mat-icon>
+                              <input matInput formControlName="phone" placeholder="Phone number" />
+                            </mat-form-field>
+                          </div>
+
+                          <div class="field-row checkbox-row">
+                            <div class="field-half">
+                              <mat-checkbox [checked]="c.get('isPrimary')?.value" (click)="$event.stopPropagation()" (change)="setPrimaryCampus(i)">Primary</mat-checkbox>
+                            </div>
+                            <div class="field-half">
+                              <mat-checkbox [checked]="c.get('isActive')?.value" formControlName="isActive">Active</mat-checkbox>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="field-half">
+                          <mat-form-field appearance="outline" class="field-full">
+                            <mat-label>Country</mat-label>
+                            <mat-icon matPrefix>public</mat-icon>
+                            <mat-select formControlName="country" (openedChange)="onCampusCountryOpened(c, $event)">
+                              <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+                                <input matInput class="select-search-input" placeholder="Search country"
+                                  [ngModel]="getCampusCountrySearch(c)"
+                                  (ngModelChange)="setCampusCountrySearch(c, $event)"
+                                  [ngModelOptions]="{standalone: true}"
+                                  (click)="$event.stopPropagation()"
+                                  (keydown)="stopLocationSearchEvent($event)"
+                                  (keyup)="stopLocationSearchEvent($event)"
+                                  (input)="stopLocationSearchEvent($event)" />
+                              </mat-option>
+                              <mat-option *ngFor="let cc of getFilteredCampusCountries(c)" [value]="cc.id">{{ cc.name }}</mat-option>
+                            </mat-select>
+                          </mat-form-field>
+
+                          <mat-form-field appearance="outline" class="field-full">
+                            <mat-label>State</mat-label>
+                            <mat-icon matPrefix>map</mat-icon>
+                            <mat-select formControlName="state"
+                              [disabled]="!c.get('country')?.value || !(campusStateOptions[(c.get('_cid')?.value)] || []).length || campusLoadingStates[(c.get('_cid')?.value)]"
+                              (openedChange)="onCampusStateOpened(c, $event)">
+                              <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+                                <input matInput class="select-search-input" placeholder="Search state"
+                                  [ngModel]="getCampusStateSearch(c)"
+                                  (ngModelChange)="setCampusStateSearch(c, $event)"
+                                  [ngModelOptions]="{standalone: true}"
+                                  (click)="$event.stopPropagation()"
+                                  (keydown)="stopLocationSearchEvent($event)"
+                                  (keyup)="stopLocationSearchEvent($event)"
+                                  (input)="stopLocationSearchEvent($event)" />
+                              </mat-option>
+                              <mat-option *ngFor="let s of getFilteredCampusStates(c)" [value]="s.id">{{ s.name }}</mat-option>
+                            </mat-select>
+                            <mat-hint *ngIf="!campusLoadingStates[(c.get('_cid')?.value)] && !c.get('country')?.value">Select country first</mat-hint>
+                            <mat-hint *ngIf="!campusLoadingStates[(c.get('_cid')?.value)] && c.get('country')?.value && !(campusStateOptions[(c.get('_cid')?.value)] || []).length">No states available</mat-hint>
+                          </mat-form-field>
+
+                          <mat-form-field appearance="outline" class="field-full">
+                            <mat-label>City</mat-label>
+                            <mat-icon matPrefix>location_city</mat-icon>
+                           <input matInput type="text" formControlName="city" placeholder="City" />
+                            <mat-hint *ngIf="!campusLoadingCities[(c.get('_cid')?.value)] && !c.get('state')?.value">Select state first</mat-hint>
+                            <mat-hint *ngIf="!campusLoadingCities[(c.get('_cid')?.value)] && c.get('state')?.value && !(campusCityOptions[(c.get('_cid')?.value)] || []).length">No cities available</mat-hint>
+                          </mat-form-field>
+
+                          <mat-form-field appearance="outline" class="field-full">
+                            <mat-label>Pincode</mat-label>
+                            <mat-icon matPrefix>pin_drop</mat-icon>
+                            <input matInput formControlName="pincode" placeholder="Pincode / ZIP" />
+                          </mat-form-field>
+                        </div>
+                      </div>
+                    </div>
+                  </mat-expansion-panel>
+                </mat-accordion>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" mat-button matStepperPrevious class="prev-btn">
+                <mat-icon svgIcon="arrow_back"></mat-icon>
+                <span>Back</span>
+              </button>
+              <button type="button" mat-button matStepperNext class="next-btn">
+                <span>Next</span>
+                <mat-icon svgIcon="arrow_forward"></mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+        <!-- ═══ Step 4: Review & Submit ═══ -->
+        <mat-step>
+          <ng-template matStepLabel>Review</ng-template>
+          <div class="step-content">
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">fact_check</mat-icon>
+                <div>
+                  <h2 class="section-heading">Review & Submit</h2>
+                  <p class="section-desc">Please review all information before submitting.</p>
+                </div>
+              </div>
+
+              <div class="review-grid">
+                <!-- Institute Info -->
+                <div class="review-section">
+                  <h4 class="review-section-title">
+                    <mat-icon>domain</mat-icon> Institute Information
+                  </h4>
+                  <div class="review-items">
+                    <div class="review-item">
+                      <span class="review-label">Name</span>
+                      <span class="review-value">{{ form.get('name')?.value || '–' }}</span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Short Name</span>
+                      <span class="review-value">{{ form.get('short_name')?.value || '–' }}</span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Website</span>
+                      <span class="review-value">{{ form.get('website')?.value || '–' }}</span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Industry</span>
+                      <span class="review-value">{{ form.get('industry_type')?.value || '–' }} / {{ form.get('industry_sector')?.value || '–' }}</span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Primary Contact</span>
+                      <span class="review-value">{{ form.get('primary_contact_person')?.value || '–' }}</span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Email</span>
+                      <span class="review-value">{{ form.get('primary_contact_email')?.value || '–' }}</span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Phone</span>
+                      <span class="review-value">{{ form.get('primary_contact_phone')?.value || '–' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Organization -->
+                <div class="review-section">
+                  <h4 class="review-section-title">
+                    <mat-icon>layers</mat-icon> Organization
+                  </h4>
+                  <div class="review-items">
+                    <div class="review-item">
+                      <span class="review-label">Departments</span>
+                      <span class="review-value">
+                        <ng-container *ngIf="departmentList?.length; else noDept">
+                          <span class="review-chip" *ngFor="let d of departmentList">{{ d }}</span>
+                        </ng-container>
+                        <ng-template #noDept>–</ng-template>
+                      </span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Teams</span>
+                      <span class="review-value">
+                        <ng-container *ngIf="teamList?.length; else noTeam">
+                          <span class="review-chip" *ngFor="let t of teamList">{{ t }}</span>
+                        </ng-container>
+                        <ng-template #noTeam>–</ng-template>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Billing -->
+                <div class="review-section">
+                  <h4 class="review-section-title">
+                    <mat-icon>receipt_long</mat-icon> Billing & Limits
+                  </h4>
+                  <div class="review-items">
+                    <div class="review-item">
+                      <span class="review-label">Max Users</span>
+                      <span class="review-value">{{ form.get('max_users')?.value || '–' }}</span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Status</span>
+                      <span class="review-value">
+                        <span class="status-pill" [class.active]="form.get('active')?.value">{{ form.get('active')?.value ? 'Active' : 'Inactive' }}</span>
+                      </span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Subscription</span>
+                      <span class="review-value">{{ form.get('subscription_start')?.value || '–' }} → {{ form.get('subscription_end')?.value || '–' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Head Office -->
+                <div class="review-section" *ngIf="form.get('headOffice')?.get('address')?.value">
+                  <h4 class="review-section-title">
+                    <mat-icon>apartment</mat-icon> Head Office
+                  </h4>
+                  <div class="review-items">
+                    <div class="review-item">
+                      <span class="review-label">Address</span>
+                      <span class="review-value">{{ form.get('headOffice')?.get('address')?.value || '–' }}</span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Location</span>
+                      <span class="review-value">
+                        {{ resolveCountryName(form.get('headOffice')?.get('country')?.value) }} /
+                        {{ resolveStateName(form.get('headOffice')?.get('state')?.value) }} /
+                        {{ resolveCityName(form.get('headOffice')?.get('city')?.value) }}
+                      </span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Pincode</span>
+                      <span class="review-value">{{ form.get('headOffice')?.get('pincode')?.value || '–' }}</span>
+                    </div>
+                    <div class="review-item">
+                      <span class="review-label">Contact</span>
+                      <span class="review-value">{{ form.get('headOffice')?.get('email')?.value || '–' }} &nbsp;|&nbsp; {{ form.get('headOffice')?.get('phone')?.value || '–' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Campuses -->
+                <div class="review-section review-section--full">
+                  <h4 class="review-section-title">
+                    <mat-icon>location_city</mat-icon> Campuses
+                  </h4>
+                  <div *ngIf="campuses?.length; else noCampus">
+                    <div *ngFor="let c of campuses.controls; let i = index" class="campus-review-card">
+                      <div class="campus-review-header">
+                        <strong>{{ c.get('name')?.value || ('Campus ' + (i + 1)) }}</strong>
+                        <span class="campus-tag" *ngIf="c.get('isPrimary')?.value">Primary</span>
+                      </div>
+                      <div class="campus-review-details">
+                        <span>{{ c.get('address')?.value || '–' }}</span>
+                        <span>{{ getCampusCityName(c) }} / {{ getCampusStateName(c) }} / {{ getCampusCountryName(c) }} | {{ c.get('pincode')?.value || '–' }}</span>
+                        <span>{{ c.get('email')?.value || '–' }} | {{ c.get('phone')?.value || '–' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <ng-template #noCampus>
+                    <p class="empty-text">No campuses added.</p>
+                  </ng-template>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" mat-button matStepperPrevious class="prev-btn">
+                <mat-icon svgIcon="arrow_back"></mat-icon>
+                <span>Back</span>
+              </button>
+              <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || isSubmitting" class="submit-btn">
+                <mat-icon svgIcon="save"></mat-icon>
+                <span *ngIf="isSubmitting">Saving...</span>
+                <span *ngIf="!isSubmitting && !isEditing">Register</span>
+                <span *ngIf="!isSubmitting && isEditing">Save Changes</span>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+      </mat-horizontal-stepper>
+    </form>
+  </div>
+</div>

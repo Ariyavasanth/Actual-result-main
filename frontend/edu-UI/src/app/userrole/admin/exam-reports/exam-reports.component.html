@@ -1,0 +1,831 @@
+<div class="page exam-reports">
+     <div class="toolbar">
+          <div class="selections">
+               <mat-form-field appearance="outline">
+                    <mat-icon matPrefix svgIcon="institute"></mat-icon>
+                    <mat-label>Institute</mat-label>
+                    <input matInput [formControl]="instituteCtrl" [matAutocomplete]="instAuto"
+                         placeholder="Pick an institute" />
+                    <mat-autocomplete #instAuto="matAutocomplete" [displayWith]="displayInstitute"
+                         (optionSelected)="onInstituteSelected($event.option.value)">
+                         <mat-option *ngFor="let inst of (filteredInstitutes$ | async)"
+                              [value]="inst">{{inst.name}}</mat-option>
+                    </mat-autocomplete>
+               </mat-form-field>
+
+               <mat-form-field appearance="outline">
+                    <mat-icon matPrefix svgIcon="exam"></mat-icon>
+                    <mat-label>Scheduled Exams</mat-label>
+                    <input type="text" matInput [formControl]="examCtrl" [matAutocomplete]="auto"
+                         placeholder="Pick a exam" />
+                    <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayExam.bind(this)"
+                         (optionSelected)="onExamAutocompleteSelected($event.option.value)">
+                         <mat-option *ngFor="let exam of (filteredExams$ | async)" [value]="exam">
+                              <div class="option-main">{{ exam.title || exam.name }}</div>
+                              <!-- <div class="option-sub muted">{{ exam.schedule_id || exam.id || '' }}</div> -->
+                         </mat-option>
+                    </mat-autocomplete>
+               </mat-form-field>
+          </div>
+
+          <div class="controls">
+
+               <div class="action-row">
+                    <button mat-stroked-button color="primary" type="button" (click)="loadAnalytics()" class="button-one">
+                         <mat-icon svgIcon="refresh"></mat-icon>Refresh</button>
+                    <button #filtersBtn mat-flat-button type="button" class="button-one"
+                              (click)="$event.stopPropagation(); openFiltersOverlay()">
+                         <mat-icon svgIcon="filter"></mat-icon>
+                         <span>Filters</span>
+                    </button>
+               </div>
+               <!-- Filter fields (rendered into overlay) -->
+               <ng-template #filtersPanel>
+                    <div class="filters-panel" (click)="$event.stopPropagation()">
+                         <div class="filters-panel-header">
+                              <h4><mat-icon>tune</mat-icon> Filters</h4>
+                         </div>
+                         <div class="filter-block">
+
+                              <mat-form-field appearance="outline" class="filter-item">
+                                   <mat-label>Country</mat-label>
+                                   <mat-select [(ngModel)]="userFilters.country_id" name="filterCountry"
+                                        (selectionChange)="onCountryChange()">
+                                        <mat-option value="">All</mat-option>
+                                        <mat-option *ngFor="let c of countries" [value]="c.code">
+                                             {{ c.name }}
+                                        </mat-option>
+                                   </mat-select>
+                              </mat-form-field>
+
+                              <mat-form-field appearance="outline" class="filter-item">
+                                   <mat-label>City</mat-label>
+                                   <mat-select [(ngModel)]="userFilters.city_id" name="filterCity">
+                                        <mat-option value="">All</mat-option>
+                                        <mat-option *ngFor="let c of cities" [value]="c.code">
+                                             {{ c.name }}
+                                        </mat-option>
+                                   </mat-select>
+                              </mat-form-field>
+
+                              <mat-form-field appearance="outline" class="filter-item">
+                                   <mat-label>Campus</mat-label>
+                                   <mat-select [(ngModel)]="userFilters.campus_id" name="filterCampus">
+                                        <mat-option value="">All</mat-option>
+                                        <mat-option *ngFor="let cp of campusList" [value]="cp">
+                                             {{ cp }}
+                                        </mat-option>
+                                   </mat-select>
+                              </mat-form-field>
+
+                              <mat-form-field appearance="outline" class="filter-item">
+                                   <mat-label>Department</mat-label>
+                                   <mat-select [(ngModel)]="userFilters.department_id" name="filterDepartment">
+                                        <mat-option value="">All</mat-option>
+                                        <mat-option *ngFor="let d of departmentList" [value]="d">
+                                             {{ d }}
+                                        </mat-option>
+                                   </mat-select>
+                              </mat-form-field>
+
+                              <mat-form-field appearance="outline" class="filter-item">
+                                   <mat-label>Team</mat-label>
+                                   <mat-select [(ngModel)]="userFilters.teams_id" name="filterTeam">
+                                        <mat-option value="">All</mat-option>
+                                        <mat-option *ngFor="let t of teamList" [value]="t">
+                                             {{ t }}
+                                        </mat-option>
+                                   </mat-select>
+                              </mat-form-field>
+
+                              <mat-form-field appearance="outline" class="filter-item">
+                                   <mat-label>Exam schedule after</mat-label>
+                                   <input matInput [matDatepicker]="joinAfter" [(ngModel)]="userFilters.joined_after"
+                                        placeholder="Exam schedule after" />
+                                   <mat-datepicker-toggle matSuffix [for]="joinAfter"></mat-datepicker-toggle>
+                                   <mat-datepicker #joinAfter></mat-datepicker>
+                              </mat-form-field>
+
+                              <mat-form-field appearance="outline" class="filter-item">
+                                   <mat-label>Exam schedule before</mat-label>
+                                   <input matInput [matDatepicker]="joinBefore" [(ngModel)]="userFilters.joined_before"
+                                        placeholder="Exam schedule before" />
+                                   <mat-datepicker-toggle matSuffix [for]="joinBefore"></mat-datepicker-toggle>
+                                   <mat-datepicker #joinBefore></mat-datepicker>
+                              </mat-form-field>
+
+
+                         </div>
+                         <div class="filter-actions">
+                              <button mat-flat-button (click)="loadScheduledExam(); closeFiltersOverlay();" class="filter-apply-btn">
+                                   <mat-icon svgIcon="apply"></mat-icon> Apply
+                              </button>
+                              <button mat-flat-button (click)="resetFiltersAndReload()" class="filter-reset-btn">
+                                   <mat-icon svgIcon="reset_settings"></mat-icon> Reset
+                              </button>
+                         </div>
+                    </div>
+               </ng-template>
+          </div>
+     </div>
+     <div class="list-card">
+          <div class="list-wrapper">
+               <mat-tab-group class="exam-tabs" [selectedIndex]="activeMainTabIndex" (selectedTabChange)="onTabChange($event)"
+                    (selectedIndexChange)="activeMainTabIndex = $event">
+                    <mat-tab label="User Report">
+                              <div class="report-summary-grid">
+                                   <div class="summary-card">
+                                        <div class="summary-icon summary-icon--students"><mat-icon>groups</mat-icon></div>
+                                        <div class="summary-copy">
+                                             <div class="summary-label">Students</div>
+                                             <div class="summary-value">{{ userReportTotal || 0 }}</div>
+                                             <div class="summary-meta">{{ userReportData.length || 0 }} visible for {{ selectedExam?.title || selectedExam?.name || 'selected exam' }}</div>
+                                        </div>
+                                   </div>
+                                   <div class="summary-card">
+                                        <div class="summary-icon summary-icon--page"><mat-icon>article</mat-icon></div>
+                                        <div class="summary-copy">
+                                             <div class="summary-label">Current Page</div>
+                                             <div class="summary-value">{{ currentPage }}/{{ totalPages }}</div>
+                                             <div class="summary-meta">Paginated user report results</div>
+                                        </div>
+                                   </div>
+                                   <div class="summary-card">
+                                        <div class="summary-icon summary-icon--score"><mat-icon>military_tech</mat-icon></div>
+                                        <div class="summary-copy">
+                                             <div class="summary-label">Average Score</div>
+                                             <div class="summary-value">{{ userAverageScore | number:'1.0-1' }}</div>
+                                             <div class="summary-meta">Average marks from loaded users</div>
+                                        </div>
+                                   </div>
+                                   <div class="summary-card">
+                                        <div class="summary-icon summary-icon--pass"><mat-icon>task_alt</mat-icon></div>
+                                        <div class="summary-copy">
+                                             <div class="summary-label">Pass Rate</div>
+                                             <div class="summary-value">{{ userPassRate | number:'1.0-0' }}%</div>
+                                             <div class="summary-meta">Success ratio in current view</div>
+                                        </div>
+                                   </div>
+                              </div>
+                         <div class="tab-actions">
+                              <div class="search">
+                                   <mat-form-field appearance="outline" class="search-field"><mat-icon matPrefix>search</mat-icon>
+                                        <mat-label>Search student</mat-label>
+                                        <input matInput [(ngModel)]="searchQuery" placeholder="Student Name " />
+                                   </mat-form-field>
+                              </div>
+                              <div class="controls">
+                                   <div class="action-row">
+                                        <button mat-stroked-button color="primary" type="button"
+                                             (click)="loadUserReport(1)"><mat-icon>search</mat-icon> Search</button>
+                                        <button mat-stroked-button type="button" (click)="exportUserCSV()"><mat-icon>download</mat-icon> Export CSV</button>
+                                   </div>
+                              </div>
+                         </div>
+
+                         <div class="table-wrap" *ngIf="!loadingUserReport">
+                              <table mat-table [dataSource]="userReportData"
+                                   class="mat-elevation-z1 compact premium-table" matSort>
+                                   <ng-container matColumnDef="student_name">
+                                        <th mat-header-cell *matHeaderCellDef>Student</th>
+                                        <td mat-cell *matCellDef="let row" class="cell-primary">
+                                             <div class="student-cell" (click)="openUserReview(row)">
+                                                  <div class="student-avatar">{{ (row.student_name || row.name || 'S').charAt(0).toUpperCase() }}</div>
+                                                  <span class="student-name">{{ row.student_name || row.name || 'Student' }}</span>
+                                             </div>
+                                        </td>
+                                   </ng-container>
+                                   <ng-container matColumnDef="questions_attempted">
+                                        <th mat-header-cell *matHeaderCellDef>Marks / Total</th>
+                                        <td mat-cell *matCellDef="let row">
+                                             <span class="marks-inline">{{row.marks_obtained}} <span class="marks-sep">/</span> {{row.total_marks}}</span>
+                                        </td>
+                                   </ng-container>
+                                   <ng-container matColumnDef="correct_answers">
+                                        <th mat-header-cell *matHeaderCellDef>Percentage</th>
+                                        <td mat-cell *matCellDef="let row">
+                                             <span class="pct-badge">{{row.percentage}}</span>
+                                        </td>
+                                   </ng-container>
+                                   <ng-container matColumnDef="wrong_answers">
+                                        <th mat-header-cell *matHeaderCellDef>Manual Review</th>
+                                        <td mat-cell *matCellDef="let row">
+                                             <span class="review-status" [class.review-pending]="row.manual_review === 'pending' || row.manual_review === 'Pending'">{{row.manual_review}}</span>
+                                        </td>
+                                   </ng-container>
+                                   <ng-container matColumnDef="result">
+                                        <th mat-header-cell *matHeaderCellDef>Result</th>
+                                        <td mat-cell *matCellDef="let row">
+                                             <span class="result-pill" [class.result-pass]="(row.result || '').toLowerCase() === 'pass' || (row.result || '').toLowerCase() === 'passed'" [class.result-fail]="(row.result || '').toLowerCase() === 'fail' || (row.result || '').toLowerCase() === 'failed'">{{row.result}}</span>
+                                        </td>
+                                   </ng-container>
+
+                                   <tr mat-header-row
+                                        *matHeaderRowDef="['student_name','questions_attempted','correct_answers','wrong_answers','result']">
+                                   </tr>
+                                   <tr mat-row
+                                        *matRowDef="let row; columns: ['student_name','questions_attempted','correct_answers','wrong_answers','result'];">
+                                   </tr>
+                              </table>
+
+                              <div class="pager">
+                                   <button mat-button (click)="prevPage()" [disabled]="currentPage<=1">Prev</button>
+                                   <span>Page {{currentPage}} of {{ totalPages }}</span>
+                                   <button mat-button (click)="nextPage()"
+                                        [disabled]="currentPage>=totalPages">Next</button>
+                              </div>
+                         </div>
+                         <div *ngIf="loadingUserReport" class="loader-placeholder">Loading user report...</div>
+                    </mat-tab>
+                    <mat-tab label="Analytics Report">
+                         <div class="analytics-section">
+                              <div class="report-summary-grid analytics-summary-grid">
+                                   <div class="summary-card">
+                                        <div class="summary-icon summary-icon--categories"><mat-icon>grid_view</mat-icon></div>
+                                        <div class="summary-copy">
+                                             <div class="summary-label">Categories</div>
+                                             <div class="summary-value">{{ categoryAnalytics.length || 0 }}</div>
+                                             <div class="summary-meta">Performance groups in analytics</div>
+                                        </div>
+                                   </div>
+                                   <div class="summary-card">
+                                        <div class="summary-icon summary-icon--questions"><mat-icon>quiz</mat-icon></div>
+                                        <div class="summary-copy">
+                                             <div class="summary-label">Questions</div>
+                                             <div class="summary-value">{{ activeQuestionCount || 0 }}</div>
+                                             <div class="summary-meta">{{ filteredQuestionSummary.length ? 'Filtered question summary view' : 'Complete question summary view' }}</div>
+                                        </div>
+                                   </div>
+                                   <div class="summary-card">
+                                        <div class="summary-icon summary-icon--attempts"><mat-icon>stacked_line_chart</mat-icon></div>
+                                        <div class="summary-copy">
+                                             <div class="summary-label">Total Attempts</div>
+                                             <div class="summary-value">{{ analyticsTotalAttempts || 0 }}</div>
+                                             <div class="summary-meta">Attempts recorded across categories</div>
+                                        </div>
+                                   </div>
+                                   <div class="summary-card">
+                                        <div class="summary-icon summary-icon--mistakes"><mat-icon>warning_amber</mat-icon></div>
+                                        <div class="summary-copy">
+                                             <div class="summary-label">Mistakes</div>
+                                             <div class="summary-value">{{ analyticsMistakeCount || 0 }}</div>
+                                             <div class="summary-meta">Wrong answers identified in analytics</div>
+                                        </div>
+                                   </div>
+                              </div>
+                              <!-- <h3>Category Report</h3>
+                              <table mat-table [dataSource]="categoryAnalytics" class="mat-elevation-z2 full-width">
+                                   <ng-container matColumnDef="category">
+                                        <th mat-header-cell *matHeaderCellDef>Category</th>
+                                        <td mat-cell *matCellDef="let c">{{c.category_name || c.name}}</td>
+                                   </ng-container>
+                                   <ng-container matColumnDef="questions">
+                                        <th mat-header-cell *matHeaderCellDef>Questions</th>
+                                        <td mat-cell *matCellDef="let c">{{c.total_questions || c.questions_count}}</td>
+                                   </ng-container>
+                                   <ng-container matColumnDef="mistakes">
+                                        <th mat-header-cell *matHeaderCellDef>Mistakes</th>
+                                        <td mat-cell *matCellDef="let c">{{c.mistakes || c.wrong_count}}</td>
+                                   </ng-container>
+                                   <ng-container matColumnDef="error_pct">
+                                        <th mat-header-cell *matHeaderCellDef>Error %</th>
+                                        <td mat-cell *matCellDef="let c">{{c.error_percentage || c.error_pct}}</td>
+                                   </ng-container>
+
+                                   <tr mat-header-row
+                                        *matHeaderRowDef="['category','questions','mistakes','error_pct']"></tr>
+                                   <tr mat-row
+                                        *matRowDef="let row; columns: ['category','questions','mistakes','error_pct'];">
+                                   </tr>
+                              </table> -->
+
+                              <mat-tab-group class="inner-analytics-tabs" [(selectedIndex)]="innerAnalyticsTabIndex">
+                                   <mat-tab label="Category Report">
+                                        <div class="analytics-section">
+                                             <div class="table-wrap">
+                                                  <table mat-table [dataSource]="categoryAnalytics"
+                                                  class="mat-elevation-z1 compact premium-table" matSort>
+                                                  <ng-container matColumnDef="category">
+                                                       <th mat-header-cell *matHeaderCellDef>Category</th>
+                                                       <td mat-cell *matCellDef="let c" class="cell-primary">
+                                                            <div class="category-cell" (click)="openCategoryQuestionSummary(c)">
+                                                                 <div class="category-avatar">{{ (c.category_name || c.name || '?').charAt(0).toUpperCase() }}</div>
+                                                                 <span class="student-name">{{c.category_name || c.name}}</span>
+                                                            </div>
+                                                       </td>
+                                                  </ng-container>
+                                                  <ng-container matColumnDef="questions">
+                                                       <th mat-header-cell *matHeaderCellDef>Questions</th>
+                                                       <td mat-cell *matCellDef="let c">{{c.total_questions ||
+                                                            c.questions_count}}</td>
+                                                  </ng-container>
+                                                   <ng-container matColumnDef="users_attempted">
+                                                       <th mat-header-cell *matHeaderCellDef>Users Attempted</th>
+                                                       <td mat-cell *matCellDef="let c">{{c.no_of_students || c.users_attempted}}</td>
+                                                  </ng-container>
+                                                  <ng-container matColumnDef="total_attempts">
+                                                       <th mat-header-cell *matHeaderCellDef>Total Attempts</th>
+                                                       <td mat-cell *matCellDef="let c">{{c.total_attempts}}</td>
+                                                  </ng-container>
+
+                                                  <ng-container matColumnDef="mistakes">
+                                                       <th mat-header-cell *matHeaderCellDef>Mistakes</th>
+                                                       <td mat-cell *matCellDef="let c">{{c.wrong_answers || c.mistakes
+                                                            || c.wrong_count}}</td>
+                                                  </ng-container>
+                                                  <ng-container matColumnDef="error_pct">
+                                                       <th mat-header-cell *matHeaderCellDef>Error %</th>
+                                                       <td mat-cell *matCellDef="let c">{{c.error_percentage ||
+                                                            c.error_pct}}</td>
+                                                  </ng-container>
+
+                                                  <tr mat-header-row
+                                                       *matHeaderRowDef="['category','questions','users_attempted','total_attempts','mistakes','error_pct']">
+                                                  </tr>
+                                                  <tr mat-row
+                                                       *matRowDef="let row; columns: ['category','questions','users_attempted','total_attempts','mistakes','error_pct'];">
+                                                  </tr>
+                                             </table>
+                                             </div>
+                                        </div>
+                                   </mat-tab>
+                                   <mat-tab label="Question Summary">
+                                        <div class="analytics-section">
+                                             <div class="table-wrap">
+                                                  <table mat-table [dataSource]="(filteredQuestionSummary && filteredQuestionSummary.length) ? filteredQuestionSummary : questionSummary"
+                                                  class="mat-elevation-z1 compact premium-table" matSort>
+                                                  <ng-container matColumnDef="sno">
+                                                       <th mat-header-cell *matHeaderCellDef>#</th>
+                                                       <td mat-cell *matCellDef="let q; let i = index">{{q.sno || i+1}}
+                                                       </td>
+                                                  </ng-container>
+                                                  <ng-container matColumnDef="question">
+                                                       <th mat-header-cell *matHeaderCellDef>Question</th>
+                                                       <td mat-cell *matCellDef="let q">{{q.question_text || q.text}}
+                                                       </td>
+                                                  </ng-container>
+                                                  <!-- User Attempts -->
+                                                  <ng-container matColumnDef="user_attempts">
+                                                       <th mat-header-cell *matHeaderCellDef>Users Attempted</th>
+                                                       <td mat-cell *matCellDef="let q">{{q.user_attempts}}</td>
+                                                  </ng-container>
+                                                  <ng-container matColumnDef="attempts">
+                                                       <th mat-header-cell *matHeaderCellDef>Attempts</th>
+                                                       <td mat-cell *matCellDef="let q">{{q.attempts}}</td>
+                                                  </ng-container>
+                                                  <ng-container matColumnDef="mistakes">
+                                                       <th mat-header-cell *matHeaderCellDef>Mistakes</th>
+                                                           <td mat-cell *matCellDef="let q">
+                                                                <!-- {{q.mistakes}} -->
+                                                                <!-- show link when mistakes > 1 -->
+                                                                <a *ngIf="(q.mistakes || 0) > 0" href="javascript:void(0)" class="wrong-summary-link"
+                                                                     (click)="$event.stopPropagation(); openWrongAnswerSummary(q)">{{q.mistakes}}</a>
+                                                           </td>
+                                                  </ng-container>
+
+                                                  <tr mat-header-row
+                                                       *matHeaderRowDef="['sno','question','user_attempts','attempts','mistakes']"></tr>
+                                                  <tr mat-row
+                                                       *matRowDef="let row; columns: ['sno','question','user_attempts','attempts','mistakes'];">
+                                                  </tr>
+                                             </table>
+                                             </div>
+                                        </div>
+                                   </mat-tab>
+                              </mat-tab-group>
+                              <!-- <div class="analytics-actions" style="padding:8px 0 12px 0">
+                                        <button mat-stroked-button color="primary" type="button" (click)="loadAnalytics()">Refresh Analytics</button>
+                                   </div> -->
+                         </div>
+                    </mat-tab>
+               </mat-tab-group>
+          </div>
+     </div>
+     
+</div>
+
+<!-- User Review Panel (root-level) -->
+<div *ngIf="showUserReviewPanel" class="wrong-summary-backdrop" (click)="closeUserReview()">
+     <div class="wrong-summary-panel user-review-panel" (click)="$event.stopPropagation()">
+          <div class="card">
+               <div class="panel-header">
+                    <div class="header-icon">
+                         <mat-icon>assignment</mat-icon>
+                    </div>
+                    <div class="header-info">
+                         <h4>Answer Sheet - {{ selectedUserName || 'User' }}</h4>
+                         <h3>
+                              <span class="score">Score: {{ selectedUserScore || '-' }} / {{ totalMarks || '-' }} &nbsp;|&nbsp;Result: </span>
+                              <span class="result" [ngClass]="{ 'pass': (selectedUserResult || '').toLowerCase() === 'pass', 'fail': (selectedUserResult || '').toLowerCase() === 'fail' }">{{ selectedUserResult || '-' }}</span>
+                         </h3>
+                    </div>
+                    <button mat-icon-button aria-label="Close" type="button" (click)="closeUserReview()"><mat-icon>close</mat-icon></button>
+               </div>
+               <div class="panel-body">
+                    <div *ngIf="userReviewLoading" class="muted">Loading review...</div>
+                    <div *ngIf="!userReviewLoading">
+                         <div *ngIf="userReviewAttempts && userReviewAttempts.length; else noUserReview">
+                              <div *ngFor="let att of userReviewAttempts">
+                                   <!-- <div class="attempt-header">
+                                        <h5>Attempt {{ att.attempt_number || att.attempt || 1 }} — Score: {{ att.score || att.marks || (att.percentage ? (att.percentage + '%') : '-') }} — {{ att.result || att.status || '' }}</h5>
+                                        <div class="muted">Started: {{ att.started_date || att.started_at || '' }} • Submitted: {{ att.submitted_date || att.submitted_at || '' }} • Time: {{ att.time_taken || '' }}</div>
+                                   </div> -->
+                                   <div class="questions-list">
+                                        <div *ngFor="let q of att.review || att.questions || []; let qi = index" class="question-review-card">
+                                             <div class="q-head-row">
+                                                  <div class="q-left">
+                                                       <div class="q-index">{{ (q.sno || q.qno) ? (q.sno || q.qno) : (qi + 1) }}</div>
+                                                       <div class="q-body">
+                                                            <div class="q-meta">
+                                                            <div class="q-badge">{{ (q.question_type || q.type || '').toUpperCase() }}</div>
+                                                            <!-- <div class="q-info" *ngIf="q.question_type  != 'descriptive'" >{{ q.marks_awarded + '/' + q.question_marks + ' Marks (' + (q.marks_awarded/(q.question_marks || 1) * 100) + '%)' }} </div> -->
+                                                            <div class="q-info" *ngIf="q.question_type != 'descriptive'">{{ q.marks_awarded }}/{{ q.question_marks }} Marks({{ (q.marks_awarded / (q.question_marks || 1) * 100) | number:'1.2-2' }}%)</div>
+                                                            <div class="q-info" *ngIf="q.question_type  === 'descriptive'" >  {{ q.marks_awarded }}/{{ q.question_marks }} Marks({{ (q.marks_awarded / (q.question_marks || 1) * 100) | number:'1.2-2' }}%)
+                                                                 <mat-icon svgIcon="brain"></mat-icon>  {{'AI Confidence: ' + (q.ai_confidence != null ? (q.ai_confidence + '%') : 'N/A')}}
+                                                            </div>
+                                                            </div>
+                                                            <div class="q-text"><strong>{{ q.question_text || q.text || q.title || 'Question' }}</strong></div>
+                                                       </div>    
+                                                  </div>
+                                                  <div class="q-right">
+                                                       <!-- Mark display with edit option for descriptive questions -->
+                                                       <div class="marks-container" *ngIf="(q.question_type || q.type) === 'descriptive'">
+                                                            <div *ngIf="!q._editingMarks" class="marks-display">
+                                                                 <div class="q-marks small-muted" [ngClass]="{ 'mark-positive': (q.marks_awarded || 0) == (q.question_marks || 0), 'mark-negative': (q.marks_awarded || 0) == 0, 'mark-mid': (q.marks_awarded || 0) > 0 && (q.marks_awarded || 0) < (q.question_marks || 0) }">{{ q.marks_awarded != null ? (q.marks_awarded + ' / ' + (q.question_marks || '-')) : (q.marks ? ('0 / ' + q.marks) : '') }}</div>
+                                                                 <button mat-icon-button class="edit-marks-btn" type="button" (click)="$event.stopPropagation(); startEditMarks(q)" title="Edit marks">
+                                                                      <mat-icon>edit</mat-icon>
+                                                                 </button>
+                                                            </div>
+                                                            <div *ngIf="q._editingMarks" class="marks-edit">
+                                                                 <input type="number" class="marks-input" [(ngModel)]="q._editedMarks" [min]="0" [max]="q.question_marks || 100" step="0.5" />
+                                                                 <span class="marks-max">/ {{ q.question_marks || '-' }}</span>
+                                                                 <button mat-icon-button class="save-marks-btn" type="button" (click)="$event.stopPropagation(); saveMarks(q)" title="Save marks">
+                                                                      <mat-icon>check</mat-icon>
+                                                                 </button>
+                                                                 <button mat-icon-button class="cancel-marks-btn" type="button" (click)="$event.stopPropagation(); cancelEditMarks(q)" title="Cancel">
+                                                                      <mat-icon>close</mat-icon>
+                                                                 </button>
+                                                            </div>
+                                                       </div>
+                                                       <!-- Standard marks display for non-descriptive questions -->
+                                                       <div *ngIf="(q.question_type || q.type) !== 'descriptive'" class="q-marks small-muted" [ngClass]="{ 'mark-positive': (q.marks_awarded || 0) == (q.question_marks || 0), 'mark-negative': (q.marks_awarded || 0) == 0, 'mark-mid': (q.marks_awarded || 0) > 0 && (q.marks_awarded || 0) < (q.question_marks || 0) }">{{ q.marks_awarded != null ? (q.marks_awarded + ' / ' + (q.question_marks || '-')) : (q.marks ? ('0 / ' + q.marks) : '') }}</div>
+                                                  </div>
+                                             </div>
+
+                                             <!-- Fill / short answer style -->
+                                             <div *ngIf="(q.question_type || q.type) === 'fill' " class="q-fill">
+                                                  <div class="fill-row">
+                                                       <div class="fill-option" [class.selected]="(q.selected_option || []).length" [class.correct]="q.is_correct"> Student Answer: {{ (q.selected_option || []).join(', ') || '-' }}</div>
+                                                       <div class="fill-correct" *ngIf="q.marks_awarded === 0">Correct Answer: {{ q.options[0].option_text || q.options[0] }}</div>
+                                                  </div>
+                                             </div>
+                                             <!-- descriptive -->
+                                             <div *ngIf="(q.question_type || q.type) === 'descriptive'" class="q-descriptive">
+                                                  <!-- <div class="desc-header">
+                                                       <div class="desc-question">
+                                                            <div class="question-label">Descriptive Question</div>
+                                                            <div class="question-value">{{ q.question_text || '-' }}</div>
+                                                       </div>
+                                                       <div class="desc-score">
+                                                            <div class="score-label">Student Score</div>
+                                                            <div class="score-value">{{ q.marks_awarded != null ? (q.marks_awarded + ' / ' + (q.question_marks || q.marks || '-')) : '-' }}</div>
+                                                       </div>
+                                                  </div> 
+                                                  -->
+
+                                                  <div class="q-feedback" *ngIf="q.feedback">
+                                                       <strong>High-level Feedback</strong>
+                                                       <div class="feedback-text">{{ q.feedback }}</div>
+                                                  </div>
+
+                                                  <!-- Review Comments summary: split into three columns -->
+                                                       <div class="q-review-comments" *ngIf="q.review_comment && q.review_comment.comments && q.review_comment.comments.length">
+                                                            <div class="review-columns">
+                                                                 <div class="col missed">
+                                                                      <div class="col-header"><span class="dot red"></span><h4>Points Missed</h4></div>
+                                                                           <div *ngFor="let rc of reviewComments(q, 'missing'); let rci = index">
+                                                                                <div class="review-item">
+                                                                                     <div class="ri-body">
+                                                                                               <div *ngIf="rc.history && rc.history.length" class="review-text-history">
+                                                                                                    <div *ngFor="let h of rc.history; let hi = index">
+                                                                                                                                            <div class="history-entry" [class.deleted]="h.is_deleted == 1">
+                                                                                                              <div *ngIf="!h._editing" class="review-text-missed" [class.deleted]="rc.is_deleted == 1">
+                                                                                                                        <div class="ri-left"><span class="ri-icon missed">{{ rci + 1 }}</span></div>
+                                                                                <span class="review-text" [class.deleted]="h.is_deleted == 1 || h.updated_by">{{ toTitleCase(h.comment_text || h.comment || '') }}</span>
+                                                                                                              </div>
+                                                                                                              <div *ngIf="h._editing" class="review-text-missed editing">
+                                                                                                                        <div class="ri-left"><span class="ri-icon missed">{{ rci + 1 }}</span></div>
+                                                                                                                        <textarea [(ngModel)]="h._editedText" class="edit-comment-text" rows="2"></textarea>
+                                                                                                              </div>
+                                                                                                              <div class="review-meta small-muted">
+                                                                                                                        <span *ngIf="h.is_deleted == 1" class="deleted-by">Deleted by {{ h.updated_by || h.created_by || h.reviewer_id || 'System' }}</span>
+                                                                                                                        <span *ngIf="h.is_deleted != 1 && (h.updated_by || h.edited_by)">Edited by {{ h.updated_by || h.created_by }} On {{ h.updated_date }} </span>
+                                                                                                              </div>
+                                                                                                              <div class="review-actions" *ngIf="!h.updated_by">
+                                                                                                                   <a class="edit-link" href="javascript:void(0)" *ngIf="!h._editing" (click)="$event.stopPropagation(); startEditComment(h)"><mat-icon>edit</mat-icon> Edit</a>
+                                                                                                                   <a class="delete-link" href="javascript:void(0)" *ngIf="!h._editing" (click)="$event.stopPropagation(); confirmDeleteComment(h)"><mat-icon>delete</mat-icon> Delete</a>
+                                                                                                                   <a class="save-link" href="javascript:void(0)" *ngIf="h._editing" (click)="$event.stopPropagation(); saveReviewComment(h)"><mat-icon>save</mat-icon> Save</a>
+                                                                                                                   <a class="cancel-link" href="javascript:void(0)" *ngIf="h._editing" (click)="$event.stopPropagation(); cancelEditComment(h)"><mat-icon>close</mat-icon> Cancel</a>
+                                                                                                              </div>
+
+                                                                                                         </div>
+                                                                                                    </div>
+                                                                                               </div>
+                                                                                               <div *ngIf="!rc._editing" class="review-text-missed" [class.deleted]="rc.is_deleted == 1">
+                                                                                                         <div class="ri-left"><span class="ri-icon missed">{{ rci + 1 }}</span></div>
+                                                                                                         <span class="review-text" [class.deleted]="rc.is_deleted == 1 || rc.updated_by">{{ toTitleCase(rc.comment_text || rc.comment || '') }}</span>
+                                                                                               </div>
+                                                                                               <div *ngIf="rc._editing" class="review-text-missed editing">
+                                                                                                    <div class="ri-left"><span class="ri-icon missed">{{ rci + 1 }}</span></div>
+                                                                                                    <textarea [(ngModel)]="rc._editedText" class="edit-comment-text" rows="2"></textarea>
+                                                                                               </div>
+                                                                                          <div class="review-meta small-muted">
+                                                                                               <span *ngIf="rc.is_deleted == 1" class="deleted-by">Deleted by {{ rc.updated_by || rc.created_by || rc.reviewer_id || 'System' }}</span>
+                                                                                               <span *ngIf="rc.is_deleted != 1 && (rc.updated_by || rc.edited_by)">Edited by {{ rc.updated_by || rc.created_by }} On {{ rc.updated_date }} </span>
+                                                                                          </div>
+                                                                                          <div class="review-actions" *ngIf="!rc.updated_by">
+                                                                                               <a class="edit-link" href="javascript:void(0)" *ngIf="!rc._editing" (click)="$event.stopPropagation(); startEditComment(rc)"><mat-icon>edit</mat-icon> Edit</a>
+                                                                                               <a class="delete-link" href="javascript:void(0)" *ngIf="!rc._editing" (click)="$event.stopPropagation(); confirmDeleteComment(rc)"><mat-icon>delete</mat-icon> Delete</a>
+                                                                                               <a class="save-link" href="javascript:void(0)" *ngIf="rc._editing" (click)="$event.stopPropagation(); saveReviewComment(rc)"><mat-icon>save</mat-icon> Save</a>
+                                                                                               <a class="cancel-link" href="javascript:void(0)" *ngIf="rc._editing" (click)="$event.stopPropagation(); cancelEditComment(rc)"><mat-icon>close</mat-icon> Cancel</a>
+                                                                                          </div>
+                                                                                     </div>
+                                                                                </div>
+                                                                      </div>
+                                                                 </div>
+                                                                 <div class="col incorrect">
+                                                                      <div class="col-header"><span class="dot orange"></span><h4>Points Incorrect</h4></div>
+                                                                           <div *ngFor="let rc of reviewComments(q, ['incorrct','incorrect','incor']); let rci = index">
+                                                                                <div class="review-item">
+                                                                                     <div class="ri-body">
+                                                                                               <div *ngIf="rc.history && rc.history.length" class="review-text-history">
+                                                                                                    <div *ngFor="let h of rc.history; let hi = index">
+                                                                                                         <div class="history-entry" [class.deleted]="h.is_deleted == 1">
+                                                                                                              <div *ngIf="!h._editing" class="review-text-missed" [class.deleted]="h.is_deleted == 1">
+                                                                                                                        <div class="ri-left"><span class="ri-icon missed">{{ hi + 1 }}</span></div>
+                                                                                                                        <span class="review-text" [class.deleted]="h.is_deleted == 1 || h.updated_by">{{ toTitleCase(h.comment_text || h.comment || '') }}</span>
+                                                                                                              </div>
+                                                                                                              <div *ngIf="h._editing" class="review-text-missed editing">
+                                                                                                                        <div class="ri-left"><span class="ri-icon missed">{{ rci + 1 }}</span></div>
+                                                                                                                        <textarea [(ngModel)]="h._editedText" class="edit-comment-text" rows="2"></textarea>
+                                                                                                              </div>
+                                                                                                              <div class="review-meta small-muted">
+                                                                                                                        <span *ngIf="h.is_deleted == 1" class="deleted-by">Deleted by {{ h.updated_by || h.created_by || h.reviewer_id || 'System' }}</span>
+                                                                                                                        <span *ngIf="h.is_deleted != 1 && (h.updated_by || h.edited_by)">Edited by {{ h.updated_by || h.created_by }} On {{ h.updated_date }} </span>
+                                                                                                              </div>
+                                                                                                              <div class="review-actions" *ngIf="!h.updated_by">
+                                                                                                                   <a class="edit-link" href="javascript:void(0)" *ngIf="!h._editing" (click)="$event.stopPropagation(); startEditComment(h)"><mat-icon>edit</mat-icon> Edit</a>
+                                                                                                                   <a class="delete-link" href="javascript:void(0)" *ngIf="!h._editing" (click)="$event.stopPropagation(); confirmDeleteComment(h)"><mat-icon>delete</mat-icon> Delete</a>
+                                                                                                                   <a class="save-link" href="javascript:void(0)" *ngIf="h._editing" (click)="$event.stopPropagation(); saveReviewComment(h)"><mat-icon>save</mat-icon> Save</a>
+                                                                                                                   <a class="cancel-link" href="javascript:void(0)" *ngIf="h._editing" (click)="$event.stopPropagation(); cancelEditComment(h)"><mat-icon>close</mat-icon> Cancel</a>
+                                                                                                              </div>
+
+                                                                                                         </div>
+                                                                                                    </div>
+                                                                                               </div>
+                                                                                     <div *ngIf="!rc._editing" class="review-text-incorrect" [class.deleted]="rc.is_deleted == 1">
+                                                                                          <div class="ri-left"><span class="ri-icon incorrect">{{ rci + 1 }}</span></div>
+                                                                                          <span class="review-text" [class.deleted]="rc.is_deleted == 1 || rc.updated_by">{{ toTitleCase(rc.comment_text || rc.comment || '') }}</span>
+                                                                                     </div>
+                                                                                          <div *ngIf="rc._editing" class="review-text-incorrect editing">
+                                                                                               <div class="ri-left"><span class="ri-icon incorrect">{{ rci + 1 }}</span></div>
+                                                                                               <textarea [(ngModel)]="rc._editedText" class="edit-comment-text" rows="2"></textarea>
+                                                                                          </div>
+                                                                                          <div class="review-meta small-muted">
+                                                                                                    <span *ngIf="rc.is_deleted == 1" class="deleted-by">Deleted by {{ rc.updated_by || rc.reviewer_id || rc.commented_by || 'Instructor' }}</span>
+                                                                                                    <span *ngIf="rc.is_deleted != 1 && (rc.updated_by || rc.edited_by)">Edited by {{ rc.updated_by || rc.edited_by }}</span>
+                                                                                          </div>
+                                                                                          <div class="review-actions" *ngIf="!rc.updated_by">
+                                                                                               <a class="edit-link" href="javascript:void(0)" *ngIf="!rc._editing" (click)="$event.stopPropagation(); startEditComment(rc)"><mat-icon>edit</mat-icon> Edit</a>
+                                                                                               <a class="delete-link" href="javascript:void(0)" *ngIf="!rc._editing" (click)="$event.stopPropagation(); confirmDeleteComment(rc)"><mat-icon>delete</mat-icon> Delete</a>
+                                                                                               <a class="save-link" href="javascript:void(0)" *ngIf="rc._editing" (click)="$event.stopPropagation(); saveReviewComment(rc)"><mat-icon>save</mat-icon> Save</a>
+                                                                                               <a class="cancel-link" href="javascript:void(0)" *ngIf="rc._editing" (click)="$event.stopPropagation(); cancelEditComment(rc)"><mat-icon>close</mat-icon> Cancel</a>
+                                                                                          </div>
+                                                                                     </div>
+                                                                                </div>
+                                                                      </div>
+                                                                 </div>
+                                                                 <div class="col incomplete">
+                                                                      <div class="col-header"><span class="dot yellow"></span><h4>Points Incomplete</h4></div>
+                                                                           <div *ngFor="let rc of reviewComments(q, 'incomplete'); let rci = index">
+                                                                                <div class="review-item">
+                                                                                     <div class="ri-body">
+                                                                                               <div *ngIf="rc.history && rc.history.length" class="review-text-history">
+                                                                                                    <div *ngFor="let h of rc.history; let hi = index">
+                                                                                                         <div class="history-entry" [class.deleted]="h.is_deleted == 1">
+                                                                                                              <div *ngIf="!h._editing" class="review-text-missed" [class.deleted]="h.is_deleted == 1">
+                                                                                                                        <div class="ri-left"><span class="ri-icon missed">{{ hi + 1 }}</span></div>
+                                                                                                                        <span class="review-text" [class.deleted]="h.is_deleted == 1 || h.updated_by">{{ toTitleCase(h.comment_text || h.comment || '') }}</span>
+                                                                                                              </div>
+                                                                                                              <div *ngIf="h._editing" class="review-text-missed editing">
+                                                                                                                        <div class="ri-left"><span class="ri-icon missed">{{ rci + 1 }}</span></div>
+                                                                                                                        <textarea [(ngModel)]="h._editedText" class="edit-comment-text" rows="2"></textarea>
+                                                                                                              </div>
+                                                                                                              <div class="review-meta small-muted">
+                                                                                                                        <span *ngIf="h.is_deleted == 1" class="deleted-by">Deleted by {{ h.updated_by || h.created_by || h.reviewer_id || 'System' }}</span>
+                                                                                                                        <span *ngIf="h.is_deleted != 1 && (h.updated_by || h.edited_by)">Edited by {{ h.updated_by || h.created_by }} On {{ h.updated_date }} </span>
+                                                                                                              </div>
+                                                                                                              <div class="review-actions" *ngIf="!h.updated_by">
+                                                                                                                   <a class="edit-link" href="javascript:void(0)" *ngIf="!h._editing" (click)="$event.stopPropagation(); startEditComment(h)"><mat-icon>edit</mat-icon> Edit</a>
+                                                                                                                   <a class="delete-link" href="javascript:void(0)" *ngIf="!h._editing" (click)="$event.stopPropagation(); confirmDeleteComment(h)"><mat-icon>delete</mat-icon> Delete</a>
+                                                                                                                   <a class="save-link" href="javascript:void(0)" *ngIf="h._editing" (click)="$event.stopPropagation(); saveReviewComment(h)"><mat-icon>save</mat-icon> Save</a>
+                                                                                                                   <a class="cancel-link" href="javascript:void(0)" *ngIf="h._editing" (click)="$event.stopPropagation(); cancelEditComment(h)"><mat-icon>close</mat-icon> Cancel</a>
+                                                                                                              </div>
+
+                                                                                                         </div>
+                                                                                                    </div>
+                                                                                               </div>
+                                                                                          <div *ngIf="!rc._editing" class="review-text-incomplete" [class.deleted]="rc.is_deleted == 1">
+                                                                                               <div class="ri-left"><span class="ri-icon incomplete">{{ rci + 1 }}</span></div>
+                                                                                               <span class="review-text" [class.deleted]="rc.is_deleted == 1 || rc.updated_by">{{ toTitleCase(rc.comment_text || rc.comment || '') }}</span>
+                                                                                          </div>
+                                                                                          <div *ngIf="rc._editing" class="review-text-incomplete editing">
+                                                                                               <div class="ri-left"><span class="ri-icon incomplete">{{ rci + 1 }}</span></div>
+                                                                                               <textarea [(ngModel)]="rc._editedText" class="edit-comment-text" rows="2"></textarea>
+                                                                                          </div>
+                                                                                          <div class="review-meta small-muted">
+                                                                                                    <span *ngIf="rc.is_deleted == 1" class="deleted-by">Deleted by {{ rc.updated_by || rc.reviewer_id || rc.commented_by || 'Instructor' }}</span>
+                                                                                                    <span *ngIf="rc.is_deleted != 1 && (rc.updated_by || rc.edited_by)">Edited by {{ rc.updated_by || rc.edited_by }}</span>
+                                                                                          </div>
+                                                                                          <div class="review-actions" *ngIf="!rc.updated_by">
+                                                                                               <a class="edit-link" href="javascript:void(0)" *ngIf="!rc._editing" (click)="$event.stopPropagation(); startEditComment(rc)"><mat-icon>edit</mat-icon> Edit</a>
+                                                                                               <a class="delete-link" href="javascript:void(0)" *ngIf="!rc._editing" (click)="$event.stopPropagation(); confirmDeleteComment(rc)"><mat-icon>delete</mat-icon> Delete</a>
+                                                                                               <a class="save-link" href="javascript:void(0)" *ngIf="rc._editing" (click)="$event.stopPropagation(); saveReviewComment(rc)"><mat-icon>save</mat-icon> Save</a>
+                                                                                               <a class="cancel-link" href="javascript:void(0)" *ngIf="rc._editing" (click)="$event.stopPropagation(); cancelEditComment(rc)"><mat-icon>close</mat-icon> Cancel</a>
+                                                                                          </div>
+                                                                                     </div>
+                                                                                </div>
+                                                                      </div>
+                                                                 </div>
+                                                            </div>
+                                                       </div>
+                                                  <div class="desc-student">
+                                                       <div class="student-label">Student's Answer</div>
+                                                       <div class="answer-text">{{ (q.selected_option || []).join(' ') || '-' }}</div>
+                                                  </div>
+                                                  
+                                                  <div class="desc-model">
+                                                       <div class="model-label">Model Answer</div>
+                                                       <div class="model-text">{{ q.correct_option || (q.options && q.options[0] && q.options[0].option_text) || q.correct_answer || '-' }}</div>
+                                                  </div>
+
+                                                  <!-- Marks History Section -->
+                                                  <div class="marks-history-section" *ngIf="(q.marks_history && q.marks_history.length)">
+                                                       <div class="marks-history-header">
+                                                            <mat-icon>history</mat-icon>
+                                                            <span>Marks History</span>
+                                                       </div>
+                                                       <div class="marks-history-timeline">
+                                                            <!-- Current Marks (Latest) -->
+                                                            <div class="history-item current" *ngIf="q.updated_by">
+                                                                 <div class="history-indicator">
+                                                                      <div class="dot current"></div>
+                                                                      <div class="line" *ngIf="q.marks_history && q.marks_history.length"></div>
+                                                                 </div>
+                                                                 <div class="history-content">
+                                                                      <div class="history-card current">
+                                                                           <div class="history-badge">Current</div>
+                                                                           <div class="history-marks">{{ q.marks_awarded }} <span class="marks-total">/ {{ q.question_marks || '-' }}</span></div>
+                                                                           <div class="history-meta">
+                                                                                <span class="updated-by"><mat-icon>person</mat-icon>{{ q.updated_by }}</span>
+                                                                                <span class="updated-date"><mat-icon>schedule</mat-icon>{{ q.updated_date }}</span>
+                                                                           </div>
+                                                                      </div>
+                                                                 </div>
+                                                            </div>
+                                                            <!-- Previous Marks History -->
+                                                            <div class="history-item" *ngFor="let mh of q.marks_history; let mhi = index; let isLast = last">
+                                                                 <div class="history-indicator">
+                                                                      <div class="dot past"></div>
+                                                                      <div class="line" *ngIf="!isLast"></div>
+                                                                 </div>
+                                                                 <div class="history-content">
+                                                                      <div class="history-card past">
+                                                                           <div class="history-marks">{{ mh.marks_awarded }} <span class="marks-total">/ {{ q.question_marks || '-' }}</span></div>
+                                                                           <div class="history-meta">
+                                                                                <span class="updated-by"><mat-icon>person</mat-icon>{{ mh.updated_by || 'System' }}</span>
+                                                                                <span class="updated-date"><mat-icon>schedule</mat-icon>{{ mh.updated_date }}</span>
+                                                                           </div>
+                                                                      </div>
+                                                                 </div>
+                                                            </div>
+                                                       </div>
+                                                  </div>
+
+                                             </div>
+
+                                             <!-- Multiple choice / multi select -->
+                                             <div *ngIf="(q.question_type || q.type) == 'choose' || (q.question_type || q.type) == 'multi'" class="q-options two-col">
+                                                  <div *ngFor="let opt of (q.options || []); let oi = index" class="q-option"
+                                                       [class.correct]="opt.is_correct == 1 || opt.is_correct === true"
+                                                       [class.selected]="(q.selected_option || []).indexOf(opt.option_text || opt) !== -1"
+                                                       [class.missed]="opt.is_correct && (q.selected_option || []).indexOf(opt.option_text || opt) === -1">
+                                                       <div class="opt-left">
+                                                                 <span class="opt-mark">{{ getOptionLetter(oi) }}</span>
+                                                       </div>
+                                                       <div class="opt-body">
+                                                            <div class="opt-text">{{ opt.option_text || opt }}</div>
+                                                       </div>
+                                                       <div class="opt-badge" *ngIf="q.question_type == 'choose'">
+                                                            <span *ngIf="(q.selected_option || []).indexOf(opt.option_text || opt) !== -1 && !(opt.is_correct == 1 || opt.is_correct === true)" class="badge your-answer">Student Answer</span>
+                                                            <span *ngIf="(q.selected_option || []).indexOf(opt.option_text || opt) !== -1 && (opt.is_correct == 1 || opt.is_correct === true)" class="badge correct">Correct Answer</span>
+                                                            <span *ngIf="opt.is_correct && (q.selected_option || []).indexOf(opt.option_text || opt) === -1" class="badge missed">Correct Answer</span>
+                                                       </div>
+                                                       <div class="opt-badge" *ngIf="q.question_type == 'multi'">
+                                                            <span *ngIf="(q.selected_option || []).indexOf(opt.option_text || opt) !== -1 && (opt.is_correct == 1 || opt.is_correct === true)" class="badge correct">Correct Option</span>
+                                                            <span *ngIf="(q.selected_option || []).indexOf(opt.option_text || opt) !== -1 && !(opt.is_correct == 1 || opt.is_correct === true)" class="badge your-answer">Student Selected</span>
+                                                            <span *ngIf="opt.is_correct && (q.selected_option || []).indexOf(opt.option_text || opt) === -1" class="badge missed">Missed Correct Option</span>
+                                                       </div>
+                                                  </div>
+                                             </div>
+
+                                        </div>
+                                   </div>
+                              </div>
+                         </div>
+                         <ng-template #noUserReview>
+                              <div class="muted">No review data available for this user.</div>
+                         </ng-template>
+                    </div>
+               </div>
+               <div class="summary-actions">
+                    <button mat-stroked-button color="primary" (click)="closeUserReview()">Close</button>
+               </div>
+          </div>
+     </div>
+</div>
+<!-- Inline wrong answer summary panel (centered with backdrop) -->
+<div *ngIf="showWrongAnswerSummary" class="wrong-summary-backdrop" (click)="closeWrongAnswerSummary()">
+     <div class="wrong-summary-panel" (click)="$event.stopPropagation()">
+          <div class="card">
+               <div class="panel-header">
+                    <div class="header-info">
+                         <div class="header-icon"><mat-icon>rule_folder</mat-icon></div>
+                         <div class="header-copy">
+                              <h4>Wrong Answer Summary</h4>
+                              <div class="panel-sub">Details for selected question</div>
+                         </div>
+                    </div>
+                    <button mat-icon-button aria-label="Close" type="button" (click)="closeWrongAnswerSummary()"><mat-icon>close</mat-icon></button>
+               </div>
+               <div class="panel-body">
+                    <div *ngIf="selectedQuestionForWrongSummary">
+                         <div class="question-title">Question: {{ selectedQuestionForWrongSummary.question_text || selectedQuestionForWrongSummary.text || selectedQuestionForWrongSummary.name || '' }}</div>
+                         <table class="summary-table">
+                              <thead><tr><th>Wrong Answers</th><th>No. of times selected</th><th>Occurrence %</th></tr></thead>
+                              <tbody>
+                                   <tr *ngFor="let wa of selectedWrongAnswers">
+                                        <td data-label="Wrong Answer">
+                                             <a href="javascript:void(0)" class="wa-answer-link" (click)="$event.stopPropagation(); openResourcesForWrongAnswer(selectedQuestionForWrongSummary, wa)">{{ wa.answer }}</a>
+                                        </td>
+                                        <td data-label="Selected Count">
+                                             <a href="javascript:void(0)" class="wa-count-link" (click)="$event.stopPropagation(); openResourcesForWrongAnswer(selectedQuestionForWrongSummary, wa)">{{ wa.count || '-' }}</a>
+                                        </td>
+                                        <td data-label="Occurrence %">{{ wa.pct || '-' }}</td>
+                                   </tr>
+                              </tbody>
+                         </table>
+                         <div *ngIf="!selectedWrongAnswers || !selectedWrongAnswers.length" class="muted">No wrong answer data available for this question.</div>
+                         <div class="summary-actions">
+                              <button mat-stroked-button color="primary" (click)="closeWrongAnswerSummary()">Close</button>
+                         </div>
+                    </div>
+               </div>
+          </div>
+     </div>
+</div>
+
+<!-- Resource modal (centered) -->
+<div *ngIf="showResourcePanel" class="wrong-summary-backdrop" (click)="closeResourcePanel()">
+     <div class="wrong-summary-panel" (click)="$event.stopPropagation()">
+          <div class="card">
+               <div class="panel-header">
+                    <div class="header-info">
+                         <div class="header-icon"><mat-icon>folder_shared</mat-icon></div>
+                         <div class="header-copy">
+                              <h4>Resources</h4>
+                              <div class="panel-sub small-muted">Resources related to the selected wrong answer</div>
+                         </div>
+                    </div>
+                    <button mat-icon-button aria-label="Close resources" type="button" (click)="closeResourcePanel()"><mat-icon>close</mat-icon></button>
+               </div>
+               <div class="panel-body">
+                    <div *ngIf="selectedResources && selectedResources.length">
+                         <ul class="resource-list">
+                              <li *ngFor="let r of selectedResources">
+                                   <div class="res-title">{{ r.full_name }}</div>
+                                   <div class="res-desc small-muted">{{ r.email  || '' }}</div>
+                                   <!-- <div class="res-actions"><a target="_blank" [href]="r.url">Open</a></div> -->
+                              </li>
+                         </ul>
+                    </div>
+                    <div *ngIf="!selectedResources || !selectedResources.length" class="muted">No resources linked for this wrong answer.</div>
+               </div>
+               <div class="summary-actions">
+                    <button mat-stroked-button color="primary" (click)="closeResourcePanel()">Close</button>
+               </div>
+          </div>
+          <!-- User Review Panel (moved) -->
+          <!-- (moved out of resource panel by script) -->
+     </div>
+</div>

@@ -1,0 +1,315 @@
+<div class="page view-users">
+  <div class="toolbar">
+    <div class="search">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-icon matPrefix aria-hidden="false" aria-label="Search icon">search</mat-icon>
+        <input matInput placeholder="Name, Institute, Department" [(ngModel)]="filter"
+          (ngModelChange)="applyFilter($event)" aria-label="Search users" />
+        <button mat-icon-button matSuffix *ngIf="filter" (click)="filter = ''; applyFilter('')"
+          aria-label="Clear search">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+    </div>
+
+    <div class="controls">
+      <div class="action-row">
+        <button #filtersBtn mat-flat-button type="button" (click)="openFiltersOverlay(); $event.stopPropagation()"
+          class="button-one">
+          <mat-icon svgIcon="filter"></mat-icon>
+          <span>Filters</span>
+        </button>
+        <button mat-flat-button color="primary" (click)="refresh()" class="button-one">
+          <mat-icon svgIcon="refresh"></mat-icon>
+          <span>Refresh</span>
+        </button>
+        <button *hasAccess="'Users'; hasAccessAction: 'add'" type="button" mat-flat-button color="primary"
+          routerLink="/user-register" class="register-btn">
+          <mat-icon>person_add</mat-icon>
+          <span>Register User</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="list-card">
+    <!-- Filters panel -->
+    <ng-template #filtersPanel>
+      <div class="filters-panel" (click)="$event.stopPropagation()">
+        <div class="filters-panel-header">
+          <h4><mat-icon>tune</mat-icon> Filters</h4>
+        </div>
+        <div class="filter-block">
+          <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+            <mat-label>Institute</mat-label>
+            <mat-select [(ngModel)]="selectedInstitute" (selectionChange)="onInstituteChange($event.value)">
+              <!-- [disabled]="!isSuperAdmin"> -->
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let i of institutes" [value]="i.institute_id">{{i.short_name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Name</mat-label>
+            <input matInput placeholder="Name or username" [(ngModel)]="filters.name" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Department</mat-label>
+            <mat-select [(ngModel)]="filters.department">
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let d of departments" [value]="d.id">{{d.name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Team</mat-label>
+            <mat-select [(ngModel)]="filters.team">
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let t of teams" [value]="t.id">{{t.name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Country</mat-label>
+            <mat-select [(ngModel)]="filters.country" (selectionChange)="onCountryChange()">
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let c of countries" [value]="c.code">{{c.name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>City</mat-label>
+            <mat-select [(ngModel)]="filters.city">
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let c of cities" [value]="c.code">{{c.name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Active</mat-label>
+            <mat-select [(ngModel)]="filters.active_status">
+              <mat-option value="">Any</mat-option>
+              <mat-option [value]="true">Active</mat-option>
+              <mat-option [value]="false">Inactive</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+        </div>
+        <div class="filter-actions">
+          <button mat-flat-button (click)="applyFilters()" class="filter-apply-btn">
+            <mat-icon svgIcon="apply"></mat-icon> Apply
+          </button>
+          <button mat-flat-button (click)="resetFilters()" class="filter-reset-btn">
+            <mat-icon svgIcon="reset_settings"></mat-icon> Reset
+          </button>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="list-wrapper">
+      <table mat-table [dataSource]="dataSource" class="mat-elevation-z1 compact premium-table" matSort>
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+          <td mat-cell *matCellDef="let u" class="cell-primary">
+            <div class="user-cell">
+              <div class="user-avatar">{{ (u.name || '?').charAt(0).toUpperCase() }}</div>
+              <div class="user-info">
+                <span class="user-name">{{u.name}}</span>
+                <span class="user-email" *ngIf="u.email">{{u.email}}</span>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="institute">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Institute</th>
+          <td mat-cell *matCellDef="let u">{{u.institute}}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Role</th>
+          <td mat-cell *matCellDef="let u">
+            <span class="role-badge">{{u.role}}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="department">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Department</th>
+          <td mat-cell *matCellDef="let u">{{u.department || '—'}}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="team">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Team</th>
+          <td mat-cell *matCellDef="let u">{{u.team || '—'}}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="active">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Active</th>
+          <td mat-cell *matCellDef="let u">
+            <button type="button" role="switch" [attr.aria-checked]="u.active ? 'true' : 'false'"
+              [attr.data-state]="u.active ? 'checked' : 'unchecked'" (click)="toggleActive(u)"
+              class="custom-toggle peer inline-flex">
+              <span class="toggle-thumb" [attr.data-state]="u.active ? 'checked' : 'unchecked'"></span>
+            </button>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let u">
+            <div class="actions-inline">
+              <button *hasAccess="'Users'; hasAccessAction: 'view'" mat-icon-button color="primary" (click)="viewDetails(u)"
+                title="View details"><mat-icon svgIcon="view"></mat-icon></button>
+              <button *hasAccess="'Users'; hasAccessAction: 'edit'" mat-icon-button color="accent" (click)="startEditUser(u)"
+                title="Edit" class="edit-btn"><mat-icon svgIcon="edit"></mat-icon></button>
+              <button *hasAccess="'Users'; hasAccessAction: 'delete'" mat-icon-button color="warn" (click)="deleteUser(u)"
+                title="Delete" class="delete-btn"><mat-icon svgIcon="delete"></mat-icon></button>
+            </div>
+          </td>
+        </ng-container>
+
+        <thead>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        </thead>
+        <tbody>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        </tbody>
+      </table>
+      <mat-paginator [length]="totalCount" [pageSize]="pageSize" [pageIndex]="pageIndex"
+        [pageSizeOptions]="[25,50,100]" showFirstLastButtons class="custom-paginator"
+        (page)="onPageEvent($event)"></mat-paginator>
+    </div>
+  </div>
+</div>
+
+<!-- User detail/edit modal (rich modal like institutes) -->
+<div class="modal-backdrop" *ngIf="selectedUser || editing">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-avatar">
+          {{ (selectedUser.full_name || selectedUser.name || '?').charAt(0).toUpperCase() }}
+        </div>
+        <div class="modal-header-text">
+          <h1 class="modal-user-name">{{selectedUser.full_name || selectedUser.name}}</h1>
+          <div class="modal-user-meta">
+            <span class="modal-role-badge">{{selectedUser.user_role || selectedUser.role || 'User'}}</span>
+            <span class="modal-status" [class.modal-status--active]="selectedUser.active || selectedUser.active_status" [class.modal-status--inactive]="!(selectedUser.active || selectedUser.active_status)">
+              <span class="status-dot"></span>
+              {{(selectedUser.active || selectedUser.active_status) ? 'Active' : 'Inactive'}}
+            </span>
+          </div>
+        </div>
+      </div>
+      <button mat-icon-button class="modal-close-btn" (click)="closeModal()"><mat-icon>close</mat-icon></button>
+    </div>
+
+    <div class="modal-body">
+      <ng-container *ngIf="selectedUser">
+        <div class="detail-card">
+          <mat-tab-group dynamicHeight mat-align-tabs="start">
+            <mat-tab label="Basic">
+              <div class="detail-grid">
+                <div class="label"><mat-icon>account_circle</mat-icon> Full Name</div>
+                <div class="value">{{selectedUser.full_name || selectedUser.name}}</div>
+
+                <div class="label"><mat-icon>badge</mat-icon> Username</div>
+                <div class="value">{{selectedUser.user_name || '—'}}</div>
+
+                <div class="label"><mat-icon>email</mat-icon> Email</div>
+                <div class="value">{{selectedUser.email || '—'}}</div>
+
+                <div class="label"><mat-icon>phone</mat-icon> Contact</div>
+                <div class="value">{{selectedUser.contact_no || selectedUser.phone || '—'}}</div>
+
+                <div class="label"><mat-icon>event</mat-icon> Joining Date</div>
+                <div class="value">{{selectedUser.joining_date || '—'}}</div>
+
+                <div class="label"><mat-icon>verified_user</mat-icon> Role</div>
+                <div class="value">
+                  <span class="role-badge role-badge--modal">{{selectedUser.user_role || selectedUser.role || '—'}}</span>
+                </div>
+
+                <div class="label"><mat-icon>toggle_on</mat-icon> Status</div>
+                <div class="value">
+                  <span class="status-pill" [class.status-pill--active]="selectedUser.active || selectedUser.active_status" [class.status-pill--inactive]="!(selectedUser.active || selectedUser.active_status)">
+                    <span class="status-dot"></span>
+                    {{(selectedUser.active || selectedUser.active_status) ? 'Active' : 'Inactive'}}
+                  </span>
+                </div>
+              </div>
+            </mat-tab>
+
+            <mat-tab label="Affiliation">
+              <div class="detail-grid">
+                <div class="label"><mat-icon>business</mat-icon> Institute</div>
+                <div class="value">{{selectedUser.institute?.institute_name || selectedUser.institute_name || selectedUser.institute}}</div>
+
+                <div class="label"><mat-icon>school</mat-icon> Department</div>
+                <div class="value">{{selectedUser.department?.department_name || selectedUser.department_name || selectedUser.department || '—'}}</div>
+
+                <div class="label"><mat-icon>groups</mat-icon> Team</div>
+                <div class="value">{{selectedUser.team?.team_name || selectedUser.team_name || selectedUser.team || '—'}}</div>
+
+                <div class="label"><mat-icon>apartment</mat-icon> Campus</div>
+                <div class="value">{{selectedUser.campus?.campus_name || selectedUser.campus_name || selectedUser.campus || '—'}}</div>
+
+                <div class="label"><mat-icon>location_city</mat-icon> City</div>
+                <div class="value">{{selectedUser.city?.city_name || selectedUser.city_name || selectedUser.city || '—'}}</div>
+
+                <div class="label"><mat-icon>map</mat-icon> State</div>
+                <div class="value">{{selectedUser.state?.state_name || selectedUser.state_name || selectedUser.state || '—'}}</div>
+
+                <div class="label"><mat-icon>public</mat-icon> Country</div>
+                <div class="value">{{selectedUser.country?.country_name || selectedUser.country_name || selectedUser.country || '—'}}</div>
+              </div>
+            </mat-tab>
+
+            <mat-tab label="Privileges" *ngIf="(selectedUser.user_privileges && selectedUser.user_privileges.length) || (selectedUser.privileges && selectedUser.privileges.length)">
+              <div class="privileges-grid">
+                <div class="priv-col head">Page</div>
+                <div class="priv-col head"><mat-icon>visibility</mat-icon> View</div>
+                <div class="priv-col head"><mat-icon>edit</mat-icon> Edit</div>
+                <div class="priv-col head"><mat-icon>add</mat-icon> Add</div>
+                <div class="priv-col head"><mat-icon>delete</mat-icon> Delete</div>
+
+                <ng-container
+                  *ngFor="let p of (selectedUser.privileges && selectedUser.privileges.length ? selectedUser.privileges : (selectedUser.user_privileges || []))">
+                  <div class="priv-col name">{{p.page_name || p.pageName || p.page || p.page_name}}</div>
+                  <div class="priv-col"> <mat-icon color="primary" *ngIf="p.can_view">done</mat-icon> <mat-icon color="warn" *ngIf="!p.can_view">visibility_off</mat-icon> </div>
+                  <div class="priv-col"> <mat-icon color="primary" *ngIf="p.can_edit">done</mat-icon> <mat-icon color="warn" *ngIf="!p.can_edit">block</mat-icon> </div>
+                  <div class="priv-col"> <mat-icon color="primary" *ngIf="p.can_add">done</mat-icon> <mat-icon color="warn" *ngIf="!p.can_add">block</mat-icon> </div>
+                  <div class="priv-col"> <mat-icon color="primary" *ngIf="p.can_delete">done</mat-icon> <mat-icon color="warn" *ngIf="!p.can_delete">block</mat-icon> </div>
+                </ng-container>
+              </div>
+            </mat-tab>
+
+            <mat-tab label="Metadata">
+              <div class="detail-grid">
+                <div class="label"><mat-icon>person</mat-icon> Created By</div>
+                <div class="value">{{selectedUser.created_by || '—'}}</div>
+                <div class="label"><mat-icon>calendar_today</mat-icon> Created Date</div>
+                <div class="value">{{selectedUser.created_date || selectedUser.created_at || '—'}}</div>
+                <div class="label"><mat-icon>person</mat-icon> Updated By</div>
+                <div class="value">{{selectedUser.updated_by || '—'}}</div>
+                <div class="label"><mat-icon>calendar_today</mat-icon> Updated Date</div>
+                <div class="value">{{selectedUser.updated_date || selectedUser.updated_at || '—'}}</div>
+
+                <div class="label"><mat-icon>note</mat-icon> Notes</div>
+                <div class="value">{{selectedUser.notes || '—'}}</div>
+              </div>
+            </mat-tab>
+          </mat-tab-group>
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="modal-actions">
+      <button mat-button (click)="closeModal()" class="modal-btn-close">Close</button>
+      <button mat-flat-button (click)="startEditUser(selectedUser)" class="modal-btn-edit">
+        <mat-icon>edit</mat-icon> Edit
+      </button>
+    </div>
+  </div>
+</div>

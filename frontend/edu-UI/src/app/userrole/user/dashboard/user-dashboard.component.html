@@ -1,0 +1,158 @@
+<div class="page user-dashboard">
+
+  <!-- ── Under Development Banner ── -->
+  <div class="dev-banner">
+    <div class="dev-banner-inner">
+      <mat-icon class="dev-icon">construction</mat-icon>
+      <div class="dev-text">
+        <strong>Dashboard Under Development</strong>
+        <span>Some features and data visualizations are still being built. Data shown may be incomplete.</span>
+      </div>
+      <span class="dev-badge">PREVIEW</span>
+    </div>
+  </div>
+
+  <!-- ── Header: Filters ── -->
+  <header class="dash-header">
+    <div class="header-content">
+      <div class="header-actions">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Institute</mat-label>
+          <mat-select [(value)]="selectedInstituteId" (selectionChange)="onInstituteChange($any($event).value)">
+            <mat-option *ngFor="let i of institutes" [value]="i.id">{{i.name}}</mat-option>
+          </mat-select>
+          <mat-icon matPrefix>business</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>User</mat-label>
+          <mat-select [(value)]="selectedUserId" (selectionChange)="onUserChange($any($event).value)">
+            <mat-option *ngFor="let u of users" [value]="u.id">{{u.name || u.email}}</mat-option>
+          </mat-select>
+          <mat-icon matPrefix>person</mat-icon>
+        </mat-form-field>
+
+        <button mat-icon-button class="refresh-btn" (click)="loadDashboard()" aria-label="Refresh dashboard">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── KPI Cards ── -->
+  <section class="kpi-section">
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-card--gradient kpi-card--blue">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>scoreboard</mat-icon>
+          </div>
+          <div class="kpi-val">{{ metrics.lastScore ?? '--' }}</div>
+          <div class="kpi-label">Last Score</div>
+        </div>
+        <div class="kpi-decoration"></div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--green">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>percent</mat-icon>
+          </div>
+          <div class="kpi-val">{{ (metrics.lastPercent | number:'1.0-2') ?? '--' }}<small *ngIf="metrics.lastPercent !== null">%</small></div>
+          <div class="kpi-label">Last Percentage</div>
+        </div>
+        <div class="kpi-decoration"></div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--purple">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>quiz</mat-icon>
+          </div>
+          <div class="kpi-val">{{ metrics.totalQuestions ?? '--' }}</div>
+          <div class="kpi-label">Questions Answered</div>
+        </div>
+        <div class="kpi-decoration"></div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--amber">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>target</mat-icon>
+          </div>
+          <div class="kpi-val">{{ metrics.accuracy ?? '--' }}<small *ngIf="metrics.accuracy !== null">%</small></div>
+          <div class="kpi-label">Accuracy</div>
+        </div>
+        <div class="kpi-decoration"></div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--teal">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>assignment</mat-icon>
+          </div>
+          <div class="kpi-val">{{ metrics.totalExams ?? '--' }}</div>
+          <div class="kpi-label">Exams Taken</div>
+        </div>
+        <div class="kpi-decoration"></div>
+      </div>
+
+      <div class="kpi-card kpi-card--gradient kpi-card--rose">
+        <div class="kpi-card-inner">
+          <div class="kpi-icon-wrap">
+            <mat-icon>avg_pace</mat-icon>
+          </div>
+          <div class="kpi-val">{{ metrics.avgScore ?? '--' }}<small *ngIf="metrics.avgScore !== null">%</small></div>
+          <div class="kpi-label">Avg. Score</div>
+        </div>
+        <div class="kpi-decoration"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Charts Grid ── -->
+  <section class="charts-section">
+    <div class="section-header">
+      <div class="section-title-wrap">
+        <h3 class="section-title">
+          <mat-icon>insights</mat-icon>
+          Analytics
+        </h3>
+        <span class="live-badge">
+          <span class="live-dot"></span>
+          Live
+        </span>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <ng-container *ngFor="let c of charts">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-title-wrap">
+              <h4>{{ c.title }}</h4>
+              <span class="chart-type-badge" [ngClass]="'badge--' + c.type">{{ c.type }}</span>
+            </div>
+            <button mat-icon-button class="chart-menu-btn">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+          </div>
+          <div class="chart-body">
+            <app-dynamic-chart [type]="c.type" [data]="c.data"></app-dynamic-chart>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- Empty state when no charts -->
+      <div class="chart-card chart-card--empty" *ngIf="charts.length === 0">
+        <div class="empty-state">
+          <div class="empty-icon-wrap">
+            <mat-icon class="empty-icon">bar_chart</mat-icon>
+          </div>
+          <h4>No Analytics Yet</h4>
+          <p>Charts will appear here once you complete your first exam.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

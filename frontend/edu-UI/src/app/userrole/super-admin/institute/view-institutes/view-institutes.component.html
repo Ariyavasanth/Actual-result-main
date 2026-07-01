@@ -1,0 +1,387 @@
+<div class="page view-institutes">
+
+  <!-- ── Toolbar ── -->
+  <div class="toolbar">
+    <div class="search">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-icon matPrefix aria-hidden="false" aria-label="Search icon">search</mat-icon>
+        <input matInput placeholder="Search institutes, industry, sector" [(ngModel)]="filter"
+          (ngModelChange)="applyFilter($event)" aria-label="Search institutes" />
+        <button mat-icon-button matSuffix *ngIf="filter" (click)="filter = ''; applyFilter('')"
+          aria-label="Clear search">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+    </div>
+
+    <div class="controls">
+      <div class="action-row">
+        <button #filtersBtn mat-flat-button type="button" (click)="openFiltersOverlay(); $event.stopPropagation()"
+          class="button-one">
+          <mat-icon svgIcon="filter"></mat-icon>
+          <span>Filters</span>
+        </button>
+
+        <button mat-flat-button (click)="loadInstitutes()" class="button-one">
+          <mat-icon svgIcon="refresh"></mat-icon>
+          <span>Refresh</span>
+        </button>
+
+        <button mat-flat-button type="button" routerLink="/institute-register" class="register-btn">
+          <mat-icon svgIcon="add"></mat-icon>
+          <span>Register Institute</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Filter Overlay Panel ── -->
+  <ng-template #filtersPanel>
+    <div class="filters-panel" (click)="$event.stopPropagation()">
+      <div class="filters-panel-header">
+        <h4><mat-icon>tune</mat-icon> Filters</h4>
+      </div>
+      <div class="filter-block">
+        <mat-form-field appearance="outline" class="filter-item">
+          <mat-label>Institute</mat-label>
+          <input matInput placeholder="Institute name" [(ngModel)]="filters.name" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-item">
+          <mat-label>Industry</mat-label>
+          <mat-select [(ngModel)]="filters.industry" placeholder="Industry type">
+            <mat-option value="">Any</mat-option>
+            <mat-option *ngFor="let t of industryTypes" [value]="t">{{t}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-item">
+          <mat-label>Sector</mat-label>
+          <mat-select [(ngModel)]="filters.sector" placeholder="Industry sector">
+            <mat-option value="">Any</mat-option>
+            <mat-option *ngFor="let s of industrySectors" [value]="s">{{s}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-item">
+          <mat-label>Country</mat-label>
+          <mat-select [(ngModel)]="filters.country">
+            <mat-option value="">Any</mat-option>
+            <mat-option *ngFor="let c of countries" [value]="c.code">{{c.name}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-item">
+          <mat-label>City</mat-label>
+          <mat-select [(ngModel)]="filters.city">
+            <mat-option value="">Any</mat-option>
+            <mat-option *ngFor="let c of cities" [value]="c.code">{{c.name}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-item">
+          <mat-label>Active</mat-label>
+          <mat-select [(ngModel)]="filters.active_status">
+            <mat-option value="">Any</mat-option>
+            <mat-option [value]="true">Active</mat-option>
+            <mat-option [value]="false">Inactive</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="filter-actions">
+        <button mat-flat-button (click)="applyFilters()" class="filter-apply-btn">
+          <mat-icon svgIcon="apply"></mat-icon> Apply
+        </button>
+        <button mat-flat-button (click)="resetFilters()" class="filter-reset-btn">
+          <mat-icon svgIcon="reset_settings"></mat-icon> Reset
+        </button>
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- ── Data Table Card ── -->
+  <div class="list-card">
+    <div class="list-wrapper">
+      <table mat-table [dataSource]="dataSource" class="mat-elevation-z1 compact premium-table" matSort>
+        <colgroup>
+          <col class="col-name">
+          <col class="col-short">
+          <col class="col-industry">
+          <col class="col-sector">
+          <col class="col-primary-contact">
+          <col class="col-sub-start">
+          <col class="col-sub-end">
+          <col class="col-active">
+          <col>
+        </colgroup>
+
+        <!-- Name -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Institute</th>
+          <td mat-cell *matCellDef="let i">
+            <div class="inst-cell">
+              <div class="inst-avatar">{{ (i.name || '?').charAt(0).toUpperCase() }}</div>
+              <div class="inst-info">
+                <span class="inst-name">{{i.name}}</span>
+                <span class="inst-short" *ngIf="i.short">{{i.short}}</span>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Short -->
+        <!-- <ng-container matColumnDef="short">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Short Name</th>
+          <td mat-cell *matCellDef="let i">
+            <span class="cell-mono">{{i.short}}</span>
+          </td>
+        </ng-container> -->
+
+        <!-- Industry Type -->
+        <ng-container matColumnDef="industry_type">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Industry</th>
+          <td mat-cell *matCellDef="let i">
+            <span class="cell-badge cell-badge--blue" *ngIf="i.industry_type">{{i.industry_type}}</span>
+            <span class="cell-muted" *ngIf="!i.industry_type">—</span>
+          </td>
+        </ng-container>
+
+        <!-- Industry Sector -->
+        <ng-container matColumnDef="industry_sector">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Sector</th>
+          <td mat-cell *matCellDef="let i">
+            <span class="cell-badge cell-badge--teal" *ngIf="i.industry_sector">{{i.industry_sector}}</span>
+            <span class="cell-muted" *ngIf="!i.industry_sector">—</span>
+          </td>
+        </ng-container>
+
+        <!-- Primary contact -->
+        <ng-container matColumnDef="primary_contact_person">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Primary Contact</th>
+          <td mat-cell *matCellDef="let i">
+            {{i.primary_contact || i.primary_contact_person || i.primary_email || '—'}}
+          </td>
+        </ng-container>
+
+        <!-- Subscription start -->
+        <ng-container matColumnDef="subscription_start">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Sub. Start</th>
+          <td mat-cell *matCellDef="let i">
+            <span class="cell-date" *ngIf="i.subscription_start">{{i.subscription_start | date:'dd-MMM-yyyy'}}</span>
+            <span class="cell-muted" *ngIf="!i.subscription_start">—</span>
+          </td>
+        </ng-container>
+
+        <!-- Subscription end -->
+        <ng-container matColumnDef="subscription_end">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Sub. End</th>
+          <td mat-cell *matCellDef="let i">
+            <span class="cell-date" *ngIf="i.subscription_end">{{i.subscription_end | date:'dd-MMM-yyyy'}}</span>
+            <span class="cell-muted" *ngIf="!i.subscription_end">—</span>
+          </td>
+        </ng-container>
+
+        <!-- Active -->
+        <ng-container matColumnDef="active">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Active</th>
+          <td mat-cell *matCellDef="let i">
+            <button type="button" role="switch"
+              aria-label="Toggle active status"
+              aria-checked="false"
+              [attr.aria-checked]="i.active ? 'true' : 'false'"
+              [attr.data-state]="i.active ? 'checked' : 'unchecked'"
+              (click)="toggleActive(i)"
+              title="Toggle active status"
+              class="custom-toggle peer inline-flex">
+              <span class="toggle-thumb" [attr.data-state]="i.active ? 'checked' : 'unchecked'"></span>
+            </button>
+          </td>
+        </ng-container>
+
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let u">
+            <div class="actions-inline">
+              <button mat-icon-button aria-label="View details" (click)="viewDetails(u)" title="View details">
+                <mat-icon svgIcon="view"></mat-icon>
+              </button>
+              <button mat-icon-button class="edit-btn" (click)="startEdit(u)" title="Edit">
+                <mat-icon svgIcon="edit"></mat-icon>
+              </button>
+              <button mat-icon-button class="delete-btn" (click)="confirmDelete(u)" title="Delete">
+                <mat-icon svgIcon="delete"></mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <thead>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        </thead>
+        <tbody>
+          <tr mat-row *matRowDef="let row; columns: columns"></tr>
+        </tbody>
+      </table>
+
+      <mat-paginator [pageSizeOptions]="[25,50,100]" showFirstLastButtons class="custom-paginator"></mat-paginator>
+    </div>
+  </div>
+
+  <!-- ── Detail Modal ── -->
+  <div class="modal-backdrop" *ngIf="selectedInstitute || editing">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-avatar">
+            {{ (selectedInstitute.name || '?').charAt(0).toUpperCase() }}
+          </div>
+          <div class="modal-header-text">
+            <h1 class="modal-inst-name">{{selectedInstitute.name}}</h1>
+            <div class="modal-inst-meta">
+              <span class="modal-industry-badge" *ngIf="selectedInstitute.industry_type">{{selectedInstitute.industry_type}}</span>
+              <span class="modal-sector-badge" *ngIf="selectedInstitute.industry_sector">{{selectedInstitute.industry_sector}}</span>
+              <span class="modal-status" [class.modal-status--active]="selectedInstitute.active_status || selectedInstitute.active" [class.modal-status--inactive]="!(selectedInstitute.active_status || selectedInstitute.active)">
+                <span class="status-dot"></span>
+                {{(selectedInstitute.active_status || selectedInstitute.active) ? 'Active' : 'Inactive'}}
+              </span>
+            </div>
+          </div>
+        </div>
+        <button mat-icon-button (click)="closeModal()" class="modal-close-btn">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <ng-container *ngIf="selectedInstitute && !editing">
+          <div class="detail-card">
+            <mat-tab-group dynamicHeight mat-align-tabs="start">
+
+              <!-- Basic Info Tab -->
+              <mat-tab>
+                <ng-template mat-tab-label>Basic Information</ng-template>
+                <div class="detail-grid">
+                  <div class="label"><mat-icon>domain</mat-icon> Name</div>
+                  <div class="value">{{selectedInstitute.name}}</div>
+
+                  <div class="label"><mat-icon>badge</mat-icon> Short Name</div>
+                  <div class="value">{{selectedInstitute.short_name || selectedInstitute.short}}</div>
+
+                  <div class="label"><mat-icon>business</mat-icon> Industry</div>
+                  <div class="value">{{selectedInstitute.industry_type || selectedInstitute.industry_sector || '—'}}</div>
+
+                  <div class="label"><mat-icon>language</mat-icon> Website</div>
+                  <div class="value" *ngIf="selectedInstitute.website">
+                    <a [href]="selectedInstitute.website" target="_blank" class="link">{{selectedInstitute.website}}</a>
+                  </div>
+                  <div class="label"><mat-icon>person</mat-icon> Primary Contact</div>
+                  <div class="value">{{selectedInstitute.primary_contact_person || '—'}}</div>
+
+                  <div class="label"><mat-icon>phone</mat-icon> Primary Phone</div>
+                  <div class="value">{{selectedInstitute.primary_contact_phone || selectedInstitute.primary_contact || '—'}}</div>
+
+                  <div class="label"><mat-icon>email</mat-icon> Primary Email</div>
+                  <div class="value">{{selectedInstitute.primary_contact_email || selectedInstitute.primary_email || '—'}}</div>
+                </div>
+              </mat-tab>
+
+              <!-- Contacts Tab -->
+              <mat-tab>
+                <ng-template mat-tab-label>Subscription</ng-template>
+                <div class="detail-grid">
+                  <div class="label"><mat-icon>toggle_on</mat-icon> Status</div>
+                  <div class="value">
+                    <span class="status-pill" [class.status-pill--active]="selectedInstitute.active_status" [class.status-pill--inactive]="!selectedInstitute.active_status">
+                      <span class="status-dot"></span>
+                      {{selectedInstitute.active_status ? 'Active' : 'Inactive'}}
+                    </span>
+                  </div>
+
+                  <div class="label"><mat-icon>event</mat-icon> Subscription Period</div>
+                  <div class="value">
+                    {{selectedInstitute.subscription_start ? (selectedInstitute.subscription_start | date:'dd-MMM-yyyy') : '—'}}
+                    &nbsp;→&nbsp;
+                    {{selectedInstitute.subscription_end ? (selectedInstitute.subscription_end | date:'dd-MMM-yyyy') : '—'}}
+                  </div>
+
+                  <div class="label"><mat-icon>people</mat-icon> Max Users</div>
+                  <div class="value">{{selectedInstitute.max_users || '—'}}</div>
+                </div>
+              </mat-tab>
+
+              <!-- Campuses Tab -->
+              <mat-tab *ngIf="selectedInstitute.campuses && selectedInstitute.campuses.length">
+                <ng-template mat-tab-label>
+                  Campuses ({{selectedInstitute.campuses.length}})
+                </ng-template>
+                <div class="campus-list">
+                  <div *ngFor="let cp of selectedInstitute.campuses" class="campus-card">
+                    <div class="campus-header">
+                      <strong>{{cp.name}}</strong>
+                      <span class="campus-tag" *ngIf="(cp.is_primary === true) || cp.isPrimary">Primary</span>
+                      <span class="campus-tag campus-tag--active" *ngIf="(cp.active_status === true) || cp.active_status">Active</span>
+                    </div>
+                    <div class="campus-line">{{cp.address}}</div>
+                    <div class="campus-line campus-line--muted">
+                      {{cp.city?.city_name || ''}}, {{cp.state?.state_name || ''}}, {{cp.country?.country_name || ''}} — {{cp.pin_code || cp.pincode || ''}}
+                    </div>
+                    <div class="campus-line campus-line--muted">
+                      Email: {{cp.email || '—'}} &nbsp;|&nbsp; Phone: {{cp.phone || cp.contact_no || '—'}}
+                    </div>
+                  </div>
+                </div>
+              </mat-tab>
+
+              <!-- Departments & Teams Tab -->
+              <mat-tab *ngIf="(selectedInstitute.departments && selectedInstitute.departments.length) || (selectedInstitute.teams && selectedInstitute.teams.length)">
+                <ng-template mat-tab-label>Departments &amp; Teams</ng-template>
+                <div class="dept-teams-grid">
+                  <div class="dept-section" *ngIf="selectedInstitute.departments && selectedInstitute.departments.length">
+                    <h5 class="section-label">Departments</h5>
+                    <ul class="clean-list">
+                      <li *ngFor="let d of selectedInstitute.departments">{{d.name}}</li>
+                    </ul>
+                  </div>
+                  <div class="dept-section" *ngIf="selectedInstitute.teams && selectedInstitute.teams.length">
+                    <h5 class="section-label">Teams</h5>
+                    <ul class="clean-list">
+                      <li *ngFor="let t of selectedInstitute.teams">{{t.name}}</li>
+                    </ul>
+                  </div>
+                </div>
+              </mat-tab>
+
+              <!-- Metadata Tab -->
+              <mat-tab>
+                <ng-template mat-tab-label>Metadata</ng-template>
+                <div class="detail-grid">
+                  <div class="label"><mat-icon>person</mat-icon> Created By</div>
+                  <div class="value">{{ selectedInstitute.created_by?.user_name || '—'}}</div>
+                  <div class="label"><mat-icon>date_range</mat-icon> Created Date</div>
+                  <div class="value">
+                    {{selectedInstitute.created_date ? (selectedInstitute.created_date | date:'dd-MMM-yyyy HH:mm') : '—'}}
+                  </div>
+                  <div class="label"><mat-icon>person</mat-icon> Last Updated By</div>
+                  <div class="value">{{selectedInstitute.updated_by?.user_name || '—'}}</div>
+                  <div class="label"><mat-icon>update</mat-icon> Last Updated Date</div>
+                  <div class="value">
+                    {{selectedInstitute.updated_date ? (selectedInstitute.updated_date | date:'dd-MMM-yyyy HH:mm') : '—'}}
+                  </div>
+                </div>
+              </mat-tab>
+
+            </mat-tab-group>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="modal-actions">
+        <button mat-button (click)="closeModal()" class="modal-btn-close">Close</button>
+        <button mat-flat-button (click)="startEdit(selectedInstitute)" class="modal-btn-edit">
+          <mat-icon>edit</mat-icon> Edit
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

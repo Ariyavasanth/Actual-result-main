@@ -1,0 +1,116 @@
+/* ── Design tokens ── */
+$ease: cubic-bezier(0.4, 0, 0.2, 1);
+$radius: 0.75rem;
+$shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+$shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+
+/* ── Page wrapper ── */
+.page { display:flex; flex-direction:column; gap:1rem; padding:0.75rem 1rem 3rem; }
+.toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:0.875rem; }
+.toolbar .title { font:700 1.125rem/1.2 inherit; color:var(--theme-3-text-1); }
+
+/* ── Form actions ── */
+.form-card .form-actions { display:flex; justify-content:space-between; align-items:center; gap:0.75rem; margin-top:0.75rem; padding:0.625rem 1.25rem; background:var(--bg-2); border:1px solid var(--theme-3-border); border-radius:0.5rem; }
+.step-actions { display:flex; gap:0.75rem; justify-content:flex-end; padding-top:0.875rem; }
+
+/* ── Form card (schedule card) ── */
+.form-card { width:100%; background:var(--bg-1); border:1px solid var(--theme-3-border); border-radius:$radius; box-shadow:$shadow-md; position:relative; overflow:visible; margin-bottom:3rem; }
+.form-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--button-1) 0%,#8b5cf6 50%,#06b6d4 100%); border-radius:$radius $radius 0 0; }
+
+/* ── Stepper overrides ── */
+:host ::ng-deep .mat-horizontal-stepper-header-container { padding:0.625rem 1.25rem 0.375rem; border-bottom:1px solid var(--theme-3-border); background:var(--bg-2); }
+:host ::ng-deep .mat-horizontal-stepper-header { gap:0.5rem; }
+:host ::ng-deep .mat-step-icon { width:1.875rem; height:1.875rem; font-size:0.8125rem; }
+:host ::ng-deep .mat-horizontal-stepper-header .mat-step-label { font-size:0.85rem; padding:0.25rem 0.5rem; white-space:nowrap; font-weight:500; }
+:host ::ng-deep .mat-horizontal-content-container { padding:0!important; overflow:visible!important; }
+
+/* ── Step content ── */
+.step-content { padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:1rem; overflow:visible; }
+
+/* ── Section blocks ── */
+.section-block { background:var(--bg-1); border:1px solid var(--theme-3-border); border-radius:$radius; padding:1rem 1.25rem; transition:all 0.25s $ease; overflow:visible; }
+.section-block:hover { box-shadow:$shadow-sm; border-color:var(--button-1); }
+.section-header { display:flex; align-items:flex-start; gap:0.75rem; margin-bottom:0.75rem; }
+.section-icon { color:var(--button-1); font-size:1.25rem; width:1.25rem; height:1.25rem; margin-top:0.125rem; flex-shrink:0; }
+.section-heading { margin:0; font:600 1rem/1.2 inherit; color:var(--theme-3-text-1); }
+.section-desc { margin:0.125rem 0 0; font:400 0.8rem/1.4 inherit; color:var(--theme-3-text-3); }
+.section-header-text { flex:1; }
+
+/* ── Step 1 – two-column layout ── */
+.step1-two-column { display:flex; align-items:stretch; gap:1.25rem; }
+.basic-info { flex:1 1 65%; }
+.schedule-section { flex:1 1 35%; display:flex; flex-direction:column; }
+
+/* ── Field layout ── */
+.field-row { display:flex; gap:1rem; margin-bottom:1rem; }
+.field-half,.field-third { flex:1; min-width:0; }
+.field-full { width:100%; }
+.form-row { display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:0.875rem; }
+.form-col { flex:1 1 0; min-width:0; }
+.form-col-2 { flex:1 1 calc(50% - 0.5rem); }
+.form-col-auto { flex:0 0 auto; }
+.full-width { width:100%; }
+.filter-toggle { display:flex; align-items:center; justify-content:flex-end; }
+
+/* ── Schedule fields ── */
+.schedule-row { display:flex; align-items:flex-start; gap:0.625rem; margin-bottom:0.625rem; }
+.schedule-field { flex:1 1 0; }
+.date-field { flex:0 1 60%; }
+.time-field { flex:1 0 9rem; }
+.schedule-toggles { display:grid; align-items:center; gap:1.5rem; margin-top:0.625rem; }
+
+/* ── Exam preview ── */
+.exam-preview { margin-top:0.625rem; padding:1rem 1.125rem; border-radius:0.75rem; background:var(--bg-2); border:1px dashed var(--theme-3-border); }
+.exam-preview-header { display:flex; justify-content:space-between; align-items:baseline; gap:0.625rem; }
+.exam-title { margin:0; font:600 1rem/1.4 inherit; color:var(--theme-3-text-1); }
+.exam-meta { font:500 0.75rem/1 inherit; color:var(--theme-3-text-3); }
+.exam-desc { margin:0.5rem 0 0; font:400 0.8125rem/1.5 inherit; color:var(--theme-3-text-2); }
+
+/* ── User list (Step 2) ── */
+.user-list { margin-top:0.625rem; border-radius:0.75rem; border:1px solid var(--theme-3-border); max-height:23rem; overflow:hidden; display:flex; flex-direction:column; }
+.user-list-header { display:flex; align-items:center; justify-content:space-between; padding:0.625rem 0.875rem; background:var(--bg-2); border-bottom:1px solid var(--theme-3-border); }
+.user-selection-list { max-height:20rem; overflow:auto; }
+.user-filter-button { margin-left:0.875rem; }
+.muted { color:var(--theme-3-text-3); font:400 0.75rem/1 inherit; }
+
+/* ── Filters panel ── */
+.filters-panel { padding:1rem; background:var(--bg-1); border-radius:$radius; box-shadow:$shadow-md; max-height:60vh; overflow:auto; }
+.filter-block { display:flex; flex-direction:column; gap:0.625rem; }
+.filter-item { width:100%; }
+.filter-actions { display:flex; gap:0.625rem; justify-content:flex-end; padding-top:0.5rem; }
+
+/* ── Prev/Next buttons ── */
+.prev-btn,.next-btn { display:inline-flex; align-items:center; gap:0.375rem; font:500 0.85rem/1 inherit; border-radius:0.5rem; padding:0.5rem 1rem; transition:all 0.25s $ease; }
+.prev-btn:hover,.next-btn:hover { background:var(--theme-3-hanover-bg); }
+.next-btn { color:var(--button-1); }
+.submit-btn { display:inline-flex; align-items:center; gap:0.375rem; font:600 0.9rem/1 inherit; border-radius:0.5rem; padding:0 1.25rem; min-height:2.5rem; }
+
+/* ── Review grid ── */
+.review-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; }
+.review-section { background:var(--bg-2); border:1px solid var(--theme-3-border); border-radius:$radius; padding:1rem 1.125rem; }
+.review-section--full { grid-column:1/-1; }
+.review-section-title { display:flex; align-items:center; gap:0.5rem; margin:0 0 0.875rem; font-size:0.9rem; font-weight:600; color:var(--theme-3-text-1); }
+.review-section-title mat-icon { font-size:1.125rem; width:1.125rem; height:1.125rem; color:var(--button-1); }
+.review-items { display:flex; flex-direction:column; gap:0.5rem; }
+.review-item { display:flex; gap:0.5rem; }
+.review-label { flex:0 0 7.5rem; font-size:0.8rem; font-weight:600; color:var(--theme-3-text-2); }
+.review-value { flex:1; font-size:0.85rem; color:var(--theme-3-text-1); display:flex; flex-wrap:wrap; gap:0.25rem; align-items:center; }
+.review-chip { display:inline-block; padding:0.125rem 0.625rem; border-radius:0.75rem; font-size:0.78rem; font-weight:500; background:rgba(31,123,255,0.08); color:var(--button-1); border:1px solid var(--theme-3-border); margin-right:0.25rem; }
+.status-pill { display:inline-block; padding:0.125rem 0.625rem; border-radius:0.75rem; font-size:0.78rem; font-weight:600; background:#fef2f2; color:#b91c1c; }
+.status-pill.active { background:#ecfdf5; color:#047857; }
+
+/* ── Legacy review summary ── */
+.review-summary { display:grid; grid-template-columns:1fr; gap:0; padding:0.75rem; }
+.review-summary .row { display:grid; grid-template-columns:13rem 1fr; gap:0; align-items:center; padding:0; border-bottom:none; }
+.review-summary .label { display:flex; align-items:center; padding:0.75rem 1rem; font:600 0.8125rem/1.4 inherit; color:var(--theme-3-text-2); background:var(--bg-2); border-bottom:1px solid var(--theme-3-border); }
+.review-summary .value { display:flex; align-items:center; padding:0.75rem 1rem; font:500 0.8125rem/1.4 inherit; color:var(--theme-3-text-1); border-bottom:1px solid var(--theme-3-border); }
+.review-summary .label:last-of-type,.review-summary .value:last-of-type { border-bottom:none; }
+.review-summary .assigned-list { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:0.5rem; }
+.review-summary .assigned-list li { background:rgba(31,123,255,0.08); padding:0.375rem 0.75rem; border-radius:2rem; font:500 0.8125rem/1 inherit; color:var(--button-1); border:1px solid var(--theme-3-border); }
+
+/* ── Actions panel ── */
+.actions-panel { padding:0.875rem 1.5rem; }
+
+/* ── Responsive ── */
+@media (max-width:56.25rem) { .step1-two-column{flex-direction:column;} .basic-info,.schedule-section{flex:1 1 100%;} .schedule-row{flex-direction:column;} .time-field{flex:1 1 100%;max-width:100%;} .form-col-2{flex:1 1 100%;} .section-block{padding:0.875rem 1rem;} .review-grid{grid-template-columns:1fr;} .review-summary .row{grid-template-columns:1fr;} .review-summary .label{margin-bottom:0.25rem;} }
+@media (max-width:45rem) { .page{padding:0.75rem 0.75rem 2rem;} .step-content{padding:1rem;} .field-row{flex-direction:column;gap:0;} :host ::ng-deep .mat-horizontal-stepper-header-container{overflow-x:auto;} }

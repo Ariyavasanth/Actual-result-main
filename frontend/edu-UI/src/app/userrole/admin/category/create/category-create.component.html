@@ -1,0 +1,246 @@
+<div class="page category-create">
+    <!-- ── Top Toolbar ── -->
+    <div class="toolbar">
+        <div class="title"></div>
+        <div class="form-actions">
+            <button mat-flat-button color="accent" type="button" class="btn-cancel" (click)="cancel()">
+                <mat-icon>arrow_back</mat-icon>
+                <span>View Categories</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Form Card ── -->
+    <div class="form-card">
+        <mat-horizontal-stepper linear #stepper>
+            <!-- ═══ Step 1: Basic Info ═══ -->
+            <mat-step>
+                <ng-template matStepLabel>Basic</ng-template>
+                <div class="step-content">
+
+                    <div class="section-block">
+                        <div class="section-header">
+                            <mat-icon class="section-icon">category</mat-icon>
+                            <div class="section-header-text">
+                                <h2 class="section-heading">Category Information</h2>
+                                <p class="section-desc">Basic details for this category.</p>
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Name</mat-label>
+                                <mat-icon matPrefix>edit</mat-icon>
+                                <input matInput [value]="name" (input)="setName($any($event.target).value)"
+                                    placeholder="Category name" />
+                            </mat-form-field>
+
+                            <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Institute</mat-label>
+                                <mat-icon matPrefix>school</mat-icon>
+                                <mat-select [value]="institute" [disabled]="!isSuperAdmin || isEditing"
+                                    (selectionChange)="setInstitute($event.value)">
+                                    <mat-option *ngFor="let i of institutesList" [value]="i.id">{{i.name}}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+
+                        <div class="field-row">
+                            <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Description</mat-label>
+                                <mat-icon matPrefix>description</mat-icon>
+                                <input matInput [value]="description"
+                                    (input)="setDescription($any($event.target).value)"
+                                    placeholder="Optional description" />
+                            </mat-form-field>
+                            
+                            <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Type</mat-label>
+                                <mat-icon matPrefix>category</mat-icon>
+                                <mat-select [value]="type" (selectionChange)="setType($event.value)">
+                                    <mat-option *ngFor="let t of typeOptions" [value]="t.id">{{t.name}}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <span></span>
+                        <button mat-button matStepperNext type="button" class="next-btn">
+                            <span>Next</span>
+                            <mat-icon>arrow_forward</mat-icon>
+                        </button>
+                    </div>
+                </div>
+            </mat-step>
+
+            <!-- ═══ Step 2: Access & Scoring ═══ -->
+            <mat-step>
+                <ng-template matStepLabel>Access & Scoring</ng-template>
+                <div class="step-content">
+
+                    <div class="section-block">
+                        <div class="section-header">
+                            <mat-icon class="section-icon">apartment</mat-icon>
+                            <div class="section-header-text">
+                                <h2 class="section-heading">Department & Team Access</h2>
+                                <p class="section-desc">Assign departments and teams for this category.</p>
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Departments (required)</mat-label>
+                                <mat-icon matPrefix>apartment</mat-icon>
+                                <mat-select multiple [value]="selectedDepartments"
+                                    (selectionChange)="setDepartments($event.value)">
+                                    <mat-option *ngFor="let d of departments" [value]="d.id">{{d.name}}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+
+                            <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Teams (required)</mat-label>
+                                <mat-icon matPrefix>group</mat-icon>
+                                <mat-select multiple [value]="selectedTeams" (selectionChange)="setTeams($event.value)">
+                                    <mat-option *ngFor="let t of teams" [value]="t.id">{{t.name}}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-header">
+                            <mat-icon class="section-icon">grade</mat-icon>
+                            <div class="section-header-text">
+                                <h2 class="section-heading">Scoring & Status</h2>
+                                <p class="section-desc">Configure marks and visibility settings.</p>
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Mark for each question</mat-label>
+                                <mat-icon matPrefix>grade</mat-icon>
+                                <input matInput [value]="markForEachQuestion"
+                                    (input)="setMark($any($event.target).value)" placeholder="e.g. 1" />
+                            </mat-form-field>
+
+                            <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Status</mat-label>
+                                <mat-icon matPrefix>toggle_on</mat-icon>
+                                <mat-select [value]="status" (selectionChange)="setStatus($event.value)">
+                                    <mat-option *ngFor="let s of statusOptions" [value]="s.id">{{s.name}}</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
+
+                        <div class="field-row">
+                            <mat-form-field appearance="outline" class="field-half">
+                                <mat-label>Access</mat-label>
+                                <mat-icon matPrefix>public</mat-icon>
+                                <mat-select [value]="publicAccess" (selectionChange)="publicAccess = $event.value">
+                                    <mat-option [value]="true">Public</mat-option>
+                                    <mat-option [value]="false">Limited</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            <div class="field-half"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button mat-button matStepperPrevious type="button" class="prev-btn">
+                            <mat-icon>arrow_back</mat-icon>
+                            <span>Back</span>
+                        </button>
+                        <button mat-button matStepperNext type="button" class="next-btn">
+                            <span>Next</span>
+                            <mat-icon>arrow_forward</mat-icon>
+                        </button>
+                    </div>
+                </div>
+            </mat-step>
+
+            <!-- ═══ Step 3: Review ═══ -->
+            <mat-step>
+                <ng-template matStepLabel>Review</ng-template>
+                <div class="step-content">
+
+                    <div class="section-block">
+                        <div class="section-header">
+                            <mat-icon class="section-icon">fact_check</mat-icon>
+                            <div class="section-header-text">
+                                <h2 class="section-heading">Review & Submit</h2>
+                                <p class="section-desc">Please review all information before submitting.</p>
+                            </div>
+                        </div>
+
+                        <div class="review-grid">
+                            <!-- Basic Info -->
+                            <div class="review-section">
+                                <h4 class="review-section-title">
+                                    <mat-icon>category</mat-icon> Basic Info
+                                </h4>
+                                <div class="review-items">
+                                    <div class="review-item"><span class="review-label">Name</span><span class="review-value">{{ name || '—' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Institute</span><span class="review-value">{{ getInstituteName(institute) || '—' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Type</span><span class="review-value">{{ getOptionName(typeOptions, type) || '—' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Description</span><span class="review-value">{{ description || '—' }}</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Access -->
+                            <div class="review-section">
+                                <h4 class="review-section-title">
+                                    <mat-icon>apartment</mat-icon> Access
+                                </h4>
+                                <div class="review-items">
+                                    <div class="review-item">
+                                        <span class="review-label">Departments</span>
+                                        <span class="review-value">
+                                            <span *ngIf="selectedDepartments.length; else noDept">
+                                                <span class="review-chip" *ngFor="let d of selectedDepartments">{{ getDepartmentName(d) || d }}</span>
+                                            </span>
+                                            <ng-template #noDept>—</ng-template>
+                                        </span>
+                                    </div>
+                                    <div class="review-item">
+                                        <span class="review-label">Teams</span>
+                                        <span class="review-value">
+                                            <span *ngIf="selectedTeams.length; else noTeam">
+                                                <span class="review-chip" *ngFor="let t of selectedTeams">{{ getTeamName(t) || t }}</span>
+                                            </span>
+                                            <ng-template #noTeam>—</ng-template>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Scoring & Status -->
+                            <div class="review-section review-section--full">
+                                <h4 class="review-section-title">
+                                    <mat-icon>grade</mat-icon> Scoring & Status
+                                </h4>
+                                <div class="review-items">
+                                    <div class="review-item"><span class="review-label">Mark / Question</span><span class="review-value">{{ markForEachQuestion || '—' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Status</span><span class="review-value">{{ getOptionName(statusOptions, status) || '—' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Access</span><span class="review-value">{{ publicAccess ? 'Public' : 'Limited' }}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button mat-button matStepperPrevious type="button" class="prev-btn">
+                            <mat-icon>arrow_back</mat-icon>
+                            <span>Back</span>
+                        </button>
+                        <button mat-flat-button color="primary" (click)="save()" type="button" class="submit-btn">
+                            <mat-icon>save</mat-icon>
+                            <span>{{ isEditing ? 'Update' : 'Create Category' }}</span>
+                        </button>
+                    </div>
+                </div>
+            </mat-step>
+        </mat-horizontal-stepper>
+    </div>
+</div>

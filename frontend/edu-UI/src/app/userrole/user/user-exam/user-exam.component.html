@@ -1,0 +1,239 @@
+<main class="page user-exam-runner">
+  <p *ngIf="!exam" class="muted">No exam loaded. Please launch an exam first.</p>
+  
+  <ng-container *ngIf="exam">
+    <!-- Sticky Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="title">{{ examTitle || exam.title || exam.name }}</h1>
+        <div class="header-meta">
+          <span class="meta-item" *ngIf="exam.category"><mat-icon>category</mat-icon>{{ exam.category }}</span>
+          <span class="meta-item"><mat-icon>help_outline</mat-icon>{{ questions.length }} Questions</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="timer-block" [class.warning]="remaining <= 300" [class.danger]="remaining <= 60" role="timer" [attr.aria-label]="'Time remaining: ' + formatTime(remaining)">
+          <mat-icon class="timer-icon">schedule</mat-icon>
+          <div class="timer-content">
+            <span class="timer-label">Time Left</span>
+            <span class="timer-value">{{ formatTime(remaining) }}</span>
+          </div>
+          <span *ngIf="remaining <= 300" class="timer-alert" aria-hidden="true">!</span>
+        </div>
+        <button type="button" class="btn btn-submit" (click)="openConfirm()" [disabled]="submitting" [attr.aria-busy]="submitting">
+          <mat-icon>send</mat-icon>
+          <span>{{ submitting ? 'Submitting...' : 'Submit' }}</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Progress Section -->
+    <section class="progress-section" aria-label="Exam progress">
+      <div class="progress-stats">
+        <div class="stat-item answered">
+          <mat-icon>check_circle</mat-icon>
+          <span class="stat-value">{{ answeredCount }}</span>
+          <span class="stat-label">Answered</span>
+        </div>
+        <div class="stat-item unanswered">
+          <mat-icon>radio_button_unchecked</mat-icon>
+          <span class="stat-value">{{ questions.length - answeredCount }}</span>
+          <span class="stat-label">Remaining</span>
+        </div>
+        <div class="stat-item progress-pct">
+          <mat-icon>pie_chart</mat-icon>
+          <span class="stat-value">{{ progressPercent | number:'1.0-0' }}%</span>
+          <span class="stat-label">Complete</span>
+        </div>
+      </div>
+      <div class="progress-bar-outer" role="progressbar" [attr.aria-valuenow]="progressPercent" aria-valuemin="0" aria-valuemax="100" title="Exam progress">
+        <div class="progress-bar-inner" [style.width.%]="progressPercent"></div>
+      </div>
+    </section>
+
+    <!-- Navigation Row -->
+    <nav class="nav-row" aria-label="Question navigation">
+      <div class="nav-card horizontal">
+        <div class="nav-hint">
+          <mat-icon>touch_app</mat-icon>
+          <span>Jump to question</span>
+        </div>
+        <div class="nav-controls">
+          <button type="button" class="btn-nav" (click)="prevQuestion()" [disabled]="currentIndex === 0" aria-label="Previous question">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+        </div>
+        <div class="nav-list nav-grid" role="tablist" aria-label="Question numbers">
+          <button *ngFor="let q of questions; let i = index" type="button" class="nav-item" role="tab"
+            (click)="scrollToQuestion(i)" 
+            [attr.aria-label]="'Question ' + (i+1) + (answers[q.id || i] ? ', answered' : ', not answered')"
+            [attr.aria-selected]="currentIndex === i"
+            [class.answered]="answers[q.id || i]" 
+            [class.active]="currentIndex === i">
+            <span class="nav-num">{{ i+1 }}</span>
+            <mat-icon class="nav-check" *ngIf="answers[q.id || i]">check</mat-icon>
+          </button>
+        </div>
+        <div class="nav-controls">
+          <button type="button" class="btn-nav" (click)="nextQuestion()" [disabled]="currentIndex === questions.length - 1" aria-label="Next question">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+        <div class="nav-position">
+          <span class="current">{{ currentIndex + 1 }}</span>
+          <span class="separator">/</span>
+          <span class="total">{{ questions.length }}</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Questions -->
+    <div class="questions">
+      <section class="q-list" aria-label="Exam questions">
+        <article *ngFor="let q of questions; let i = index" class="q-card" [attr.id]="'q-' + i" 
+          [class.current]="currentIndex === i"
+          [class.completed]="answers[q.id || i]"
+          role="region" [attr.aria-labelledby]="'q-text-' + i">
+          
+          <!-- Question Header -->
+          <div class="q-header">
+            <div class="q-number">
+              <span class="num">{{ i+1 }}</span>
+              <span class="type-badge" [ngClass]="{
+                'mcq': q.type === 'choose' || q.type === 'Choose' || q.type === 'MCQ',
+                'multi': q.type === 'multi' || q.type === 'Multi',
+                'fill': q.type === 'fill' || q.type === 'Fill',
+                'desc': q.type === 'descriptive' || q.type === 'Paragraph'
+              }">
+                {{ q.type === 'choose' || q.type === 'Choose' || q.type === 'MCQ' ? 'Single Choice' : 
+                   q.type === 'multi' || q.type === 'Multi' ? 'Multiple Choice' : 
+                   q.type === 'fill' || q.type === 'Fill' ? 'Fill Blank' : 'Long Answer' }}
+              </span>
+            </div>
+            <div class="q-status" *ngIf="answers[q.id || i]">
+              <mat-icon class="status-icon">check_circle</mat-icon>
+              <span>Answered</span>
+            </div>
+          </div>
+
+          <!-- Question Text -->
+          <p class="q-text" [id]="'q-text-' + i">{{ q.question || q.text }}</p>
+
+          <!-- Single choice -->
+          <fieldset *ngIf="q.type === 'choose' || q.type === 'Choose' || q.type === 'MCQ'" class="q-options">
+            <legend class="sr-only">Select one answer</legend>
+            <label class="opt" *ngFor="let o of q.options; let oi = index" 
+              [class.selected]="answers[q.id || i] === (o.id || o.text)">
+              <span class="opt-letter">{{ 'ABCDEFGH'[oi] }}</span>
+              <input type="radio" name="q-{{q.id || i}}" [value]="o.id || o.text" [(ngModel)]="answers[q.id || i]"
+                (change)="selectOne(q.id || i, o.id || o.text)" />
+              <span class="opt-text">{{ o.text }}</span>
+              <mat-icon class="opt-check" *ngIf="answers[q.id || i] === (o.id || o.text)">check_circle</mat-icon>
+            </label>
+          </fieldset>
+
+          <!-- Multiple choice -->
+          <fieldset *ngIf="q.type === 'multi' || q.type === 'Multi'" class="q-options">
+            <legend class="sr-only">Select all that apply</legend>
+            <label class="opt" *ngFor="let o of q.options; let oi = index"
+              [class.selected]="(answers[q.id || i] || []).indexOf(o.id || o.text) !== -1">
+              <span class="opt-letter">{{ 'ABCDEFGH'[oi] }}</span>
+              <input type="checkbox" [value]="o.id || o.text" (change)="toggleMulti(q.id || i, o.id || o.text)"
+                [checked]="(answers[q.id || i] || []).indexOf(o.id || o.text) !== -1" />
+              <span class="opt-text">{{ o.text }}</span>
+              <mat-icon class="opt-check" *ngIf="(answers[q.id || i] || []).indexOf(o.id || o.text) !== -1">check_circle</mat-icon>
+            </label>
+          </fieldset>
+
+          <!-- Fill in the blank -->
+          <div *ngIf="q.type === 'fill' || q.type === 'Fill'" class="q-input">
+            <label class="sr-only" [for]="'fill-' + i">Your answer</label>
+            <div class="input-wrapper">
+              <mat-icon class="input-icon">edit</mat-icon>
+              <input type="text" [id]="'fill-' + i" [(ngModel)]="answers[q.id || i]" placeholder="Type your answer here..." />
+              <mat-icon class="input-clear" *ngIf="answers[q.id || i]" (click)="answers[q.id || i] = ''">close</mat-icon>
+            </div>
+          </div>
+
+          <!-- Descriptive -->
+          <div *ngIf="q.type === 'descriptive' || q.type === 'Paragraph'" class="q-input descriptive-input">
+            <div class="textarea-wrapper">
+              <label class="sr-only" [for]="'desc-' + i">Your answer</label>
+              <textarea [id]="'desc-' + i" rows="6" [(ngModel)]="answers[q.id || i]" placeholder="Write your detailed answer here..."></textarea>
+              <button type="button" class="voice-btn" *ngIf="speechSupported"
+                (click)="toggleVoiceInput(q.id || i)" 
+                [class.recording]="isRecording(q.id || i)"
+                [attr.aria-label]="isRecording(q.id || i) ? 'Stop voice input' : 'Start voice input'"
+                title="Voice input"
+                aria-live="polite">
+                <mat-icon *ngIf="!isRecording(q.id || i)">mic</mat-icon>
+                <mat-icon *ngIf="isRecording(q.id || i)" class="rec-icon">stop</mat-icon>
+              </button>
+            </div>
+            <div class="textarea-footer">
+              <p class="voice-hint" *ngIf="speechSupported">
+                <span *ngIf="!isRecording(q.id || i)"><mat-icon>mic</mat-icon> Click mic to use voice input</span>
+                <span *ngIf="isRecording(q.id || i)" class="recording-status" role="status" aria-live="polite">
+                  <span class="rec-dot"></span> Listening... Speak now
+                </span>
+              </p>
+              <span class="char-count" *ngIf="answers[q.id || i]">{{ (answers[q.id || i] || '').length }} characters</span>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+
+    <!-- Floating Quick Actions -->
+    <div class="floating-actions">
+      <button type="button" class="fab" (click)="scrollToQuestion(0)" aria-label="Go to first question" title="First question">
+        <mat-icon>vertical_align_top</mat-icon>
+      </button>
+      <button type="button" class="fab" (click)="scrollToQuestion(questions.length - 1)" aria-label="Go to last question" title="Last question">
+        <mat-icon>vertical_align_bottom</mat-icon>
+      </button>
+    </div>
+
+    <!-- Confirmation Dialog -->
+    <div *ngIf="showConfirm" class="confirm-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirm-title" (click)="showConfirm = false">
+      <div class="confirm-dialog" (click)="$event.stopPropagation()">
+        <div class="confirm-icon">
+          <mat-icon>assignment_turned_in</mat-icon>
+        </div>
+        <h2 id="confirm-title" class="confirm-title">Ready to Submit?</h2>
+        
+        <div class="confirm-summary">
+          <div class="summary-item completed">
+            <mat-icon>check_circle</mat-icon>
+            <span class="summary-value">{{ answeredCount }}</span>
+            <span class="summary-label">Answered</span>
+          </div>
+          <div class="summary-item pending" [class.warning]="questions.length - answeredCount > 0">
+            <mat-icon>{{ questions.length - answeredCount > 0 ? 'warning' : 'check_circle' }}</mat-icon>
+            <span class="summary-value">{{ questions.length - answeredCount }}</span>
+            <span class="summary-label">Unanswered</span>
+          </div>
+        </div>
+
+        <p class="confirm-body" *ngIf="questions.length - answeredCount > 0">
+          <mat-icon class="warn-icon">info</mat-icon>
+          You have <strong>{{ questions.length - answeredCount }}</strong> unanswered question(s). Are you sure you want to submit?
+        </p>
+        <p class="confirm-body" *ngIf="questions.length - answeredCount === 0">
+          Great job! You've answered all questions. Ready to submit your exam?
+        </p>
+
+        <div class="confirm-actions">
+          <button type="button" class="btn btn-secondary" (click)="showConfirm = false">
+            <mat-icon>arrow_back</mat-icon>
+            <span>Review Answers</span>
+          </button>
+          <button type="button" class="btn btn-primary" (click)="submit()">
+            <mat-icon>send</mat-icon>
+            <span>Submit Exam</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</main>

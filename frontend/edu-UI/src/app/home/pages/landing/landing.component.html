@@ -1,0 +1,390 @@
+<!-- =========================
+     Profluent Lab — Modern Enterprise Landing
+     ========================= -->
+
+<div class="landing-wrapper">
+
+   <!-- ─── Sticky Header ─── -->
+   <header class="header" role="banner">
+      <div class="header-inner">
+         <div class="brand" routerLink="/" aria-label="Profluent Lab Home">
+            <img src="/assets/images/profluent-lab.png" alt="Profluent Lab logo" class="logo" loading="eager" />
+         </div>
+
+         <nav class="nav-pill" id="main-nav" aria-label="Main navigation">
+            <a routerLink="/" class="nav-link" routerLinkActive="active"
+               [routerLinkActiveOptions]="{ exact: true }">Home</a>
+            <a routerLink="/features" class="nav-link" routerLinkActive="active">Features</a>
+            <a routerLink="/pricing" class="nav-link" routerLinkActive="active">Pricing</a>
+            <a routerLink="/docs" class="nav-link" routerLinkActive="active">Docs</a>
+            <a routerLink="/contact" class="nav-link" routerLinkActive="active">Contact</a>
+         </nav>
+
+         <div class="header-actions">
+            <a routerLink="/login" class="btn-signin" aria-label="Sign in">Sign in</a>
+            <a routerLink="/register" class="btn-get-started" aria-label="Get Started">
+               Get Started
+               <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+            </a>
+         </div>
+
+         <!-- Mobile menu toggle -->
+         <button class="mobile-menu-toggle" (click)="mobileMenuOpen = !mobileMenuOpen"
+                 [attr.aria-expanded]="mobileMenuOpen" aria-controls="mobile-nav" aria-label="Toggle menu">
+            <mat-icon>{{ mobileMenuOpen ? 'close' : 'menu' }}</mat-icon>
+         </button>
+      </div>
+
+      <!-- Mobile nav overlay -->
+      <div class="mobile-nav-overlay" [class.open]="mobileMenuOpen" id="mobile-nav">
+         <nav class="mobile-nav-links">
+            <a routerLink="/" (click)="mobileMenuOpen = false">Home</a>
+            <a routerLink="/features" (click)="mobileMenuOpen = false">Features</a>
+            <a routerLink="/pricing" (click)="mobileMenuOpen = false">Pricing</a>
+            <a routerLink="/docs" (click)="mobileMenuOpen = false">Docs</a>
+            <a routerLink="/contact" (click)="mobileMenuOpen = false">Contact</a>
+            <div class="mobile-nav-actions">
+               <a routerLink="/login" class="btn-signin">Sign in</a>
+               <a routerLink="/register" class="btn-primary btn-lg">Get Started</a>
+            </div>
+         </nav>
+      </div>
+   </header>
+
+   <!-- ─── Scrollable Main ─── -->
+   <main class="main-scroll" role="main" id="main-content">
+
+      <!-- ═══ Hero — Center-aligned immersive ═══ -->
+      <section class="hero">
+         <div class="hero-bg" aria-hidden="true">
+            <div class="hero-gradient"></div>
+            <div class="hero-grid-lines"></div>
+            <div class="hero-glow hero-glow--1"></div>
+            <div class="hero-glow hero-glow--2"></div>
+         </div>
+
+         <div class="hero-inner">
+            <div class="hero-content">
+               <div class="hero-badge">
+                  <span class="badge-dot"></span>
+                  Trusted by 5+ institutions worldwide
+               </div>
+
+               <h1 class="hero-title">
+                  Enterprise-ready
+                  <span class="gradient-text">Online Assessments</span>
+               </h1>
+
+               <p class="hero-sub">
+                  Secure, scalable and integrated — built for institutions and
+                  corporates who value integrity, speed and actionable insights.
+               </p>
+
+               <div class="hero-ctas">
+                  <a routerLink="/register" class="btn-primary btn-lg" aria-label="Start Free Trial">
+                     <span>Start Free Trial</span>
+                     <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                  </a>
+                  <a routerLink="/demo" class="btn-ghost btn-lg" aria-label="Request Demo">
+                     <mat-icon aria-hidden="true">play_circle</mat-icon>
+                     <span>Watch Demo</span>
+                  </a>
+               </div>
+            </div>
+
+            <!-- Floating stats cards -->
+            <div class="hero-stats" aria-label="Platform statistics">
+               <div class="stat-card">
+                  <span class="stat-value">1 K+</span>
+                  <span class="stat-label">Active Users</span>
+               </div>
+               <div class="stat-card">
+                  <span class="stat-value">5 K+</span>
+                  <span class="stat-label">Exams Delivered</span>
+               </div>
+               <div class="stat-card">
+                  <span class="stat-value">99.9%</span>
+                  <span class="stat-label">Platform Uptime</span>
+               </div>
+            </div>
+
+            <!-- Dashboard preview -->
+            <div class="hero-visual" aria-label="Platform preview">
+               <div class="dashboard-preview">
+                  <div class="preview-bar">
+                     <span class="dot red"></span>
+                     <span class="dot yellow"></span>
+                     <span class="dot green"></span>
+                     <span class="preview-title">Dashboard</span>
+                  </div>
+                  <div class="preview-body">
+                     <div class="preview-row preview-row--header"></div>
+                     <div class="preview-row preview-row--chart"></div>
+                     <div class="preview-metrics">
+                        <div class="mini-card"></div>
+                        <div class="mini-card"></div>
+                        <div class="mini-card"></div>
+                     </div>
+                     <div class="preview-row preview-row--table"></div>
+                     <div class="preview-row preview-row--table short"></div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      <!-- ═══ Trusted By — Marquee ═══ -->
+      <section class="trusted" aria-label="Trusted by leading organizations">
+         <p class="trusted-label">Trusted by teams at</p>
+         <div class="marquee-wrapper">
+            <div class="marquee-track">
+               <span class="logo-placeholder">University A</span>
+               <span class="logo-placeholder">Corp B</span>
+               <span class="logo-placeholder">Institute C</span>
+               <span class="logo-placeholder">Academy D</span>
+               <span class="logo-placeholder">Org E</span>
+               <!-- Duplicate for seamless marquee -->
+               <span class="logo-placeholder">University A</span>
+               <span class="logo-placeholder">Corp B</span>
+               <span class="logo-placeholder">Institute C</span>
+               <span class="logo-placeholder">Academy D</span>
+               <span class="logo-placeholder">Org E</span>
+            </div>
+         </div>
+      </section>
+
+      <!-- ═══ Features — Bento Grid ═══ -->
+      <section class="features" id="features">
+         <div class="section-inner">
+            <div class="section-header">
+               <span class="section-label">Features</span>
+               <h2 class="section-title">Platform Highlights</h2>
+               <p class="section-desc">Everything you need to build, deliver and analyze assessments at enterprise scale.</p>
+            </div>
+
+            <div class="bento-grid">
+               <article class="bento-card bento-card--lg">
+                  <div class="bento-icon">
+                     <mat-icon aria-hidden="true">security</mat-icon>
+                  </div>
+                  <h3>Secure by Design</h3>
+                  <p>AI proctoring, lockdown browser and tamper-proof audit logs for full traceability.</p>
+                  <div class="bento-visual">
+                     <div class="bento-mock-shield"></div>
+                  </div>
+               </article>
+
+               <article class="bento-card">
+                  <div class="bento-icon">
+                     <mat-icon aria-hidden="true">auto_stories</mat-icon>
+                  </div>
+                  <h3>Question Bank</h3>
+                  <p>Organize questions with categories, tags and generate randomized papers at any scale.</p>
+               </article>
+
+               <article class="bento-card">
+                  <div class="bento-icon">
+                     <mat-icon aria-hidden="true">insights</mat-icon>
+                  </div>
+                  <h3>Real-time Analytics</h3>
+                  <p>Live dashboards for performance tracking, attempt analysis and item-level statistics.</p>
+               </article>
+
+               <article class="bento-card">
+                  <div class="bento-icon">
+                     <mat-icon aria-hidden="true">settings_suggest</mat-icon>
+                  </div>
+                  <h3>Integrations</h3>
+                  <p>Seamless SSO, LMS connectors and a developer-friendly REST API for automation.</p>
+               </article>
+
+               <article class="bento-card">
+                  <div class="bento-icon">
+                     <mat-icon aria-hidden="true">groups</mat-icon>
+                  </div>
+                  <h3>Multi-tenant</h3>
+                  <p>Isolated data and branding per institution with role-based access controls.</p>
+               </article>
+
+               <article class="bento-card bento-card--lg">
+                  <div class="bento-icon">
+                     <mat-icon aria-hidden="true">speed</mat-icon>
+                  </div>
+                  <h3>Blazing Fast</h3>
+                  <p>Edge-cached delivery and optimized rendering for seamless exam experiences.</p>
+                  <div class="bento-visual">
+                     <div class="bento-mock-speed"></div>
+                  </div>
+               </article>
+            </div>
+         </div>
+      </section>
+
+      <!-- ═══ How it Works — Timeline ═══ -->
+      <section class="steps">
+         <div class="section-inner">
+            <div class="section-header">
+               <span class="section-label">Workflow</span>
+               <h2 class="section-title">How it Works</h2>
+               <p class="section-desc">Four simple steps from exam creation to actionable results.</p>
+            </div>
+
+            <div class="timeline" aria-label="Workflow steps">
+               <div class="timeline-line" aria-hidden="true"></div>
+               <div class="timeline-step">
+                  <div class="timeline-marker">1</div>
+                  <div class="timeline-content">
+                     <h4>Create Exam</h4>
+                     <p>Build from your question bank or bulk-import existing items in seconds.</p>
+                  </div>
+               </div>
+               <div class="timeline-step">
+                  <div class="timeline-marker">2</div>
+                  <div class="timeline-content">
+                     <h4>Assign &amp; Schedule</h4>
+                     <p>Flexible windows — assign by groups, campuses or custom cohort lists.</p>
+                  </div>
+               </div>
+               <div class="timeline-step">
+                  <div class="timeline-marker">3</div>
+                  <div class="timeline-content">
+                     <h4>Deliver &amp; Proctor</h4>
+                     <p>Automated AI proctoring with real-time integrity scoring during delivery.</p>
+                  </div>
+               </div>
+               <div class="timeline-step">
+                  <div class="timeline-marker">4</div>
+                  <div class="timeline-content">
+                     <h4>Analyze Results</h4>
+                     <p>Instant grading, comparative analytics and one-click exportable reports.</p>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      <!-- ═══ Testimonials — Featured card layout ═══ -->
+      <section class="testimonials">
+         <div class="section-inner">
+            <div class="section-header">
+               <span class="section-label">Testimonials</span>
+               <h2 class="section-title">What Our Customers Say</h2>
+            </div>
+
+            <div class="testimonials-grid">
+               <blockquote class="testimonial-card testimonial-card--featured">
+                  <div class="quote-icon" aria-hidden="true">
+                     <mat-icon>format_quote</mat-icon>
+                  </div>
+                  <p>"Profluent Lab transformed our examination process. We went from paper-based chaos to a seamless digital workflow in under two weeks."</p>
+                  <footer>
+                     <div class="avatar-placeholder">JD</div>
+                     <div class="testimonial-author">
+                        <cite>Dr. Jane Doe</cite>
+                        <span>Dean, University of Technology</span>
+                     </div>
+                  </footer>
+               </blockquote>
+
+               <blockquote class="testimonial-card">
+                  <div class="quote-icon" aria-hidden="true">
+                     <mat-icon>format_quote</mat-icon>
+                  </div>
+                  <p>"The real-time analytics alone justified the investment. We can now identify at-risk students before it's too late."</p>
+                  <footer>
+                     <div class="avatar-placeholder">RS</div>
+                     <div class="testimonial-author">
+                        <cite>Raj Singh</cite>
+                        <span>CTO, EdTech Corp</span>
+                     </div>
+                  </footer>
+               </blockquote>
+
+               <blockquote class="testimonial-card">
+                  <div class="quote-icon" aria-hidden="true">
+                     <mat-icon>format_quote</mat-icon>
+                  </div>
+                  <p>"99.9 % uptime is not a marketing claim — we've verified it across two academic years with zero exam interruptions."</p>
+                  <footer>
+                     <div class="avatar-placeholder">ML</div>
+                     <div class="testimonial-author">
+                        <cite>Maria Lopez</cite>
+                        <span>VP Operations, Global Academy</span>
+                     </div>
+                  </footer>
+               </blockquote>
+            </div>
+         </div>
+      </section>
+
+      <!-- ═══ CTA ═══ -->
+      <section class="cta">
+         <div class="cta-inner">
+            <div class="cta-bg" aria-hidden="true">
+               <div class="cta-glow"></div>
+            </div>
+            <div class="cta-content">
+               <h2>Ready to modernize assessments?</h2>
+               <p>Talk to our solutions team for enterprise onboarding, SLA guarantees and volume pricing.</p>
+               <div class="cta-actions">
+                  <a routerLink="/register" class="btn-primary btn-lg btn-white" aria-label="Start Free Trial">
+                     <span>Start Free Trial</span>
+                     <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                  </a>
+                  <a routerLink="/contact" class="btn-outline-light btn-lg" aria-label="Contact Sales">Contact Sales</a>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      <!-- ─── Footer ─── -->
+      <footer class="footer" role="contentinfo">
+         <div class="footer-inner">
+            <div class="footer-grid">
+               <div class="footer-col footer-brand">
+                  <h5>Profluent Lab</h5>
+                  <p>Enterprise online assessment platform trusted by institutions and corporates worldwide.</p>
+                  <div class="social-links" aria-label="Social links">
+                     <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                        <mat-icon>business</mat-icon>
+                     </a>
+                     <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                        <mat-icon>chat_bubble</mat-icon>
+                     </a>
+                     <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                        <mat-icon>code</mat-icon>
+                     </a>
+                  </div>
+               </div>
+               <div class="footer-col">
+                  <h5>Product</h5>
+                  <a routerLink="/features">Features</a>
+                  <a routerLink="/pricing">Pricing</a>
+                  <a routerLink="/changelog">Changelog</a>
+               </div>
+               <div class="footer-col">
+                  <h5>Resources</h5>
+                  <a routerLink="/docs">Documentation</a>
+                  <a routerLink="/support">Support Center</a>
+                  <a routerLink="/blog">Blog</a>
+               </div>
+               <div class="footer-col">
+                  <h5>Company</h5>
+                  <a routerLink="/about">About Us</a>
+                  <a routerLink="/contact">Contact Sales</a>
+                  <a routerLink="/privacy">Privacy Policy</a>
+               </div>
+            </div>
+            <div class="footer-bottom">
+               <p>&copy; 2026 Profluent Lab. All rights reserved.</p>
+            </div>
+         </div>
+      </footer>
+
+      <!-- Back to top -->
+      <button class="back-to-top" (click)="scrollToTop()" aria-label="Back to top" [class.visible]="showBackToTop">
+         <mat-icon>keyboard_arrow_up</mat-icon>
+      </button>
+
+   </main>
+</div>

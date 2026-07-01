@@ -1,0 +1,82 @@
+<div class="navbar-main" role="banner">
+  <div class="navbar-inner">
+    <!-- Left: Module title & breadcrumb -->
+    <div class="navbar-left">
+      <div class="app-title">
+        <div class="title">{{ moduleName }}</div>
+        <!-- <div class="subtitle" *ngIf="moduleData">{{ moduleData }}</div> -->
+      </div>
+    </div>
+
+    <!-- Right: Actions & User -->
+    <div class="navbar-right" *ngIf="isLogin" role="toolbar" aria-label="Top navigation actions">
+      <!-- Quick search -->
+      <button mat-icon-button 
+        aria-label="Search" 
+        class="navbar-icon-btn search-btn"
+        title="Search">
+        <mat-icon fontSet="material-icons-outlined" class="navbar-icon">search</mat-icon>
+      </button>
+
+      <!-- Notifications -->
+      <button mat-icon-button 
+        aria-label="Show notifications" 
+        class="navbar-icon-btn notifications-btn"
+        title="Notifications">
+        <mat-icon fontSet="material-icons-outlined" class="navbar-icon">notifications</mat-icon>
+      </button>
+
+      <!-- Settings -->
+      <button mat-icon-button 
+        aria-label="Open settings" 
+        class="navbar-icon-btn settings-btn"
+        title="Settings">
+        <mat-icon fontSet="material-icons-outlined" class="navbar-icon">settings</mat-icon>
+      </button>
+
+      <!-- Divider -->
+      <div class="user-profile-divider" role="separator" aria-orientation="vertical"></div>
+      
+      <!-- User Profile Pill -->
+      <div class="user-inline" role="complementary" aria-label="User profile">
+        <div class="avatar-inline" [title]="displayName">{{ initials }}</div>
+        <div class="user-inline-meta">
+          <div class="user-name">{{ displayName }}</div>
+          <div class="user-institute">{{ instituteShortName }}</div>
+        </div>
+      </div>
+
+      <!-- Logout -->
+      <button mat-icon-button 
+        aria-label="Sign out" 
+        class="navbar-icon-btn logout-inline-btn"
+        (click)="confirmLogout()"
+        title="Sign out">
+        <mat-icon class="navbar-icon logout-icon">logout</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Logout confirmation dialog template -->
+<ng-template #logoutConfirmationDialog>
+  <div class="logout-modal-wrap" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+    <div class="logout-card" tabindex="-1">
+      <header class="logout-header">
+        <div class="logout-graphic-wrap" aria-hidden="true">
+          <mat-icon class="logout-graphic">logout</mat-icon>
+        </div>
+        <div class="logout-titles">
+          <h2 id="logoutTitle" class="logout-heading">Sign out?</h2>
+          <p class="logout-sub">You will need to sign in again to access your account</p>
+        </div>
+      </header>
+
+      <footer class="modal-actions" role="group" aria-label="Logout actions">
+        <button mat-flat-button class="btn-logout" (click)="logout()" aria-describedby="logoutTitle">Sign out</button>
+        <button mat-stroked-button class="btn-cancel" (click)="dialog.closeAll()">Cancel</button>
+        <!-- <button mat-flat-button color="warn" class="btn-logout" (click)="logout()" aria-describedby="logoutTitle">Sign out</button> -->
+      </footer>
+    </div>
+  </div>
+</ng-template>

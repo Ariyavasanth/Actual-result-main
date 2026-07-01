@@ -1,0 +1,116 @@
+// ============================================
+// Shared – Top Sticky Component (v2)
+// ============================================
+
+$ease: cubic-bezier(0.4, 0, 0.2, 1);
+$shadow-sticky: 0 0.25rem 1rem rgba(0,0,0,0.1);
+
+:host {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.top-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-1, #fff);
+  padding: 0.75rem 1rem;
+  border-bottom: 0.0625rem solid rgba(0,0,0,0.08);
+  box-shadow: $shadow-sticky;
+  -webkit-backdrop-filter: blur(0.75rem);
+  backdrop-filter: blur(0.75rem);
+  transition: box-shadow 0.25s $ease, background 0.25s $ease;
+
+  // Flex layout for content
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  // Support for left/right sections
+  .sticky-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sticky-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  // Title styling
+  .sticky-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--theme-3-text-1, #1e293b);
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  // Breadcrumb support
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: rgba(0,0,0,0.55);
+
+    a {
+      color: var(--button-1, #6366f1);
+      text-decoration: none;
+      transition: opacity 0.2s $ease;
+
+      &:hover {
+        opacity: 0.75;
+        text-decoration: underline;
+        text-underline-offset: 0.125rem;
+      }
+    }
+
+    .separator {
+      color: rgba(0,0,0,0.3);
+    }
+  }
+
+  // Action buttons
+  button, .btn {
+    transition: background 0.2s $ease, box-shadow 0.2s $ease, transform 0.2s $ease;
+
+    &:hover {
+      transform: translateY(-0.0625rem);
+    }
+  }
+}
+
+// Dark variant
+.top-sticky.dark {
+  background: var(--theme-1, #1e293b);
+  border-bottom-color: rgba(255,255,255,0.08);
+
+  .sticky-title {
+    color: #fff;
+  }
+
+  .muted {
+    color: rgba(255,255,255,0.7);
+  }
+}
+
+// Utility classes
+.heading-lg {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.muted {
+  color: rgba(0,0,0,0.55);
+}

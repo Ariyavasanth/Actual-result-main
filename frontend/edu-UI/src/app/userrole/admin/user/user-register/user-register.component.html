@@ -1,0 +1,537 @@
+<div class="page admin-user-register">
+  <!-- ── Top Toolbar ── -->
+  <div class="toolbar">
+    <div class="title"></div>
+    <div class="form-actions">
+      <button mat-flat-button color="accent" type="button" class="btn-cancel" (click)="back()">
+        <mat-icon>arrow_back</mat-icon>
+        <span>View Users</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Form Card ── -->
+  <div class="form-card">
+    <form [formGroup]="form" (ngSubmit)="submit(stepper)" novalidate *ngIf="bulkMode">
+      <mat-horizontal-stepper linear #stepper>
+
+        <!-- ═══ Step 0: Bulk Upload (optional) ═══ -->
+        <mat-step *ngIf="!isEditing">
+          <ng-template matStepLabel>Bulk Upload</ng-template>
+          <div class="step-content">
+
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">cloud_upload</mat-icon>
+                <div class="section-header-text">
+                  <h2 class="section-heading">Bulk Upload</h2>
+                  <p class="section-desc">Upload multiple users at once via CSV or Excel file.</p>
+                </div>
+                <button mat-stroked-button color="accent" type="button" (click)="downloadTemplate()" class="add-campus-btn" *ngIf="bulkMode">
+                  <mat-icon>file_download</mat-icon>
+                  <span>Download Template</span>
+                </button>
+              </div>
+
+              <div class="field-row" *ngIf="bulkMode">
+                <mat-form-field appearance="outline" class="field-third">
+                  <mat-label>Institute</mat-label>
+                  <mat-icon matPrefix>business</mat-icon>
+                  <mat-select [(ngModel)]="bulkInstitute" [ngModelOptions]="{standalone: true}"
+                    (selectionChange)="fetchBulkUserLimit($event.value)" [disabled]="!isSuperAdmin">
+                    <mat-option value="">Any</mat-option>
+                    <mat-option *ngFor="let i of institutes" [value]="i.id">{{ i.name }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <div class="field-half upload-zone" (click)="$event.stopPropagation(); triggerBulkFileSelect()"
+                  [class.drag-active]="isDragOver" (dragenter)="onDragOver($event)" (dragover)="onDragOver($event)"
+                  (dragleave)="onDragLeave($event)" (drop)="onDrop($event)" tabindex="0"
+                  (keydown.enter)="triggerBulkFileSelect()"
+                  (keydown.space)="$event.preventDefault(); triggerBulkFileSelect()">
+
+                  <mat-form-field appearance="outline" class="field-full compact">
+                    <mat-icon matPrefix>file_upload</mat-icon>
+                    <mat-label>Bulk File</mat-label>
+                    <input matInput readonly [value]="bulkFile?.name || ''"
+                      placeholder="Select or drop a .csv/.xlsx/.xls file"
+                      (click)="$event.stopPropagation(); triggerBulkFileSelect()" />
+                    <button mat-icon-button matSuffix type="button"
+                      (click)="$event.stopPropagation(); triggerBulkFileSelect()">
+                      <mat-icon>attach_file</mat-icon>
+                    </button>
+                  </mat-form-field>
+
+                  <input id="bulkFileInput" #bulkFileInput type="file" class="hidden-file"
+                    (change)="onBulkFileChange($event)" accept=".csv,.xlsx,.xls" hidden />
+                </div>
+
+                <div class="field-third upload-btn-col">
+                  <button mat-flat-button color="primary" type="button" (click)="uploadBulk()"
+                    [disabled]="!bulkFile || bulkUploading || !bulkUploadAllowed" class="upload-btn">
+                    <mat-icon *ngIf="!bulkUploading">cloud_upload</mat-icon>
+                    <mat-icon *ngIf="bulkUploading">autorenew</mat-icon>
+                    <span>{{ bulkUploading ? 'Uploading...' : 'Upload' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="bulk-status" *ngIf="bulkUploadResult">
+                <mat-icon color="primary">info</mat-icon>
+                <span>{{ bulkUploadResult }}</span>
+              </div>
+            </div>
+
+            <!-- License Summary -->
+            <div class="section-block" *ngIf="bulkInstitute">
+              <div class="section-header">
+                <mat-icon class="section-icon">receipt_long</mat-icon>
+                <div>
+                  <h2 class="section-heading">License Summary</h2>
+                  <p class="section-desc">User limits for the selected institute.</p>
+                </div>
+              </div>
+              <table class="limit-table">
+                <thead>
+                  <tr>
+                    <th>Max Users</th>
+                    <th>Assigned</th>
+                    <th>Available</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{{ bulkUserLimit.max_user_limit !== null ? bulkUserLimit.max_user_limit : '—' }}</td>
+                    <td>{{ bulkUserLimit.already_assigned !== null ? bulkUserLimit.already_assigned : '—' }}</td>
+                    <td [class.available]="(bulkUserLimit.available_licenses ?? 0) > 10" [class.warning]="(bulkUserLimit.available_licenses ?? 0) <= 10 && (bulkUserLimit.available_licenses ?? 0) > 0" [class.danger]="(bulkUserLimit.available_licenses ?? 0) <= 0">{{ bulkUserLimit.available_licenses !== null ? bulkUserLimit.available_licenses : '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="form-actions">
+              <button mat-button type="button" (click)="stepper.next()" [disabled]="!bulkUploadAllowed">Skip</button>
+              <button mat-button type="button" (click)="stepper.next()" class="next-btn" [disabled]="!bulkUploadAllowed">
+                <span>Next</span>
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+        <!-- ═══ Step 1: User Details ═══ -->
+        <mat-step [stepControl]="form.controls['name']">
+          <ng-template matStepLabel>User Details</ng-template>
+          <div class="step-content">
+
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">person</mat-icon>
+                <div>
+                  <h2 class="section-heading">User Information</h2>
+                  <p class="section-desc">Basic identity and credentials for the user account.</p>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Full Name</mat-label>
+                  <mat-icon matPrefix>person</mat-icon>
+                  <input matInput id="user_name" formControlName="name" placeholder="Full name" aria-label="Full Name" />
+                  <mat-error *ngIf="form.get('name')?.touched && form.get('name')?.invalid">Full name is required</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>
+                    User Name
+                    <mat-icon class="info-icon" matTooltip="Institute registration number or email" matTooltipPosition="above" style="font-size: 16px; cursor: help; margin-left: 4px;">info</mat-icon>
+                  </mat-label>
+                  <mat-icon matPrefix>badge</mat-icon>
+                  <input matInput id="user_username" formControlName="username" placeholder="username" aria-label="User Name" />
+                  <mat-error *ngIf="form.get('username')?.touched && form.get('username')?.invalid">User name is required</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Email</mat-label>
+                  <mat-icon matPrefix>email</mat-icon>
+                  <input matInput id="user_email" formControlName="email" placeholder="email@example.com" aria-label="Email" />
+                  <mat-error *ngIf="form.get('email')?.touched && form.get('email')?.hasError('required')">Email is required</mat-error>
+                  <mat-error *ngIf="form.get('email')?.touched && form.get('email')?.hasError('email')">Enter a valid email</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Phone (optional)</mat-label>
+                  <mat-icon matPrefix>phone</mat-icon>
+                  <input matInput id="user_phone" formControlName="phone" aria-label="Phone" />
+                </mat-form-field>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Password</mat-label>
+                  <mat-icon matPrefix>lock</mat-icon>
+                  <input matInput id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password" aria-label="Password" />
+                  <button mat-icon-button matSuffix type="button" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'" [matTooltip]="showPassword ? 'Hide password' : 'Show password'" (click)="showPassword = !showPassword">
+                    <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
+                  <mat-error *ngIf="form.get('password')?.touched && form.get('password')?.invalid">Password (min 6 chars) is required</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Confirm Password</mat-label>
+                  <mat-icon matPrefix>lock_person</mat-icon>
+                  <input matInput id="confirmPassword" [type]="showConfirmPassword ? 'text' : 'password'" formControlName="confirmPassword" aria-label="Confirm password" />
+                  <button mat-icon-button matSuffix type="button" [attr.aria-label]="showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'" [matTooltip]="showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'" (click)="showConfirmPassword = !showConfirmPassword">
+                    <mat-icon>{{ showConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  </button>
+                  <mat-error *ngIf="form.hasError('passwordMismatch') && (form.get('confirmPassword')?.touched)">Passwords do not match</mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Joining date</mat-label>
+                  <mat-icon matPrefix>calendar_today</mat-icon>
+                  <input matInput [matDatepicker]="joiningDatePicker" type="text" id="joining_date" formControlName="joining_date" placeholder="dd/mm/yyyy" aria-label="Joining date" />
+                  <mat-datepicker-toggle matSuffix [for]="joiningDatePicker"></mat-datepicker-toggle>
+                  <mat-datepicker #joiningDatePicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Active</mat-label>
+                  <mat-icon matPrefix>toggle_on</mat-icon>
+                  <mat-select formControlName="active" aria-label="Active">
+                    <mat-option [value]="true">Active</mat-option>
+                    <mat-option [value]="false">Inactive</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <span></span>
+              <button mat-button matStepperNext type="button" class="next-btn">
+                <span>Next</span>
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+        <!-- ═══ Step 2: Institute & Location ═══ -->
+        <mat-step [stepControl]="form.controls['institute']">
+          <ng-template matStepLabel>Institute & Location</ng-template>
+          <div class="step-content">
+
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">business</mat-icon>
+                <div>
+                  <h2 class="section-heading">Institute & Role</h2>
+                  <p class="section-desc">Assign the user to an institute and set their role.</p>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Institute</mat-label>
+                  <mat-icon matPrefix>business</mat-icon>
+                  <mat-select id="institute" formControlName="institute" aria-label="Institute" [disabled]="!isSuperAdmin">
+                    <mat-option value="">Select institute</mat-option>
+                    <mat-option *ngFor="let i of institutes" [value]="i.id">{{i.name}}</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="form.get('institute')?.touched && form.get('institute')?.invalid">Institute is required</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Role</mat-label>
+                  <mat-icon matPrefix>security</mat-icon>
+                  <mat-select id="role" formControlName="role" aria-label="Role">
+                    <mat-option value="">Select role</mat-option>
+                    <mat-option *ngFor="let r of availableRoles" [value]="r.value">{{r.label}}</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="form.get('role')?.touched && form.get('role')?.invalid">Role is required</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">location_on</mat-icon>
+                <div>
+                  <h2 class="section-heading">Location & Organization</h2>
+                  <p class="section-desc">Campus, geographic details, and organizational assignment.</p>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Campus</mat-label>
+                  <mat-icon matPrefix>location_city</mat-icon>
+                  <mat-select id="campus" formControlName="campus" aria-label="Campus">
+                    <mat-option value="">Select campus</mat-option>
+                    <mat-option *ngFor="let c of campuses" [value]="c.id">{{c.name}}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Country</mat-label>
+                  <mat-icon matPrefix>public</mat-icon>
+                  <mat-select id="country" formControlName="country" aria-label="Country">
+                    <mat-option value="">Select country</mat-option>
+                    <mat-option *ngFor="let c of countries" [value]="c.code">{{c.name}}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>State</mat-label>
+                  <mat-icon matPrefix>map</mat-icon>
+                  <mat-select id="state" formControlName="state" aria-label="State">
+                    <mat-option value="">Select state</mat-option>
+                    <mat-option *ngFor="let s of filteredStates" [value]="s.code">{{s.name}}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>City</mat-label>
+                  <mat-icon matPrefix>location_on</mat-icon>
+                  <!-- City is shown as a read-only input so users can see the campus city without editing it. -->
+                  <input matInput id="city" type="text" formControlName="city" placeholder="City" aria-label="City" readonly [attr.disabled]="true" />
+                </mat-form-field>
+              </div>
+
+              <div class="field-row">
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Department / Class</mat-label>
+                  <mat-icon matPrefix>school</mat-icon>
+                  <mat-select id="department" formControlName="department">
+                    <mat-option value="">Select department</mat-option>
+                    <mat-option *ngFor="let d of departments" [value]="d.id">{{d.name}}</mat-option>
+                    <mat-option *ngIf="!departmentsLoading && (!departments || departments.length === 0)" disabled>No departments</mat-option>
+                  </mat-select>
+                  <mat-hint *ngIf="departmentsLoading">Loading departments…</mat-hint>
+                  <mat-error *ngIf="form.get('department')?.touched && form.get('department')?.invalid">Department is required for students</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="field-half">
+                  <mat-label>Team / Group / Section</mat-label>
+                  <mat-icon matPrefix>groups</mat-icon>
+                  <mat-select id="team" formControlName="team">
+                    <mat-option value="">Select team</mat-option>
+                    <mat-option *ngFor="let t of teams" [value]="t.id">{{t.name}}</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="form.get('team')?.touched && form.get('team')?.invalid">Team is required for students</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button mat-button matStepperPrevious type="button" class="prev-btn">
+                <mat-icon>arrow_back</mat-icon>
+                <span>Back</span>
+              </button>
+              <button mat-button matStepperNext type="button" class="next-btn">
+                <span>Next</span>
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+        <!-- ═══ Step 3: User Privileges ═══ -->
+        <mat-step *ngIf="showUserManagement">
+          <ng-template matStepLabel>User Privileges</ng-template>
+          <div class="step-content">
+
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">admin_panel_settings</mat-icon>
+                <div>
+                  <h2 class="section-heading">User Privileges</h2>
+                  <p class="section-desc">Configure page-level access permissions for this user.</p>
+                </div>
+              </div>
+
+              <div class="pages-table">
+                <table class="simple-table compact">
+                  <thead>
+                    <tr>
+                      <th width="25%">Page</th>
+                      <th class="center" width="15%">
+                        <mat-checkbox [checked]="isAllChecked('view')" [indeterminate]="isIndeterminate('view')"
+                          (change)="$event ? toggleAllAction('view', $event.checked) : null">View</mat-checkbox>
+                      </th>
+                      <th class="center" width="15%">
+                        <mat-checkbox [checked]="isAllChecked('add')" [indeterminate]="isIndeterminate('add')"
+                          (change)="$event ? toggleAllAction('add', $event.checked) : null">Add</mat-checkbox>
+                      </th>
+                      <th class="center" width="15%">
+                        <mat-checkbox [checked]="isAllChecked('edit')" [indeterminate]="isIndeterminate('edit')"
+                          (change)="$event ? toggleAllAction('edit', $event.checked) : null">Edit</mat-checkbox>
+                      </th>
+                      <th class="center" width="15%">
+                        <mat-checkbox [checked]="isAllChecked('delete')" [indeterminate]="isIndeterminate('delete')"
+                          (change)="$event ? toggleAllAction('delete', $event.checked) : null">Delete</mat-checkbox>
+                      </th>
+                      <th class="center" width="15%">
+                        <mat-checkbox [checked]="selectAll" (change)="toggleSelectAll($event.checked)"
+                          aria-label="Select all pages">ALL</mat-checkbox>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let p of pagesList">
+                      <td class="page-name">{{ p.name || p.key }}</td>
+                      <td class="center"><mat-checkbox name="perm_{{p.key}}_view"
+                          [(ngModel)]="pagesPermissions[p.key].view" [ngModelOptions]="{standalone: true}"
+                          [disabled]="!showUserManagement"></mat-checkbox></td>
+                      <td class="center"><mat-checkbox name="perm_{{p.key}}_add"
+                          [(ngModel)]="pagesPermissions[p.key].add" [ngModelOptions]="{standalone: true}"
+                          [disabled]="!showUserManagement"></mat-checkbox></td>
+                      <td class="center"><mat-checkbox name="perm_{{p.key}}_edit"
+                          [(ngModel)]="pagesPermissions[p.key].edit" [ngModelOptions]="{standalone: true}"
+                          [disabled]="!showUserManagement"></mat-checkbox></td>
+                      <td class="center"><mat-checkbox name="perm_{{p.key}}_delete"
+                          [(ngModel)]="pagesPermissions[p.key].delete" [ngModelOptions]="{standalone: true}"
+                          [disabled]="!showUserManagement"></mat-checkbox></td>
+                      <td class="center"><mat-checkbox name="perm_{{p.key}}_all"
+                          [checked]="isAllActionsForPage(p.key)"
+                          (change)="$event ? toggleAllForPage(p.key, $event.checked) : null"
+                          [disabled]="!showUserManagement"></mat-checkbox></td>
+                    </tr>
+                    <tr *ngIf="!pagesList || pagesList.length === 0">
+                      <td colspan="6" class="muted">No pages available</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button mat-button matStepperPrevious type="button" class="prev-btn">
+                <mat-icon>arrow_back</mat-icon>
+                <span>Back</span>
+              </button>
+              <button mat-button matStepperNext type="button" class="next-btn">
+                <span>Next</span>
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+        <!-- ═══ Step 4: Review & Submit ═══ -->
+        <mat-step>
+          <ng-template matStepLabel>Review</ng-template>
+          <div class="step-content">
+
+            <div class="section-block">
+              <div class="section-header">
+                <mat-icon class="section-icon">fact_check</mat-icon>
+                <div>
+                  <h2 class="section-heading">Review & Submit</h2>
+                  <p class="section-desc">Please review all information before submitting.</p>
+                </div>
+              </div>
+
+              <div class="review-grid">
+                <!-- Identity -->
+                <div class="review-section">
+                  <h4 class="review-section-title">
+                    <mat-icon>person</mat-icon> Identity
+                  </h4>
+                  <div class="review-items">
+                    <div class="review-item"><span class="review-label">Full Name</span><span class="review-value">{{ form.value.name || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">Username</span><span class="review-value">{{ form.value.username || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">Email</span><span class="review-value">{{ form.value.email || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">Phone</span><span class="review-value">{{ form.value.phone || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">Joining Date</span><span class="review-value">{{ form.value.joining_date || '—' }}</span></div>
+                  </div>
+                </div>
+
+                <!-- Organization -->
+                <div class="review-section">
+                  <h4 class="review-section-title">
+                    <mat-icon>business</mat-icon> Organization
+                  </h4>
+                  <div class="review-items">
+                    <div class="review-item"><span class="review-label">Institute</span><span class="review-value">{{ getInstituteName(form.value.institute) || form.value.institute || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">Role</span><span class="review-value">{{ getRoleLabel(form.value.role) || form.value.role || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">Department</span><span class="review-value">{{ getDepartmentName(form.value.department) || form.value.department || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">Team</span><span class="review-value">{{ getTeamName(form.value.team) || form.value.team || '—' }}</span></div>
+                  </div>
+                </div>
+
+                <!-- Location & Status -->
+                <div class="review-section">
+                  <h4 class="review-section-title">
+                    <mat-icon>location_on</mat-icon> Location & Status
+                  </h4>
+                  <div class="review-items">
+                    <div class="review-item"><span class="review-label">Campus</span><span class="review-value">{{ getCampusName(form.value.campus) || form.value.campus || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">Country</span><span class="review-value">{{ getCountryName(form.value.country) || form.value.country || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">State</span><span class="review-value">{{ getStateName(form.value.state) || form.value.state || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">City</span><span class="review-value">{{ getCityName(form.value.city) || form.value.city || '—' }}</span></div>
+                    <div class="review-item"><span class="review-label">Active</span><span class="review-value">
+                      <span class="status-pill" [class.active]="form.value.active">{{ form.value.active ? 'Active' : 'Inactive' }}</span>
+                    </span></div>
+                  </div>
+                </div>
+
+                <!-- Privileges -->
+                <div class="review-section review-section--full" *ngIf="showUserManagement">
+                  <h4 class="review-section-title">
+                    <mat-icon>admin_panel_settings</mat-icon> User Privileges
+                  </h4>
+                  <div class="review-items">
+                    <div class="priv-stats">
+                      <span class="review-chip">Pages: {{ getPrivilegesCounts().total || 0 }}</span>
+                      <span class="review-chip">View: {{ getPrivilegesCounts().view || 0 }}</span>
+                      <span class="review-chip">Add: {{ getPrivilegesCounts().add || 0 }}</span>
+                      <span class="review-chip">Edit: {{ getPrivilegesCounts().edit || 0 }}</span>
+                      <span class="review-chip">Delete: {{ getPrivilegesCounts().delete || 0 }}</span>
+                    </div>
+                    <div class="priv-list">
+                      <div *ngFor="let p of getPrivilegesOverview()" class="priv-row">
+                        <span class="priv-page">{{ p.name || p.key }}</span>
+                        <span class="priv-actions">
+                          <small *ngIf="p.view">V</small>
+                          <small *ngIf="p.add">A</small>
+                          <small *ngIf="p.edit">E</small>
+                          <small *ngIf="p.delete">D</small>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="review-notes" *ngIf="form.value.note">
+                <h4 class="review-section-title"><mat-icon>notes</mat-icon> Notes</h4>
+                <div class="note-text">{{ form.value.note }}</div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button mat-button matStepperPrevious type="button" class="prev-btn">
+                <mat-icon>arrow_back</mat-icon>
+                <span>Back</span>
+              </button>
+              <button mat-flat-button color="primary" type="submit" class="submit-btn">
+                <mat-icon *ngIf="!isEditing">person_add</mat-icon>
+                <mat-icon *ngIf="isEditing">save</mat-icon>
+                <span *ngIf="!isEditing">Register User</span>
+                <span *ngIf="isEditing">Save Changes</span>
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+      </mat-horizontal-stepper>
+    </form>
+  </div>
+</div>

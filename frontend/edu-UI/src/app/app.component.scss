@@ -1,0 +1,210 @@
+:root {
+  --topbar-height: max(3.5rem, calc(var(--font-size-base) * 5)); /* responsive nominal topbar height */
+  --sidenav-width: 16.25rem; /* Side nav nominal width */
+  --sidenav-collapsed: 4.5rem; /* collapsed width (approx 72px at 16px root) */
+}
+
+/* box sizing */
+* { box-sizing: border-box; }
+
+/* Prevent root scroll */
+html, body { width:100%; margin:0; padding:0; min-height:100%; background-color:var(--theme-3); overflow:auto; position:relative }
+
+/* ═══════════════════════════════════════════════════════════════
+   ACCESSIBILITY — Skip link for keyboard navigation
+   ═══════════════════════════════════════════════════════════════ */
+.skip-link {
+  position: fixed;
+  top: -3rem;
+  left: 1rem;
+  z-index: 99999;
+  padding: 0.75rem 1.25rem;
+  background: var(--button-1, #4f46e5);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 0 0 0.5rem 0.5rem;
+  text-decoration: none;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
+  transition: top 0.2s ease-in-out;
+  
+  &:focus {
+    top: 0;
+    outline: 0.1875rem solid var(--button-1, #4f46e5);
+    outline-offset: 0.125rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PUBLIC VIEW — Landing/Login pages layout
+   ═══════════════════════════════════════════════════════════════ */
+.public-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Full height app layout: horizontal row */
+.app-layout {
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh; /* prefer min-height so zoomed UI doesn't clip */
+  height: 100vh; /* fallback for browsers that don't support min-height */
+  background: var(--theme-3);
+  gap: 0;
+  min-width: 0;
+  position: relative;
+}
+
+// .app-sidenav {
+//   position: relative;
+//   flex: 0 0 auto;
+//   width: auto;
+//   height: 100%;
+//   background-color: var(--theme-1);
+//   overflow: inherit;
+//   background: transparent;
+//   // border-top-left-radius: 30px;
+//   // border-bottom-left-radius: 30px;
+//   min-width: 0; /* allow shrinking of the column */
+// }
+
+
+
+/* Main area: side nav + content -- app-main sits to the right of app-sidenav */
+.app-main {
+  position: relative;
+  background-color: var(--theme-1);
+  /* z-index removed to prevent stacking context issues with modals */
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto; // Take remaining width
+  min-width: 0;
+  height: 100vh; /* prefer min-height so zoomed UI doesn't clip */
+  /* Make main width the remaining space after the side-nav */
+  width: calc(100% - var(--sidenav-width));
+  overflow: visible; /* Allow modals to escape stacking context */
+}
+
+
+/* Top bar inside app-main */
+.app-topbar {
+  flex: 0 0 var(--topbar-height);
+  min-height: var(--topbar-height);
+  width: 100%;
+  background: var(--theme-2-bg-1);
+  display: grid;
+  align-items: center;
+  box-shadow: 0 0.125rem 0.625rem rgba(20, 30, 60, 0.06);
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--theme-2-border);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  position: relative;
+  z-index: 100; /* Below modal backdrops (10050) but above content */
+}
+
+
+/* Content: scrolls internally only */
+.app-content {
+  flex: 1 1 auto;
+  display: block;
+  min-height: 0;
+  width: 100%;
+  background: var(--theme-2);
+  padding: 1rem 1rem;
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  height: auto;
+  position: relative;
+  /* No z-index to avoid stacking context issues */
+}
+
+// 
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   RESPONSIVE LAYOUT \u2014 Mobile & Tablet
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+@media (max-width: 992px) {
+
+  :root {
+    --topbar-height: 4rem;
+  }
+
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    background: var(--theme-3);
+    overflow: visible; /* Allow modals to work properly */
+  }
+
+  .app-main {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: calc(100% - var(--sidenav-collapsed));
+    overflow: visible; /* Allow modals to escape */
+    background: var(--theme-1);
+    margin-left: var(--sidenav-collapsed);
+  }
+
+  /* When sidenav expanded via .sidenav-open expand, set main width and margin accordingly */
+  .sidenav-open .app-main {
+    margin-left: var(--sidenav-width);
+    width: calc(100% - var(--sidenav-width));
+  }
+
+ 
+  .app-sidenav {
+    /* on mobile keep a compact collapsed nav by default */
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: auto;
+    width: var(--sidenav-collapsed);
+    transform: none;
+    flex: 0 0 var(--sidenav-collapsed);
+    z-index: 65;
+    background: var(--theme-1);
+    overflow: auto;
+  }
+
+  /* also cover side-nav variant class used in component styles */
+  .app-side-nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: auto;
+    width: var(--sidenav-collapsed);
+    z-index: 65;
+    background: var(--theme-1);
+    overflow: auto;
+  }
+
+  /* when parent (e.g., root) has .sidenav-open, expand to full width */
+  .sidenav-open .app-sidenav,
+  .sidenav-open .app-side-nav {
+    width: var(--sidenav-width);
+    flex: 0 0 var(--sidenav-width);
+  }
+
+
+}
+
+/* Custom Scrollbar for sidebar/content */
+  .app-sidenav::-webkit-scrollbar,
+  .app-content::-webkit-scrollbar {
+    width: 0.5rem;
+    background: rgba(86,91,102,0.09);
+  }
+  .app-sidenav::-webkit-scrollbar-thumb,
+  .app-content::-webkit-scrollbar-thumb {
+    background: #b2bacb;
+    border-radius: 0.4375rem;
+  }

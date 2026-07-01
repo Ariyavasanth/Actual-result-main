@@ -1,0 +1,29 @@
+<div class="unauthorized-page">
+  <div class="card">
+    <div class="icon-wrapper">
+      <div class="icon-bg"></div>
+      <div class="icon">
+        <mat-icon>shield</mat-icon>
+      </div>
+    </div>
+    
+    <h1>Access Denied</h1>
+    <p class="subtitle">You don't have permission to view this page.</p>
+
+    <div class="actions">
+      <button mat-stroked-button (click)="goHome()" class="btn-home">
+        <mat-icon>home</mat-icon>
+        Go Home
+      </button>
+      <button mat-flat-button (click)="goBack()" class="btn-back">
+        <mat-icon>arrow_back</mat-icon>
+        Go Back
+      </button>
+    </div>
+
+    <div class="help">
+      <mat-icon class="help-icon">info</mat-icon>
+      <p>If you believe this is a mistake, contact your administrator or request access.</p>
+    </div>
+  </div>
+</div>
