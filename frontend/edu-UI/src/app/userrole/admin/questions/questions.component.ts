@@ -187,13 +187,22 @@ export class AdminQuestionsComponent {
           else if (correctIdxs.length > 1) correct = correctIdxs;
         }
 
+        const questionType = q.type || q.originalType || q.question_type || '';
+        let optionAnswer = '';
+        const normalizedQuestionType = String(questionType).toLowerCase();
+        if ((normalizedQuestionType === 'fill' || normalizedQuestionType === 'descriptive') && Array.isArray(q.options)) {
+          const answerOption = q.options.find((o: any) => o && typeof o === 'object' && (o.is_correct === 1 || o.is_correct === true || o.is_correct === '1' || o.is_correct === 'true')) || q.options[0];
+          if (typeof answerOption === 'string') optionAnswer = answerOption;
+          else if (answerOption && typeof answerOption === 'object') optionAnswer = answerOption.text || answerOption.option_text || answerOption.option || answerOption.value || answerOption.label || '';
+        }
+
         const first: any = {
-          type: q.type || q.originalType || q.question_type || '',
+          type: questionType,
           text: q.question || q.text || q.title || '',
           marks: q.marks || q.points || 1,
           options: opts.length ? opts : ['',''],
           correct: correct,
-          answerText: q.answer || q.answerText || q.correct || '',
+          answerText: q.answer || q.answerText || optionAnswer || (typeof q.correct === 'string' ? q.correct : ''),
           // copy global selections if provided
           institute_id: q.institute_id || (q.institute && (q.institute.institute_id || q.institute.id)) || '',
           exam_id: q.exam_id || (q.exam && (q.exam.exam_id || q.exam.id)) || '',
