@@ -18,13 +18,30 @@ def add_question(request):
         institute_id = data.get("institute_id")
         category_id = data.get("category_id", None)
         created_by = data.get("created_by",'System')
+        if not institute_id or not category_id:
+            json_data = {
+                "statusMessage": "Please select an Institution and Category before saving.",
+                "status": False
+            }
+            return json_data, 400
+        questions = data.get("questions", [])
+        valid_questions = [
+            q for q in questions
+            if q and q.get("type") and str(q.get("text", "")).strip()
+        ]
+        if not valid_questions:
+            json_data = {
+                "statusMessage": "Please add at least one question before saving.",
+                "status": False
+            }
+            return json_data, 400
         # json_data = {
         #     "statusMessage": "Category ID is required",
         #     "status": False,
         # }
         # return json_data, 400
 
-        for data in request.json.get('questions', []):
+        for data in valid_questions:
             question_type = data.get("type")
             question_text = data.get("text")
             marks = data.get("marks")

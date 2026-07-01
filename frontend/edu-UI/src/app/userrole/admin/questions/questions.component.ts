@@ -705,6 +705,10 @@ export class AdminQuestionsComponent {
     return false;
   }
 
+  private isValidQuestion(q: any): boolean {
+    return !!q && !!String(q.type || '').trim() && !!String(q.text || '').trim();
+  }
+
   // Call backend fine-tune endpoint to improve question/answer pair
   generateModelAnswer(qIndex:number, qText:string, answerText:string, finetuneInstructions?:string){
     this.loader.show();
@@ -756,7 +760,7 @@ export class AdminQuestionsComponent {
     } catch (e) { /* ignore */ }
     if (this.mode === 'bulk'){
       // use selected file and submit via FormData
-      if (!this.selectedBulkFile){ try { notify('Please select a file to upload', 'error'); } catch(e){}; return; }
+      if (!this.selectedBulkFile){ this.loader.hide(); try { notify('Please select a file to upload', 'error'); } catch(e){}; return; }
       const fd = new FormData();
       fd.append('file', this.selectedBulkFile);
       if (this.questions[0] && this.questions[0].institute_id) fd.append('institute_id', this.questions[0].institute_id);
@@ -776,8 +780,23 @@ export class AdminQuestionsComponent {
       return;
     }
 
+    const selectedInstituteId = this.questions && this.questions[0] && (this.questions[0] as any).institute_id;
+    const selectedCategoryId = this.questions && this.questions[0] && (this.questions[0] as any).category_id;
+    if (!selectedInstituteId || !selectedCategoryId) {
+      this.loader.hide();
+      try { notify('Please select an Institution and Category before saving.', 'error'); } catch(e){}
+      return;
+    }
+
+    const validQuestions = (this.questions || []).filter((q: any) => this.isValidQuestion(q));
+    if (!validQuestions.length) {
+      this.loader.hide();
+      try { notify('Please add at least one question before saving.', 'error'); } catch(e){}
+      return;
+    }
+
     // Submit all questions as a batch; basic validation per question
-    for (let q of this.questions){
+    for (let q of validQuestions){
       if (q.type === 'choose' && (q.correct === null || q.correct === undefined)){
         try { notify('Please select the correct option for single choice in all question blocks', 'error'); } catch(e){}
         this.loader.hide();
@@ -790,7 +809,7 @@ export class AdminQuestionsComponent {
       }
     }
 
-    const payload = this.questions.map((q:any) => {
+    const payload = validQuestions.map((q:any) => {
       const p = JSON.parse(JSON.stringify(q));
       if (q.type === 'choose' && typeof q.correct === 'number'){
         p.correct_indices = [q.correct];
