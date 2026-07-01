@@ -41,7 +41,7 @@
                   <mat-icon matPrefix>school</mat-icon>
                   <mat-label>Institute</mat-label>
                   <mat-select id="institute-select" title="Institute" [disabled]="!isSuperAdmin"
-                     [(ngModel)]="questions[0].institute_id" (ngModelChange)="loadCategories($event)">
+                     [(ngModel)]="questions[0].institute_id" (ngModelChange)="onQuestionInstituteChange($event)">
                      <mat-option value="">Select institute</mat-option>
                      <mat-option *ngFor="let inst of institutes" [value]="inst.institute_id">{{inst.name}}</mat-option>
                   </mat-select>
@@ -50,13 +50,11 @@
                <mat-form-field appearance="outline" class="field-half">
                   <mat-icon matPrefix>assignment</mat-icon>
                   <mat-label>Category</mat-label>
-                  <input type="text" matInput [formControl]="categoryCtrl" [matAutocomplete]="auto"
-                     placeholder="Pick a category" />
-                  <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCategory.bind(this)"
-                     (optionSelected)="onCategoryAutocompleteSelected($event.option.value)">
-                     <mat-option *ngFor="let cat of (filteredCategories$ | async)"
-                        [value]="cat">{{cat.name}}</mat-option>
-                  </mat-autocomplete>
+                  <mat-select [value]="questions[0].category_id" [disabled]="!questions[0].institute_id || !categories.length"
+                     (selectionChange)="onCategorySelected($event.value)">
+                     <mat-option value="">Select category</mat-option>
+                     <mat-option *ngFor="let cat of categories" [value]="cat.category_id">{{cat.name}}</mat-option>
+                  </mat-select>
                </mat-form-field>
             </div>
 
@@ -157,7 +155,7 @@
                      <mat-label>Quiz Type</mat-label>
                      <mat-select [(ngModel)]="aiQuestionType">
                         <mat-option value="">Select type</mat-option>
-                        <mat-option *ngFor="let t of questionTypes" [value]="t.value">{{t.label}}</mat-option>
+                        <mat-option *ngFor="let t of filteredQuestionTypes" [value]="t.value">{{t.label}}</mat-option>
                      </mat-select>
                   </mat-form-field>
                </div>
@@ -296,7 +294,7 @@
                            <mat-label>Type</mat-label>
                            <mat-select id="q-type-{{qi}}" title="Question type" [(ngModel)]="q.type">
                               <mat-option value="">Select type</mat-option>
-                              <mat-option *ngFor="let t of questionTypes" [value]="t.value">{{t.label}}</mat-option>
+                              <mat-option *ngFor="let t of filteredQuestionTypes" [value]="t.value">{{t.label}}</mat-option>
                            </mat-select>
                         </mat-form-field>
 

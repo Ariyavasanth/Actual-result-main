@@ -41,7 +41,8 @@ def get_categories_list(request):
         categories_list.append({
             "id": category.category_id,
             "name": category.name,
-            "description": category.description
+            "description": category.description,
+            "type": category.type
         })
     json_data = {
         "statusMessage": "Categories retrieved successfully",
