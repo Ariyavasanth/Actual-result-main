@@ -23,13 +23,34 @@ export class UserDashboardComponent implements OnInit {
   selectedInstituteId: string | null = null;
   users: Array<any> = [];
   institutes: Array<any> = [];
+  isRegularUser = false;
 
   constructor(private pageMeta: PageMetaService, private svc: UserDashboardService,private loader: LoaderService){ }
 
   ngOnInit(): void {
     try{ this.pageMeta.setMeta('User Dashboard','Performance overview & analytics'); } catch(e){}
+    this.isRegularUser = this.getLoggedInRole() === 'user';
     // fetch institutes first, then users for the default institute
     this.svc.getInstitutes().subscribe({ next: (inst:any)=>{ this.institutes = inst || []; this.setDefaultInstitute(); }, error: ()=>{ this.setDefaultInstitute(); } });
+  }
+
+  private getLoggedInRole(): string {
+    try {
+      const raw = sessionStorage.getItem('user');
+      const u = raw ? JSON.parse(raw) : null;
+      return String(u?.role || u?.user_role || '').toLowerCase();
+    } catch(e) {
+      return '';
+    }
+  }
+
+  get selectedInstituteName(): string {
+    return this.institutes.find((i: any) => i.id === this.selectedInstituteId)?.name || '';
+  }
+
+  get selectedUserName(): string {
+    const user = this.users.find((u: any) => u.id === this.selectedUserId);
+    return user?.name || user?.email || '';
   }
 
   setDefaultUser(){

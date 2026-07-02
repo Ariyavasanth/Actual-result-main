@@ -25,6 +25,8 @@ from dashboard.admin_dashboard import admin_dashboard_details
 from dashboard.user_dashboard import user_dashboard_details, dashboard_users_list
 
 from others.demo_request import submit_demo_request, get_demo_requests, get_demo_request_by_id, update_demo_request_status, delete_demo_request
+from db.db import SQLiteDB
+from db.models import User
 
 from dotenv import load_dotenv
 import os
@@ -53,6 +55,29 @@ def jwt_required(f):
    
         return f(*args, **kwargs)
     return decorated_function
+
+def get_current_user_from_request():
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header.split(" ", 1)[1]
+    try:
+        decoded = JWTValidator(jwt_secret).validate_jwt(token)
+        email = decoded.get("sub")
+        if not email:
+            return None
+        db = SQLiteDB()
+        session = db.connect()
+        if not session:
+            return None
+        return session.query(User).filter_by(email=email).first()
+    except Exception:
+        return None
+
+def is_super_admin(user):
+    role = str(getattr(user, "user_role", "") or "").lower()
+    return role in ("super_admin", "superadmin", "super-admin")
+
 def get_pagination():
     return (request.args.get('pageNumber', 1, type=int),
             request.args.get('pageSize', 25, type=int))
@@ -81,7 +106,8 @@ def get_institutes():
 @edu_blueprint.route('/get-institute-list', methods=['GET'])
 @jwt_required
 def get_institute_list_route():
-    response_data, status_code = get_institute_list()
+    current_user = get_current_user_from_request()
+    response_data, status_code = get_institute_list(current_user)
     return jsonify(response_data), status_code
 
 
@@ -89,7 +115,8 @@ def get_institute_list_route():
 @jwt_required
 def institutes_list_route():
     # reuse existing get_institute_list function and normalize output
-    response_data, status_code = get_institute_list()
+    current_user = get_current_user_from_request()
+    response_data, status_code = get_institute_list(current_user)
     if not response_data:
         return jsonify([]), 200
     # if response_data contains a list under 'institutes' or similar, normalize
@@ -235,7 +262,8 @@ def get_users():
 @edu_blueprint.route('/get-users-list', methods=['GET'])
 @jwt_required
 def get_users_list():
-    response_data, status_code = get_user_list(request)
+    current_user = get_current_user_from_request()
+    response_data, status_code = get_user_list(request, current_user)
     return jsonify(response_data), status_code
 
 @edu_blueprint.route('/get-user-limit', methods=['GET'])
@@ -470,7 +498,19 @@ def admin_dashboard_route():
 @edu_blueprint.route('/user-dashboard', methods=['GET'])
 @jwt_required
 def user_dashboard_route():
+    current_user = get_current_user_from_request()
     user_id = request.args.get('user_id')
+    if current_user and not is_super_admin(current_user):
+        if getattr(current_user, "user_role", None) == "admin":
+            db = SQLiteDB()
+            session = db.connect()
+            requested_user = session.query(User).filter_by(user_id=user_id).first() if session and user_id else None
+            if requested_user and requested_user.institute_id == current_user.institute_id:
+                user_id = requested_user.user_id
+            else:
+                user_id = current_user.user_id
+        else:
+            user_id = current_user.user_id
     response_data = user_dashboard_details(user_id)
     return jsonify(response_data), 200
 

@@ -477,7 +477,7 @@ def get_user_details(request):
     }
     return json_data, 200
 
-def get_user_list(request):
+def get_user_list(request, current_user=None):
 
     db = SQLiteDB()
     session = db.connect()
@@ -487,7 +487,14 @@ def get_user_list(request):
     filter = []
     args = getattr(request, "args", {})
     filter.append(User.is_deleted == 0)
-    if args.get("institute_id"):
+
+    current_role = getattr(current_user, "user_role", None) if current_user else None
+    if current_user and current_role not in ("super_admin", "superadmin", "super-admin"):
+        if current_role == "admin":
+            filter.append(User.institute_id == current_user.institute_id)
+        else:
+            filter.append(User.user_id == current_user.user_id)
+    elif args.get("institute_id"):
         filter.append(User.institute_id == args.get("institute_id"))
     if args.get("department_id"):
         filter.append(User.department_id == args.get("department_id"))

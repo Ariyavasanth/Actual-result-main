@@ -486,14 +486,17 @@ def get_institute_details(request):
     }
     return json_data , 200
 
-def get_institute_list():
+def get_institute_list(current_user=None):
     db = SQLiteDB()
     session = db.connect()
     if not session:
         return None
 
     # get active institutes list
-    active_institutes = session.query(Institute).filter_by(active_status=1).all()
+    query = session.query(Institute).filter_by(active_status=1)
+    if current_user and getattr(current_user, "user_role", None) not in ("super_admin", "superadmin", "super-admin"):
+        query = query.filter(Institute.institute_id == current_user.institute_id)
+    active_institutes = query.all()
     result = []
     for inst in active_institutes:
         result.append({
