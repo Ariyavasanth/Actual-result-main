@@ -118,7 +118,7 @@
                         <strong>.xlsx</strong>
                      </div>
                      <div class="dz-actions">
-                        <button mat-stroked-button color="primary" type="button" (click)="triggerFileSelect()">Choose
+                        <button mat-stroked-button color="primary" type="button" (click)="$event.stopPropagation(); triggerFileSelect()">Choose
                            file</button>
                      </div>
                   </div>
