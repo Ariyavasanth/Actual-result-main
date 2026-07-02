@@ -265,54 +265,82 @@ def update_category(category_id, request):
     db = SQLiteDB()
     session = db.connect()
     if not session:
-        return None
-    data = request.get_json()
-    category = session.query(Categories).filter_by(category_id=category_id).first()
-    if not category:
-        return {"statusMessage": "Category not found", "status": False}, 404
-    # update fields
-    category.name = data.get('name', category.name)
-    category.description = data.get('description', category.description)
-    category.type = data.get('type', category.type)
-    category.answer_by = data.get('who_inputs', category.answer_by)
-    category.evaluation = data.get('evaluation', category.evaluation)
-    category.updated_by = data.get('updated_by', category.updated_by)
-    category.updated_date = datetime.utcnow()
-    # status mapping
-    if 'status' in data:
-        try:
+        return {"statusMessage": "Database connection failed", "status": False}, 500
+
+    try:
+        data = request.get_json(silent=True) or {}
+        category = session.query(Categories).filter_by(category_id=category_id).first()
+        if not category:
+            return {"statusMessage": "Category not found", "status": False}, 404
+
+        institute_id = str(data.get('institute_id') or category.institute_id or '')
+        if institute_id:
+            try:
+                uuid.UUID(institute_id)
+            except (TypeError, ValueError):
+                return {"statusMessage": "Please select a valid institute.", "status": False}, 400
+
+            institute = session.query(Institute).filter_by(institute_id=institute_id).first()
+            if not institute:
+                return {"statusMessage": "Selected institute was not found.", "status": False}, 400
+
+        dept_ids = [str(d) for d in (data.get('departments', []) or []) if d]
+        team_ids = [str(t) for t in (data.get('teams', []) or []) if t]
+
+        if institute_id and dept_ids:
+            valid_departments = session.query(InstituteDepartment.department_id).filter(
+                InstituteDepartment.institute_id == institute_id,
+                InstituteDepartment.department_id.in_(dept_ids)
+            ).all()
+            valid_department_ids = {row[0] for row in valid_departments}
+            if any(d not in valid_department_ids for d in dept_ids):
+                return {"statusMessage": "One or more selected departments are invalid for this institute.", "status": False}, 400
+
+        if institute_id and team_ids:
+            valid_teams = session.query(InstituteTeam.team_id).filter(
+                InstituteTeam.institute_id == institute_id,
+                InstituteTeam.team_id.in_(team_ids)
+            ).all()
+            valid_team_ids = {row[0] for row in valid_teams}
+            if any(t not in valid_team_ids for t in team_ids):
+                return {"statusMessage": "One or more selected teams are invalid for this institute.", "status": False}, 400
+
+        # update fields
+        category.name = data.get('name', category.name)
+        category.description = data.get('description', category.description)
+        category.type = data.get('type', category.type)
+        category.answer_by = data.get('who_inputs', category.answer_by)
+        category.evaluation = data.get('evaluation', category.evaluation)
+        category.updated_by = data.get('updated_by', category.updated_by)
+        category.updated_date = datetime.utcnow()
+        # status mapping
+        if 'status' in data:
             category.active_status = 1 if str(data.get('status')).lower() in ['true','1','yes'] else 0
-        except Exception:
-            pass
-    if 'mark_for_each_question' in data:
-        try:
+        if 'mark_for_each_question' in data:
             category.mark_each_question = data.get('mark_for_each_question')
-        except Exception:
-            pass
-    if 'public_access' in data:
-        category.public_access = 1 if data.get('public_access') else 0
-    # update institute if provided
-    if 'institute_id' in data:
-        category.institute_id = data.get('institute_id')
-    # update departments and teams references: simplistic approach - delete old links and add new
-    try:
+        if 'public_access' in data:
+            category.public_access = 1 if data.get('public_access') else 0
+        if 'institute_id' in data:
+            category.institute_id = institute_id
+
         session.query(CategoriesDepartments).filter_by(category_id=category_id).delete()
-    except Exception:
-        pass
-    try:
         session.query(CategoriesTeams).filter_by(category_id=category_id).delete()
-    except Exception:
-        pass
-    dept_ids = data.get('departments', []) or []
-    team_ids = data.get('teams', []) or []
-    for d in dept_ids:
-        cd = CategoriesDepartments(category_id=category_id, department_id=d)
-        session.add(cd)
-    for t in team_ids:
-        ct = CategoriesTeams(category_id=category_id, team_id=t)
-        session.add(ct)
-    session.commit()
-    return {"statusMessage": "Category updated successfully", "status": True}, 200
+        for d in dept_ids:
+            cd = CategoriesDepartments(category_id=category_id, department_id=d)
+            session.add(cd)
+        for t in team_ids:
+            ct = CategoriesTeams(category_id=category_id, team_id=t)
+            session.add(ct)
+        session.commit()
+        return {"statusMessage": "Category updated successfully", "status": True}, 200
+    except IntegrityError as e:
+        session.rollback()
+        print(f"Integrity error updating category: {e}")
+        return {"statusMessage": "Category could not be updated because one of the selected values is invalid.", "status": False}, 400
+    except Exception as e:
+        session.rollback()
+        print(f"Error updating category: {e}")
+        return {"statusMessage": f"Failed to update category: {str(e)}", "status": False}, 500
 
 def delete_category(category_id, deleted_by):
     db = SQLiteDB()

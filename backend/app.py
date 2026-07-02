@@ -48,6 +48,8 @@ def initialize_jwt_validator(request):
 def jwt_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        if request.method == 'OPTIONS':
+            return jsonify({}), 200
         # return f(*args, **kwargs)
         validation_result = initialize_jwt_validator(request)
         if validation_result != "Access granted":
@@ -443,12 +445,19 @@ def add_categories_route():
         }), 500
 
 
-@edu_blueprint.route('/update-category/<category_id>', methods=['PUT'])
+@edu_blueprint.route('/update-category/<category_id>', methods=['PUT', 'OPTIONS'])
 @jwt_required
 def update_category_route(category_id):
-    from others.category import update_category
-    response_data, status_code = update_category(category_id, request)
-    return jsonify(response_data), status_code
+    try:
+        from others.category import update_category
+        response_data, status_code = update_category(category_id, request)
+        return jsonify(response_data), status_code
+    except Exception as exc:
+        print(f"Unhandled update-category error: {exc}", flush=True)
+        return jsonify({
+            "status": False,
+            "statusMessage": f"Failed to update category: {str(exc)}"
+        }), 500
 
 @edu_blueprint.route('/get-categories-list', methods=['GET'])
 @jwt_required
