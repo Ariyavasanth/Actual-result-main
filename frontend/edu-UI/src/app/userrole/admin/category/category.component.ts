@@ -333,9 +333,24 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   }
 
   EditCategory(element: any){
-    try{ sessionStorage.setItem('edit_category', JSON.stringify(element)); }catch(e){}
-    // navigate to create page where the form will load edit data
-    this.router.navigate(['/category/create']);
+    const id = element?.category_id || element?.id;
+    if (!id) return;
+    this.loader.show();
+    this.http.get<any>(`${API_BASE}/category-details`, { params: { category_id: String(id) } }).subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data || []);
+        const category = items && items.length ? items[0] : element;
+        try{ sessionStorage.setItem('edit_category', JSON.stringify(category)); }catch(e){}
+        this.router.navigate(['/category/create']);
+      },
+      error: () => {
+        try{ sessionStorage.setItem('edit_category', JSON.stringify(element)); }catch(e){}
+        this.router.navigate(['/category/create']);
+      },
+      complete: () => {
+        this.loader.hide();
+      }
+    });
   }
 
   closeModal(){

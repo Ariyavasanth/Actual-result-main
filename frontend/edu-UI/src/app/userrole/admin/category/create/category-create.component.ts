@@ -54,7 +54,6 @@ export class CategoryCreateComponent {
 
   ngOnInit(): void{
     try {
-      this.pageMeta.setMeta(this.isEditing ? 'Edit question bank':'Create question bank', this.isEditing ? 'Update the category details and click Update to save changes.' : 'Add a new category for the question bank. Fill required fields and save.');
       const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
       if (raw) {
         const u = JSON.parse(raw);
@@ -64,59 +63,61 @@ export class CategoryCreateComponent {
         if (instId) this.institute = String(instId);
       }
     } catch (e) { /* ignore */ }
-    this.loadInstitutes();
-    this.loadDepartments();
-    this.loadTeams();
+
     // if we are editing an existing category, load it from sessionStorage
     try{
       const raw = sessionStorage.getItem('edit_category');
       if(raw){
         const c = JSON.parse(raw);
-        // indicate edit mode
-        this.isEditing = true;
-        this.editId = c.category_id || c.id || c._id || null;
-        // map fields where available
-        this.name = c.name || c.category_name || '';
-        this.description = c.description || '';
-        // institute may be an object or a string id
-        if (c.institute && typeof c.institute === 'object') {
-          this.institute = c.institute.institute_id || c.institute.id || '';
-        } else {
-          this.institute = c.institute_id || c.institute || '';
-        }
-        this.type = c.type || '';
-        this.whoInputs = c.answer_by || c.who_inputs || '';
-        this.evaluation = c.evaluation || '';
-        this.status = (typeof c.active_status !== 'undefined') ? String(c.active_status) : (c.status || '');
-        this.markForEachQuestion = (typeof c.mark_each_question !== 'undefined') ? c.mark_each_question : (c.mark_for_each_question || null);
-        // normalize departments: support array of objects [{department_id,..}], object map {id: name}, or array of ids
-        if (Array.isArray(c.departments)) {
-          this.selectedDepartments = c.departments.map((d:any) => (typeof d === 'object' ? (d.department_id || d.id || d._id || '') : String(d))).filter((x:any) => !!x).map(String);
-        } else if (c.departments && typeof c.departments === 'object') {
-          this.selectedDepartments = Object.keys(c.departments).map(k => String(k));
-        } else if (Array.isArray(c.department_ids)) {
-          this.selectedDepartments = c.department_ids.map((x:any) => String(x));
-        } else {
-          this.selectedDepartments = [];
-        }
-
-        // normalize teams: support array of objects [{team_id,..}], object map {id: name}, or array of ids
-        if (Array.isArray(c.teams)) {
-          this.selectedTeams = c.teams.map((t:any) => (typeof t === 'object' ? (t.team_id || t.id || t._id || '') : String(t))).filter((x:any) => !!x).map(String);
-        } else if (c.teams && typeof c.teams === 'object') {
-          this.selectedTeams = Object.keys(c.teams).map(k => String(k));
-        } else if (Array.isArray(c.team_ids)) {
-          this.selectedTeams = c.team_ids.map((x:any) => String(x));
-        } else {
-          this.selectedTeams = [];
-        }
-
-        // ensure dependent option lists load for the institute so selections match available options
-        try{ if (this.institute) this.setInstitute(this.institute); }catch(e){}
+        this.applyEditCategory(c);
         // remove to avoid accidental reuse
         try{ sessionStorage.removeItem('edit_category'); }catch(e){}
       }
     }catch(e){ /* ignore parse errors */ }
+
+    this.pageMeta.setMeta(this.isEditing ? 'Edit question bank':'Create question bank', this.isEditing ? 'Update the category details and click Update to save changes.' : 'Add a new category for the question bank. Fill required fields and save.');
+    this.loadInstitutes();
+    if (this.institute) {
+      this.loadDepartments();
+      this.loadTeams();
+    }
+  }
+
+  private applyEditCategory(c: any): void {
+    this.isEditing = true;
+    this.editId = c.category_id || c.id || c._id || null;
+    this.name = c.name || c.category_name || '';
+    this.description = c.description || '';
+
+    if (c.institute && typeof c.institute === 'object') {
+      this.institute = c.institute.institute_id || c.institute.id || '';
+    } else {
+      this.institute = c.institute_id || c.institute || '';
+    }
+
+    this.type = c.type || '';
+    this.whoInputs = c.answer_by || c.who_inputs || '';
+    this.evaluation = c.evaluation || '';
+    this.status = (typeof c.active_status !== 'undefined') ? String(c.active_status) : (c.status || '');
+    this.markForEachQuestion = (typeof c.mark_each_question !== 'undefined') ? c.mark_each_question : (c.mark_for_each_question || null);
+    this.publicAccess = !!c.public_access;
+    this.selectedDepartments = this.normalizeEntityIds(c.departments || c.department_ids, 'department');
+    this.selectedTeams = this.normalizeEntityIds(c.teams || c.team_ids, 'team');
+  }
+
+  private normalizeEntityIds(value: any, kind: 'department' | 'team'): string[] {
+    const idKeys = kind === 'department'
+      ? ['department_id', 'dept_id', 'id', '_id']
+      : ['team_id', 'id', '_id'];
+    const list = Array.isArray(value) ? value : (value && typeof value === 'object' ? Object.values(value) : []);
+    return list
+      .map((item: any) => {
+        if (!item) return '';
+        if (typeof item !== 'object') return String(item);
+        const foundKey = idKeys.find(key => item[key]);
+        return foundKey ? String(item[foundKey]) : '';
+      })
+      .filter((id: string) => !!id);
   }
 
   loadInstitutes(){

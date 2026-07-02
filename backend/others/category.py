@@ -65,6 +65,8 @@ def get_category_details(request):
     filter = []
     args = getattr(request, "args", {})
     filter.append(func.coalesce(Categories.is_deleted, False) == False)
+    if args.get("category_id"):
+        filter.append(Categories.category_id == args.get("category_id"))
     institute_id = args.get("institute_id") or args.get("institute")
     if institute_id:
         filter.append(Categories.institute_id == institute_id)
