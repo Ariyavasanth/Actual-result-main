@@ -39,15 +39,14 @@ export class CategoryCreateComponent {
   formSubmitted = false;
   categoryInfoSubmitted = false;
 
-  // option lists (replace with API calls as needed)
-  institutesList = [ { id: '1', name: 'Default Institute' } ];
+  institutesList: Array<{ id: string; name: string }> = [];
   typeOptions = [ { id: 'objective', name: 'Objective' }, { id: 'descriptive', name: 'Descriptive' } ];
   whoInputOptions = [ { id: 'instructor', name: 'Instructor' }, { id: 'student', name: 'Student' } ];
   evaluationOptions = [ { id: 'auto', name: 'Automatic' }, { id: 'manual', name: 'Manual' } ];
   statusOptions = [ { id: 'true', name: 'Active' }, { id: 'false', name: 'Inactive' } ];
 
-  departments = [ { id: 'd1', name: 'Computer Science' }, { id: 'd2', name: 'Mathematics' }, { id: 'd3', name: 'Physics' } ];
-  teams = [ { id: 't1', name: 'Team A' }, { id: 't2', name: 'Team B' }, { id: 't3', name: 'Team C' } ];
+  departments: Array<{ id: string; name: string }> = [];
+  teams: Array<{ id: string; name: string }> = [];
   isSuperAdmin: boolean = false;
   currentUserId: string | null = null;
 
@@ -124,10 +123,19 @@ export class CategoryCreateComponent {
     const url = `${API_BASE}/get-institute-list`;
     this.http.get<any>(url).subscribe({ next: (res) => {
       const data = res?.data || [];
-      this.institutesList = (Array.isArray(data) ? data : []).map((i:any)=>({ id: i.institute_id || i.id || i.code, name: i.short_name || i.institute_name || i.name }));
+      this.institutesList = (Array.isArray(data) ? data : [])
+        .map((i:any)=>({ id: i.institute_id || i.id || i.code, name: i.short_name || i.institute_name || i.name }))
+        .filter((i:any) => !!i.id);
+      if (!this.institute && !this.isSuperAdmin && this.institutesList.length === 1) {
+        this.setInstitute(String(this.institutesList[0].id));
+        return;
+      }
       // if institute was prefilled from sessionStorage, trigger setInstitute to load dependent lists
       try{ if(this.institute) this.setInstitute(this.institute); }catch(e){}
-    }, error: () => { /* keep defaults */ } });
+    }, error: () => {
+      this.institutesList = [];
+      this.snack.open('Unable to load institutes. Please refresh and try again.', 'Close', { duration: 5000, horizontalPosition: 'right', verticalPosition: 'top' });
+    } });
   }
 
   loadDepartments(){
@@ -136,8 +144,14 @@ export class CategoryCreateComponent {
     if (this.institute) params.institute_id = this.institute;
     this.http.get<any>(url, { params }).subscribe({ next: (res) => {
       const data = res?.data || res || [];
-      this.departments = (Array.isArray(data) ? data : []).map((d:any)=> ({ id: d.department_id || d.id || d.code, name: d.department_name || d.name }));
-    }, error: () => { /* keep defaults */ } });
+      this.departments = (Array.isArray(data) ? data : [])
+        .map((d:any)=> ({ id: d.department_id || d.id || d.code, name: d.department_name || d.name }))
+        .filter((d:any) => !!d.id);
+      this.selectedDepartments = this.onlyAvailableIds(this.selectedDepartments, this.departments);
+    }, error: () => {
+      this.departments = [];
+      this.selectedDepartments = [];
+    } });
   }
 
   loadTeams(){
@@ -146,8 +160,14 @@ export class CategoryCreateComponent {
     if (this.institute) params.institute_id = this.institute;
     this.http.get<any>(url, { params }).subscribe({ next: (res) => {
       const data = res?.data || res || [];
-      this.teams = (Array.isArray(data) ? data : []).map((t:any)=> ({ id: t.team_id || t.id || t.code, name: t.team_name || t.name }));
-    }, error: () => { /* keep defaults */ } });
+      this.teams = (Array.isArray(data) ? data : [])
+        .map((t:any)=> ({ id: t.team_id || t.id || t.code, name: t.team_name || t.name }))
+        .filter((t:any) => !!t.id);
+      this.selectedTeams = this.onlyAvailableIds(this.selectedTeams, this.teams);
+    }, error: () => {
+      this.teams = [];
+      this.selectedTeams = [];
+    } });
   }
 
   save(){
@@ -191,14 +211,14 @@ export class CategoryCreateComponent {
       this.http.put<any>(url, payload).subscribe({ next: (res) => {
         this.snack.open(res?.message || 'Category updated successfully', 'Close', { duration: 3000, horizontalPosition: 'right', verticalPosition: 'top' });
         this.router.navigate(['/category']);
-      }, complete: () => { this.loader.hide(); }, error: (err) => { this.loader.hide(); console.error('Failed to update category', err); const msg = err?.error?.message || err?.message || 'Failed to update category'; this.snack.open(msg, 'Close', { duration: 5000, horizontalPosition: 'right', verticalPosition: 'top' }); } });
+      }, complete: () => { this.loader.hide(); }, error: (err) => { this.loader.hide(); console.error('Failed to update category', err); const msg = err?.error?.statusMessage || err?.error?.message || err?.message || 'Failed to update category'; this.snack.open(msg, 'Close', { duration: 5000, horizontalPosition: 'right', verticalPosition: 'top' }); } });
     } else {
       if (this.currentUserId) payload.created_by = this.currentUserId;
       const url = `${API_BASE}/add-categories`;
       this.http.post<any>(url, payload).subscribe({ next: (res) => {
         this.snack.open(res?.message || 'Category saved successfully', 'Close', { duration: 3000, horizontalPosition: 'right', verticalPosition: 'top' });
         this.router.navigate(['/category']);
-      }, complete: () => { this.loader.hide(); }, error: (err) => { this.loader.hide(); console.error('Failed to save category', err); const msg = err?.error?.message || err?.message || 'Failed to save category'; this.snack.open(msg, 'Close', { duration: 5000, horizontalPosition: 'right', verticalPosition: 'top' }); } });
+      }, complete: () => { this.loader.hide(); }, error: (err) => { this.loader.hide(); console.error('Failed to save category', err); const msg = err?.error?.statusMessage || err?.error?.message || err?.message || 'Failed to save category'; this.snack.open(msg, 'Close', { duration: 5000, horizontalPosition: 'right', verticalPosition: 'top' }); } });
     }
   }
      // Reset the form fields to their defaults

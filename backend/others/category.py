@@ -2,6 +2,8 @@ from db.models import Categories, CategoriesDepartments, CategoriesTeams, Instit
 from db.db import SQLiteDB
 from datetime import datetime
 from sqlalchemy import func, text
+from sqlalchemy.exc import IntegrityError
+import uuid
 
 def ensure_category_columns(session):
     session.execute(text("""
@@ -179,12 +181,43 @@ def add_categories(request):
         if not category_data.get("type"):
             return {"statusMessage": "Category type is required", "status": False}, 400
 
+        institute_id = str(category_data.get("institute_id"))
+        try:
+            uuid.UUID(institute_id)
+        except (TypeError, ValueError):
+            return {"statusMessage": "Please select a valid institute.", "status": False}, 400
+
+        institute = session.query(Institute).filter_by(institute_id=institute_id).first()
+        if not institute:
+            return {"statusMessage": "Selected institute was not found.", "status": False}, 400
+
+        department_ids = [str(d) for d in (category_data.get("departments", []) or []) if d]
+        team_ids = [str(t) for t in (category_data.get("teams", []) or []) if t]
+
+        if department_ids:
+            valid_departments = session.query(InstituteDepartment.department_id).filter(
+                InstituteDepartment.institute_id == institute_id,
+                InstituteDepartment.department_id.in_(department_ids)
+            ).all()
+            valid_department_ids = {row[0] for row in valid_departments}
+            if any(d not in valid_department_ids for d in department_ids):
+                return {"statusMessage": "One or more selected departments are invalid for this institute.", "status": False}, 400
+
+        if team_ids:
+            valid_teams = session.query(InstituteTeam.team_id).filter(
+                InstituteTeam.institute_id == institute_id,
+                InstituteTeam.team_id.in_(team_ids)
+            ).all()
+            valid_team_ids = {row[0] for row in valid_teams}
+            if any(t not in valid_team_ids for t in team_ids):
+                return {"statusMessage": "One or more selected teams are invalid for this institute.", "status": False}, 400
+
         created_by = category_data.get("created_by", "")
         created_date = datetime.utcnow()
         new_category = Categories(
             name=category_data.get("name"),
             description=category_data.get("description"),
-            institute_id=category_data.get("institute_id"),
+            institute_id=institute_id,
             type=category_data.get("type"),
             answer_by=category_data.get("who_inputs",""),
             evaluation=category_data.get("evaluation",""),
@@ -197,8 +230,6 @@ def add_categories(request):
         session.add(new_category)
         session.commit()
         category_id = new_category.category_id
-        department_ids = category_data.get("departments", [])
-        team_ids = category_data.get("teams", [])
         for department_id in department_ids:
             category_department = CategoriesDepartments(
                 category_id=category_id,
@@ -221,6 +252,10 @@ def add_categories(request):
             "status": True
         }
         return json_data, 201
+    except IntegrityError as e:
+        session.rollback()
+        print(f"Integrity error adding category: {e}")
+        return {"statusMessage": "Category could not be saved because one of the selected values is invalid.", "status": False}, 400
     except Exception as e:
         session.rollback()
         print(f"Error adding category: {e}")
