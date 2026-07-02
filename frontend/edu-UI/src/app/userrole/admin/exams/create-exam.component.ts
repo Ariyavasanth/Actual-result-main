@@ -71,6 +71,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   questionsForCategory: Array<any> = [];
   selectedQuestionIds: string[] = [];
   selectAllQuestions = false;
+  activeQuestionCategoryId = '';
+  activeQuestionCategoryName = '';
 
   private baseUrl = 'http://127.0.0.1:5001/edu/api';
 
@@ -241,17 +243,28 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const computedQuestions = q > 0 ? q : (Array.isArray(this.selectedQuestionIds) ? this.selectedQuestionIds.length : 0);
     const item = { category_id: catId, name, questions: computedQuestions, question_ids: [...this.selectedQuestionIds], randomize_questions: randomize };
     this.model.categories = [...(this.model.categories || []), item];
+    this.viewCategoryQuestions(item);
     this.newCategory = { questions: 0, randomize_questions: false };
     // clear selection after add
     this.selectedCategory = '';
-    this.questionsForCategory = [];
-    this.selectedQuestionIds = [];
-    this.selectAllQuestions = false;
+    this.categoryCtrl.setValue('');
   }
 
   removeCategory(index: number) {
     if (!Array.isArray(this.model.categories)) return;
+    const removed = this.model.categories[index];
     this.model.categories = this.model.categories.filter((_, i) => i !== index);
+    if (removed && removed.category_id === this.activeQuestionCategoryId) {
+      const next = this.model.categories[0];
+      if (next) this.viewCategoryQuestions(next);
+      else {
+        this.activeQuestionCategoryId = '';
+        this.activeQuestionCategoryName = '';
+        this.questionsForCategory = [];
+        this.selectedQuestionIds = [];
+        this.selectAllQuestions = false;
+      }
+    }
   }
 
   loadInstitutes() {
@@ -430,17 +443,36 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadQuestionsForCategory(this.selectedCategory);
   }
 
-  loadQuestionsForCategory(catId: string) {
+  viewCategoryQuestions(category: any) {
+    if (!category || !category.category_id) return;
+    if (String(category.category_id) === String(this.activeQuestionCategoryId) && this.questionsForCategory.length) {
+      this.activeQuestionCategoryId = '';
+      this.activeQuestionCategoryName = '';
+      this.questionsForCategory = [];
+      this.selectedQuestionIds = [];
+      this.selectAllQuestions = false;
+      return;
+    }
+    this.activeQuestionCategoryId = category.category_id;
+    this.activeQuestionCategoryName = category.name || 'Selected category';
+    this.loadQuestionsForCategory(category.category_id, Array.isArray(category.question_ids) ? category.question_ids : []);
+  }
+
+  loadQuestionsForCategory(catId: string, preselectedQuestionIds: any[] = []) {
     this.loader.show();
     this.questionsForCategory = [];
-    this.selectedQuestionIds = [];
+    this.selectedQuestionIds = (preselectedQuestionIds || []).map(id => String(id));
     this.selectAllQuestions = false;
     if (!catId) return;
+    const found = this.categories.find(c => String(c.category_id) === String(catId));
+    this.activeQuestionCategoryId = catId;
+    this.activeQuestionCategoryName = found?.name || this.activeQuestionCategoryName || 'Selected category';
     const url = `${API_BASE}/get-questions-details?category_id=${encodeURIComponent(catId)}`;
     this.http.get<any>(url).subscribe({
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res?.data || []);
         this.questionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', raw: q }));
+        this.selectAllQuestions = this.questionsForCategory.length > 0 && this.questionsForCategory.every(q => this.selectedQuestionIds.includes(String(q.id)));
       }, error: (err) => { console.warn('Failed to load questions for category', err); this.questionsForCategory = []; },
       complete: () => { this.loader.hide(); }
     });
@@ -450,6 +482,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectAllQuestions = !!checked;
     if (this.selectAllQuestions) this.selectedQuestionIds = this.questionsForCategory.map(q => String(q.id));
     else this.selectedQuestionIds = [];
+    this.syncActiveCategoryQuestionSelection();
   }
 
   toggleQuestionSelection(id: string, checked: boolean) {
@@ -460,6 +493,16 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       this.selectedQuestionIds = this.selectedQuestionIds.filter(x => x !== sid);
       this.selectAllQuestions = false;
     }
+    this.syncActiveCategoryQuestionSelection();
+  }
+
+  private syncActiveCategoryQuestionSelection() {
+    if (!this.activeQuestionCategoryId || !Array.isArray(this.model.categories)) return;
+    const idx = this.model.categories.findIndex((c: any) => String(c.category_id) === String(this.activeQuestionCategoryId));
+    if (idx < 0) return;
+    if ((this.model.categories[idx] as any).randomize_questions) return;
+    const updated = { ...this.model.categories[idx], question_ids: [...this.selectedQuestionIds], questions: this.selectedQuestionIds.length };
+    this.model.categories = this.model.categories.map((c, i) => i === idx ? updated : c);
   }
 
   // Returns true if any category in the model has randomize_questions truthy

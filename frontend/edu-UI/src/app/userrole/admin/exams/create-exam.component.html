@@ -245,9 +245,13 @@
 
                                 <div *ngIf="model.categories?.length">
                                     <div class="category-list">
+                                        <div class="category-list-header">
+                                            <span>Attached Categories</span>
+                                            <strong>{{ model.categories?.length || 0 }}</strong>
+                                        </div>
                                         <mat-list>
                                             <mat-list-item *ngFor="let c of model.categories; let i = index">
-                                                <div class="cat-item">
+                                                <div class="cat-item" [class.cat-item--active]="c.category_id === activeQuestionCategoryId">
                                                     <div class="cat-main">
                                                         <div class="cat-name">{{c.name}}</div>
                                                         <div class="cat-meta">
@@ -257,9 +261,19 @@
                                                         </div>
                                                     </div>
                                                     <div class="cat-actions">
-                                                        <button mat-stroked-button color="warn" type="button"
+                                                        <button mat-icon-button type="button"
+                                                            (click)="viewCategoryQuestions(c)"
+                                                            [attr.aria-label]="c.category_id === activeQuestionCategoryId ? 'Hide questions' : 'View questions'"
+                                                            [title]="c.category_id === activeQuestionCategoryId ? 'Hide questions' : 'View questions'">
+                                                            <mat-icon>{{ c.category_id === activeQuestionCategoryId ? 'visibility_off' : 'visibility' }}</mat-icon>
+                                                        </button>
+                                                        <button mat-icon-button color="warn" type="button"
                                                             (click)="removeCategory(i)"
-                                                            [disabled]="readOnly">Remove</button>
+                                                            aria-label="Remove category"
+                                                            title="Remove category"
+                                                            [disabled]="readOnly">
+                                                            <mat-icon>delete</mat-icon>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </mat-list-item>
@@ -275,7 +289,8 @@
                                     <mat-icon class="section-icon">quiz</mat-icon>
                                     <div class="section-header-text">
                                         <h2 class="section-heading">Questions</h2>
-                                        <p class="section-desc">Select questions from the category.</p>
+                                        <p class="section-desc" *ngIf="activeQuestionCategoryName">Questions from {{ activeQuestionCategoryName }}.</p>
+                                        <p class="section-desc" *ngIf="!activeQuestionCategoryName">Select or view a category to load questions.</p>
                                     </div>
                                 </div>
 
@@ -286,12 +301,12 @@
                                 </div>
                                 <div class="question-list">
                                     <mat-list *ngIf="questionsForCategory.length">
-                                        <mat-list-item *ngFor="let q of questionsForCategory">
+                                        <mat-list-item *ngFor="let q of questionsForCategory" class="question-row">
                                             <mat-checkbox [checked]="selectedQuestionIds.indexOf(q.id+'')>=0"
                                                 (change)="toggleQuestionSelection(q.id, $event.checked)">{{q.question}}</mat-checkbox>
                                         </mat-list-item>
                                     </mat-list>
-                                    <div *ngIf="!questionsForCategory.length" class="muted">Select a category to load questions</div>
+                                    <div *ngIf="!questionsForCategory.length" class="muted">Select a category or click View Questions from an attached category.</div>
                                 </div>
                             </div>
                         </div>

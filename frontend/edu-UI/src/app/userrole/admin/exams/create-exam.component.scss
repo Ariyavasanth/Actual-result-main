@@ -51,14 +51,22 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 .submit-btn { display:inline-flex; align-items:center; gap:0.375rem; font:600 0.9rem/1 inherit; border-radius:0.5rem; padding:0 1.25rem; min-height:2.5rem; }
 
 /* ── Category items ── */
-.cat-item { display:flex; align-items:center; justify-content:space-between; gap:0.875rem; padding:0.625rem 0.875rem; border-radius:0.75rem; background:var(--bg-1); border:1px solid var(--theme-3-border); transition:all 0.25s $ease; }
-.cat-item:hover { box-shadow:$shadow-sm; border-color:var(--button-1); }
-.cat-main { display:flex; align-items:center; gap:0.875rem; flex:1 1 auto; min-width:0; }
-.cat-name { font:600 0.9375rem/1.4 inherit; color:var(--theme-3-text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cat-meta { display:flex; gap:0.625rem; align-items:center; color:var(--theme-3-text-3); font:500 0.8125rem/1 inherit; }
-.cat-questions { font:600 0.8125rem/1 inherit; }
-.cat-randomize { background:rgba(31,123,255,0.08); padding:0.25rem 0.5rem; border-radius:0.375rem; font:600 0.75rem/1 inherit; color:var(--button-1); }
-.cat-actions { flex:0 0 auto; }
+.category-list { background:var(--bg-2); border:1px solid var(--theme-3-border); border-radius:0.75rem; margin-top:0.75rem; padding:0.75rem; }
+.category-list-header { display:flex; align-items:center; justify-content:space-between; margin:0 0 0.625rem; padding:0 0.125rem; color:var(--theme-3-text-2); font:600 0.8125rem/1.2 inherit; }
+.category-list-header strong { display:inline-flex; align-items:center; justify-content:center; min-width:1.5rem; height:1.5rem; border-radius:999px; background:rgba(31,123,255,0.1); color:var(--button-1); font:700 0.75rem/1 inherit; }
+.category-list mat-list { padding:0; display:flex; flex-direction:column; gap:0.5rem; }
+.category-list mat-list-item { height:auto!important; padding:0!important; }
+.cat-item { width:100%; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:0.75rem; padding:0.75rem 0.875rem; border-radius:0.625rem; background:var(--bg-1); border:1px solid var(--theme-3-border); transition:all 0.2s $ease; }
+.cat-item:hover { box-shadow:$shadow-sm; border-color:rgba(31,123,255,0.45); }
+.cat-item--active { border-color:var(--button-1); background:rgba(31,123,255,0.06); box-shadow:$shadow-sm; }
+.cat-main { display:flex; flex-direction:column; gap:0.375rem; min-width:0; }
+.cat-name { font:700 0.9375rem/1.25 inherit; color:var(--theme-3-text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cat-meta { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; color:var(--theme-3-text-3); font:500 0.75rem/1 inherit; }
+.cat-questions { font:700 0.75rem/1 inherit; color:var(--theme-3-text-2); }
+.cat-randomize { background:rgba(31,123,255,0.08); padding:0.25rem 0.5rem; border-radius:999px; font:600 0.72rem/1 inherit; color:var(--button-1); }
+.cat-actions { flex:0 0 auto; display:flex; align-items:center; gap:0.25rem; }
+.cat-actions button { width:2.25rem; height:2.25rem; border-radius:0.5rem; }
+.cat-actions mat-icon { font-size:1.125rem; width:1.125rem; height:1.125rem; }
 
 /* ── Small row grid ── */
 .row.small { display:flex; gap:0.625rem; align-items:center; flex-wrap:wrap; padding:0.875rem; border-radius:0.75rem; margin-top:0.625rem; justify-content:space-between; }
@@ -93,13 +101,15 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 /* ── Questions column ── */
 .card-body-inner.two-column .right .question-list { max-height:26rem; overflow:auto; padding-right:0.375rem; }
 .card-body-inner.two-column .right .question-list mat-list-item { padding:0.5rem 0; }
+.card-body-inner.two-column .right .question-list mat-list { padding:0; display:flex; flex-direction:column; gap:0.5rem; }
+.card-body-inner.two-column .right .question-list .question-row { height:auto!important; padding:0!important; border:1px solid var(--theme-3-border); border-radius:0.625rem; background:var(--bg-1); }
+.card-body-inner.two-column .right .question-list .question-row mat-checkbox { width:100%; padding:0.625rem 0.75rem; font:500 0.8125rem/1.35 inherit; color:var(--theme-3-text-1); }
 .card-body-inner.two-column .right { position:sticky; }
 @media (max-width:37.5rem) { .card-body-inner.two-column .right{position:relative;top:auto;} .card-body-inner.two-column{gap:0.875rem;} }
 
 /* ── CDK overlay filters ── */
 .overlay-filters-panel { display:block; }
 .overlay-filters-panel .filters-panel { max-height:60vh; overflow:auto; width:23rem; border-radius:0.75rem; box-shadow:$shadow-md; background:var(--bg-1); padding:1rem; }
-.category-list { background:var(--bg-2); border-radius:0.75rem; margin-top:0.75rem; }
 .spacer { display:flex; justify-content:flex-end; gap:0.625rem; }
 
 /* ── Review grid ── */
