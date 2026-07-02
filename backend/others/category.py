@@ -167,49 +167,64 @@ def get_category_details(request):
 def add_categories(request):
     db = SQLiteDB()
     session = db.connect()
-    category_data = request.get_json()
-    created_by = category_data.get("created_by", "")
-    created_date = datetime.utcnow()
-    new_category = Categories(
-        name=category_data.get("name"),
-        description=category_data.get("description"),
-        institute_id=category_data.get("institute_id"),
-        type=category_data.get("type"),
-        answer_by=category_data.get("who_inputs",""),
-        evaluation=category_data.get("evaluation",""),
-        active_status= 1 if category_data.get("status") == 'true' else 0,
-        mark_each_question=category_data.get("mark_for_each_question",1),
-        public_access= 1 if category_data.get("public_access") == True else 0,
-        created_by=created_by,
-        created_date=created_date
-    )
-    session.add(new_category)
-    session.commit()
-    category_id = new_category.category_id
-    department_ids = category_data.get("departments", [])
-    team_ids = category_data.get("teams", [])
-    for department_id in department_ids:
-        category_department = CategoriesDepartments(
-            category_id=category_id,
-            department_id=department_id,
+    if not session:
+        return {"statusMessage": "Database connection failed", "status": False}, 500
+
+    try:
+        category_data = request.get_json(silent=True) or {}
+        if not category_data.get("name"):
+            return {"statusMessage": "Category name is required", "status": False}, 400
+        if not category_data.get("institute_id"):
+            return {"statusMessage": "Institute is required", "status": False}, 400
+        if not category_data.get("type"):
+            return {"statusMessage": "Category type is required", "status": False}, 400
+
+        created_by = category_data.get("created_by", "")
+        created_date = datetime.utcnow()
+        new_category = Categories(
+            name=category_data.get("name"),
+            description=category_data.get("description"),
+            institute_id=category_data.get("institute_id"),
+            type=category_data.get("type"),
+            answer_by=category_data.get("who_inputs",""),
+            evaluation=category_data.get("evaluation",""),
+            active_status= 1 if category_data.get("status") == 'true' else 0,
+            mark_each_question=category_data.get("mark_for_each_question",1),
+            public_access= 1 if category_data.get("public_access") == True else 0,
             created_by=created_by,
             created_date=created_date
         )
-        session.add(category_department)
-    for team_id in team_ids:
-        category_team = CategoriesTeams(
-            category_id=category_id,
-            team_id=team_id,
-            created_by=created_by,
-            created_date=created_date
-        )
-        session.add(category_team)
-    session.commit()
-    json_data = {
-        "statusMessage": "Category added successfully",
-        "status": True
-    }
-    return json_data, 201
+        session.add(new_category)
+        session.commit()
+        category_id = new_category.category_id
+        department_ids = category_data.get("departments", [])
+        team_ids = category_data.get("teams", [])
+        for department_id in department_ids:
+            category_department = CategoriesDepartments(
+                category_id=category_id,
+                department_id=department_id,
+                created_by=created_by,
+                created_date=created_date
+            )
+            session.add(category_department)
+        for team_id in team_ids:
+            category_team = CategoriesTeams(
+                category_id=category_id,
+                team_id=team_id,
+                created_by=created_by,
+                created_date=created_date
+            )
+            session.add(category_team)
+        session.commit()
+        json_data = {
+            "statusMessage": "Category added successfully",
+            "status": True
+        }
+        return json_data, 201
+    except Exception as e:
+        session.rollback()
+        print(f"Error adding category: {e}")
+        return {"statusMessage": f"Failed to add category: {str(e)}", "status": False}, 500
 
 def update_category(category_id, request):
     db = SQLiteDB()

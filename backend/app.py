@@ -432,8 +432,15 @@ def get_questions_route():
 @edu_blueprint.route('/add-categories', methods=['POST'])
 @jwt_required
 def add_categories_route():
-    response_data, status_code = add_categories(request)
-    return jsonify(response_data), status_code
+    try:
+        response_data, status_code = add_categories(request)
+        return jsonify(response_data), status_code
+    except Exception as exc:
+        print(f"Unhandled add-categories error: {exc}", flush=True)
+        return jsonify({
+            "status": False,
+            "statusMessage": f"Failed to add category: {str(exc)}"
+        }), 500
 
 
 @edu_blueprint.route('/update-category/<category_id>', methods=['PUT'])
@@ -604,6 +611,16 @@ CORS(
     },
     supports_credentials=True,
 )
+
+@app.after_request
+def add_local_cors_headers(response):
+    origin = request.headers.get("Origin")
+    if origin in ("http://localhost:4200", "http://127.0.0.1:4200", "http://192.168.1.5:4200"):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    return response
 
 app.register_blueprint(edu_blueprint)
 if __name__ == '__main__':
