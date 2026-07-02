@@ -307,15 +307,15 @@
                         </button>
                      </div>
 
-                     <mat-selection-list class="user-selection-list">
-                        <mat-list-option *ngFor="let u of users" [value]="u.id" (click)="$event.stopPropagation()">
+                     <mat-list class="user-selection-list">
+                        <mat-list-item *ngFor="let u of users">
                            <mat-checkbox [checked]="selectedUsers.indexOf(u.id) >= 0"
                               (change)="toggleUserSelection(u.id, $event.checked)">
                               {{ u.name }}
                               <span class="muted">&nbsp;({{ u.email }})</span>
                            </mat-checkbox>
-                        </mat-list-option>
-                     </mat-selection-list>
+                        </mat-list-item>
+                     </mat-list>
                   </div>
                </div>
 
