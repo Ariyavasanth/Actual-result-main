@@ -81,6 +81,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   editMode: boolean = false;
   editExamId: string | null = null;
   private filtersOverlayRef: OverlayRef | null = null;
+  private categoryLoadSeq = 0;
 
   constructor(private router: Router, private http: HttpClient, private auth: AuthService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private loader: LoaderService) {
     try {
@@ -178,8 +179,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       } catch (e) { /* ignore */ }
     }
 
-    // ensure categories are loaded (if onInstituteChange didn't already load scoped categories)
-    try { this.loadCategories(); } catch (e) { /* ignore */ }
+    this.updateFilteredCategoriesStream();
   }
 
   /**
@@ -312,14 +312,21 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   loadCategories() {
     this.loader.show();
+    const requestSeq = ++this.categoryLoadSeq;
     const url = `${API_BASE}/get-categories-list`;
     this.http.get<any>(url).subscribe({
       next: (res) => {
+        if (requestSeq !== this.categoryLoadSeq) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
         this.categories = arr.map((c: any) => ({ category_id: c.category_id || c.id || c._id || '', name: c.name || c.category_name || c.title || '' }));
         // update autocomplete stream
         this.updateFilteredCategoriesStream();
-      }, error: (err) => { console.warn('Failed to load categories', err); this.categories = []; }
+      }, error: (err) => {
+        if (requestSeq !== this.categoryLoadSeq) return;
+        console.warn('Failed to load categories', err);
+        this.categories = [];
+        this.updateFilteredCategoriesStream();
+      }
       , complete: () => { this.loader.hide(); }
     });
   }
@@ -335,6 +342,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   // load categories with filters (called by Apply)
   loadCategoriesWithFilters(filters: any = {}) {
     this.loader.show();
+    const requestSeq = ++this.categoryLoadSeq;
     const currentUser = this.getCurrentUserId();
     const base = `${API_BASE}/get-categories-list`;
     const params: string[] = [];
@@ -348,11 +356,17 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const url = params.length ? `${base}?${params.join('&')}` : base;
     this.http.get<any>(url).subscribe({
       next: (res) => {
+        if (requestSeq !== this.categoryLoadSeq) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
         this.categories = arr.map((c: any) => ({ category_id: c.category_id || c.id || c._id || '', name: c.name || c.category_name || c.title || '' }));
         // ensure autocomplete reflects latest categories
         this.updateFilteredCategoriesStream();
-      }, error: (err) => { console.warn('Failed to load categories with filters', err); this.categories = []; this.updateFilteredCategoriesStream(); }
+      }, error: (err) => {
+        if (requestSeq !== this.categoryLoadSeq) return;
+        console.warn('Failed to load categories with filters', err);
+        this.categories = [];
+        this.updateFilteredCategoriesStream();
+      }
       , complete: () => { this.loader.hide(); }
     });
   }
@@ -402,6 +416,16 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   onInstituteChange(value: any) {
     const v = value !== undefined && value !== null ? value : '';
     this.institute = v;
+    this.categoryLoadSeq++;
+    this.categories = [];
+    this.selectedCategory = '';
+    this.categoryCtrl.setValue('');
+    this.activeQuestionCategoryId = '';
+    this.activeQuestionCategoryName = '';
+    this.questionsForCategory = [];
+    this.selectedQuestionIds = [];
+    this.selectAllQuestions = false;
+    this.updateFilteredCategoriesStream();
     if (this.institute) {
       this.loadDepartments(this.institute);
       this.loadTeams(this.institute);
