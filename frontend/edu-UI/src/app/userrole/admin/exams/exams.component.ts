@@ -59,6 +59,7 @@ export class AdminExamsComponent implements AfterViewInit {
   displayedColumns: string[] = ['title', 'description', 'total_questions', 'duration_mins', 'number_of_attempts', 'actions'];
   dataSource = new MatTableDataSource<any>([]);
   hasAppliedFilters = false;
+  private shouldLoadExamsAfterInstitutes = false;
   private apiUrl = `${API_BASE}/get-institute-list`;
 
   isSuperAdmin = false;
@@ -98,6 +99,13 @@ export class AdminExamsComponent implements AfterViewInit {
   private filtersOverlayRef: OverlayRef | null = null;
   ngOnInit(): void {
     this.pageMeta.setMeta('Exams', 'Browse and review exams');
+    try {
+      if (sessionStorage.getItem('exams_return_state') === 'true') {
+        sessionStorage.removeItem('exams_return_state');
+        this.hasAppliedFilters = true;
+        this.shouldLoadExamsAfterInstitutes = true;
+      }
+    } catch (e) { }
     this.loadInstitutes();
   }
 
@@ -314,6 +322,8 @@ export class AdminExamsComponent implements AfterViewInit {
                 // load dependent lists scoped to the institute
                 this.loadDepartments(this.selectedInstitute);
                 this.loadTeams(this.selectedInstitute);
+                this.loadExamsFromReturnState();
+                this.loader.hide();
                 return;
               }
             }
@@ -337,10 +347,17 @@ export class AdminExamsComponent implements AfterViewInit {
             }
           } catch (e) { /* ignore malformed session data */ }
         }
+        this.loadExamsFromReturnState();
         this.loader.hide();
       },
       error: (err) => { console.warn('Failed to load institutes', err); this.loader.hide(); }
     });
+  }
+
+  private loadExamsFromReturnState() {
+    if (!this.shouldLoadExamsAfterInstitutes) return;
+    this.shouldLoadExamsAfterInstitutes = false;
+    setTimeout(() => this.loadExamsForInstitute(this.selectedInstitute || undefined));
   }
   onApply() {
     this.hasAppliedFilters = true;

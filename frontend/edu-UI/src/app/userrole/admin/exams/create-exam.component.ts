@@ -629,6 +629,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   cancel() {
     try { sessionStorage.removeItem('edit_exam'); } catch (e) { }
+    try { sessionStorage.setItem('exams_return_state', 'true'); } catch (e) { }
     this.router.navigate(['/exams']);
   }
 }
