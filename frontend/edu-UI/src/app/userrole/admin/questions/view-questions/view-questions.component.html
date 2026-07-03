@@ -226,9 +226,6 @@
                             <button *hasAccess="'Questions'; hasAccessAction: 'view'" mat-icon-button color="primary"
                                 (click)="viewDetails(q)" title="View details"><mat-icon
                                     svgIcon="view"></mat-icon></button>
-                            <button *hasAccess="'Questions'; hasAccessAction: 'edit'" mat-icon-button color="accent"
-                                (click)="editQuestion(q)" title="Edit" class="edit-btn"><mat-icon
-                                    svgIcon="edit"></mat-icon></button>
                             <button *hasAccess="'Questions'; hasAccessAction: 'delete'" mat-icon-button color="warn"
                                 (click)="deleteQuestion(q)" title="Delete" class="delete-btn"><mat-icon
                                     svgIcon="delete"></mat-icon></button>
@@ -271,7 +268,13 @@
                         </div>
                     </div>
                 </div>
-                <button mat-icon-button (click)="closeViewModal()"><mat-icon>close</mat-icon></button>
+                <div class="modal-header-actions">
+                    <button *hasAccess="'Questions'; hasAccessAction: 'edit'" mat-icon-button color="accent"
+                        (click)="editQuestion(viewedQuestion)" title="Edit question" class="edit-btn">
+                        <mat-icon svgIcon="edit"></mat-icon>
+                    </button>
+                    <button mat-icon-button (click)="closeViewModal()" title="Close"><mat-icon>close</mat-icon></button>
+                </div>
             </div>
             <div class="modal-body">
                 <ng-container *ngIf="viewedQuestion">

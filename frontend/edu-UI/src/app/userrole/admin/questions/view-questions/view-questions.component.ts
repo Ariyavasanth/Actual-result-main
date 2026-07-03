@@ -410,6 +410,7 @@ export class ViewQuestionsComponent implements OnDestroy {
   editQuestion(q: QuestionRow) {
     // store the question into session storage and navigate to the editor
     try { sessionStorage.setItem('edit_question', JSON.stringify(q)); } catch (e) { /* ignore */ }
+    this.viewedQuestion = null;
     // navigate to the questions editor route - reuse same route as Insert Question
     if (this.router) {
       this.router.navigate(['/questions']);
