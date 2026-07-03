@@ -278,6 +278,12 @@
                               {{ getQuestionTypeLabel(q.type) }}
                            </span>
                            <div class="badge marks">{{ q.marks || 0 }} Marks</div>
+                           <div class="panel-actions">
+                              <button type="button" mat-icon-button aria-label="Remove question"
+                                 (click)="removeQuestion(qi)" [disabled]="questions.length<=1">
+                                 <mat-icon svgIcon="delete"></mat-icon>
+                              </button>
+                           </div>
                         </div>
                      </div>
                   </mat-expansion-panel-header>
