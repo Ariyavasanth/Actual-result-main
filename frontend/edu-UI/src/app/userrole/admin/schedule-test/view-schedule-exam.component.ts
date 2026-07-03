@@ -52,6 +52,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
   categories: Array<{ id: string; name: string }> = [];
   schedules: any[] = [];
   dataSource = new MatTableDataSource<any>([]);
+  hasAppliedFilters = false;
   columns: string[] = ['title', 'institute', 'start', 'end', 'publish', 'actions'];
   selectedSchedule: any = null;
 
@@ -84,6 +85,10 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
   }
 
   refresh() {
+    if (!this.hasAppliedFilters) {
+      try { notify('Apply filters to fetch scheduled exams', 'info'); } catch (e) {}
+      return;
+    }
     this.loadSchedules(this.selectedInstitute || undefined);
   }
   openFiltersOverlay() {
@@ -126,14 +131,12 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
                 this.loadDepartments(this.selectedInstitute);
                 this.loadTeams(this.selectedInstitute);
                 // this.loadCategoriesForInstitute(this.selectedInstitute);
-                this.loadSchedules(this.selectedInstitute);
                 return;
               }
             }
           } catch (e) { /* ignore */ }
 
           // Fallback: try reading user's institute from sessionStorage and apply it
-          let schedulesLoaded = false;
           try {
             const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
             if (raw) {
@@ -146,16 +149,10 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
                   this.loadDepartments(this.selectedInstitute);
                   this.loadTeams(this.selectedInstitute);
                   // this.loadCategoriesForInstitute(this.selectedInstitute);
-                  this.loadSchedules(this.selectedInstitute);
-                  schedulesLoaded = true;
                 }
               }
             }
           } catch (e) { /* ignore malformed session data */ }
-          // Ensure schedules are loaded even when no institute filter is determined
-          if (!schedulesLoaded) {
-            this.loadSchedules();
-          }
         }
       },
       error: (err) => console.warn('Failed to load institutes', err)
@@ -164,7 +161,9 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
 
   onApply() {
     // build filters and call loadSchedules with selected institute and query params
+    this.hasAppliedFilters = true;
     this.loadSchedules(this.selectedInstitute || undefined);
+    this.closeFiltersOverlay();
   }
 
   onReset() {
@@ -176,7 +175,11 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
     this.filterCreationDate = null;
     this.filterActiveStatus = null;
     this.filterCreatedByMe = false;
-    this.loadSchedules(this.selectedInstitute || undefined);
+    this.search = '';
+    this.schedules = [];
+    this.dataSource.data = [];
+    this.hasAppliedFilters = false;
+    this.closeFiltersOverlay();
   }
   onInstituteSelected(id: string) {
     this.selectedInstitute = id || '';
