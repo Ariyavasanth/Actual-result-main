@@ -2,12 +2,6 @@
    <!-- ── Top Toolbar ── -->
    <div class="toolbar">
       <div class="title"></div>
-      <div class="form-actions">
-         <button mat-flat-button color="accent" type="button" class="btn-cancel" (click)="goBackToQuestions()">
-            <mat-icon>arrow_back</mat-icon>
-            <span>View Questions</span>
-         </button>
-      </div>
    </div>
 
    <!-- ── Form Card ── -->
@@ -284,12 +278,6 @@
                               {{ getQuestionTypeLabel(q.type) }}
                            </span>
                            <div class="badge marks">{{ q.marks || 0 }} Marks</div>
-                           <div class="panel-actions">
-                              <button type="button" mat-icon-button aria-label="Remove question"
-                                 (click)="removeQuestion(qi)" [disabled]="questions.length<=1">
-                                 <mat-icon svgIcon="delete"></mat-icon>
-                              </button>
-                           </div>
                         </div>
                      </div>
                   </mat-expansion-panel-header>
@@ -396,9 +384,9 @@
       <div class="form-actions">
          <span></span>
          <div class="action-buttons">
-            <button type="button" mat-stroked-button color="warn" (click)="resetAll()">
-               <mat-icon>refresh</mat-icon>
-               <span>Reset</span>
+            <button type="button" mat-stroked-button color="warn" (click)="goBackToQuestions()">
+               <mat-icon>close</mat-icon>
+               <span>Cancel</span>
             </button>
             <button type="button" mat-flat-button color="primary" class="submit-btn" (click)="submit()"
                [disabled]="!questions || !questions.length">
@@ -410,3 +398,4 @@
       </div>
    </div>
 </div>
+
