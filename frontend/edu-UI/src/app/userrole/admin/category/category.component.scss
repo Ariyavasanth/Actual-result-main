@@ -1,5 +1,5 @@
 // ============================================
-// Enterprise – Category View
+// Enterprise â€“ Category View
 // ============================================
 
 $ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -43,7 +43,7 @@ $shadow-md: 0 0.25rem 0.75rem rgba(0,0,0,0.06);
 .actions-inline button { width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; }
 .actions-inline button mat-icon { font-size: 1.125rem; }
 
-// Avatar cell – table
+// Avatar cell â€“ table
 .item-cell { display: flex; align-items: center; gap: 0.75rem; }
 .item-avatar { width: 2.125rem; height: 2.125rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: #fff; flex-shrink: 0; }
 .item-avatar--category { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
@@ -51,7 +51,7 @@ $shadow-md: 0 0.25rem 0.75rem rgba(0,0,0,0.06);
 .item-name { font-weight: 600; color: var(--theme-3-text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .item-sub { font-size: 0.75rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-// Modal header – enhanced
+// Modal header â€“ enhanced
 .modal-header-left { display: flex; align-items: center; gap: 0.875rem; flex: 1; min-width: 0; }
 .modal-avatar { width: 3.25rem; height: 3.25rem; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.25rem; color: #fff; flex-shrink: 0; }
 .modal-avatar--category { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
@@ -75,3 +75,10 @@ $shadow-md: 0 0.25rem 0.75rem rgba(0,0,0,0.06);
   .search { max-width: 100%; }
   .controls { margin-left: 0; }
 }
+
+.applied-filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: -0.25rem; padding: 0.75rem 1rem; background: #f8fafc; border: 0.0625rem solid #e2e8f0; border-radius: 0.5rem; }
+.applied-filters-title { font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase; }
+.applied-filter-chip { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 1.75rem; padding: 0.25rem 0.625rem; border-radius: 0.5rem; background: #fff; border: 0.0625rem solid #cbd5e1; color: #1e293b; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.applied-filter-chip mat-icon { width: 1rem; height: 1rem; font-size: 1rem; color: #64748b; }
+.applied-filter-chip--locked { cursor: default; background: #eef2f7; color: #475569; }
+.applied-filter-clear { min-height: 1.75rem; padding: 0.25rem 0.75rem; border-radius: 0.5rem; border: 0.0625rem solid #1f7bff; background: #fff; color: #1f7bff; font-size: 0.82rem; font-weight: 700; cursor: pointer; }

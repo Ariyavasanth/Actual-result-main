@@ -338,3 +338,10 @@ $shadow-md: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.06);
   .priv-col.name { padding-left: 0.75rem; font-size: 0.8125rem; }
   .priv-col mat-icon[color="primary"] { width: 1.5rem; height: 1.5rem; padding: 0.125rem; }
 }
+
+.applied-filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: -0.25rem; padding: 0.75rem 1rem; background: #f8fafc; border: 0.0625rem solid #e2e8f0; border-radius: 0.5rem; }
+.applied-filters-title { font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase; }
+.applied-filter-chip { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 1.75rem; padding: 0.25rem 0.625rem; border-radius: 0.5rem; background: #fff; border: 0.0625rem solid #cbd5e1; color: #1e293b; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.applied-filter-chip mat-icon { width: 1rem; height: 1rem; font-size: 1rem; color: #64748b; }
+.applied-filter-chip--locked { cursor: default; background: #eef2f7; color: #475569; }
+.applied-filter-clear { min-height: 1.75rem; padding: 0.25rem 0.75rem; border-radius: 0.5rem; border: 0.0625rem solid #1f7bff; background: #fff; color: #1f7bff; font-size: 0.82rem; font-weight: 700; cursor: pointer; }

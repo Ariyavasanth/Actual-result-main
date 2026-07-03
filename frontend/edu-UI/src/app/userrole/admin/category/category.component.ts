@@ -151,6 +151,68 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     // };
     this.dataSource.filter = q;
   }
+  get appliedFilterChips(): Array<{ key: string; label: string; removable: boolean }> {
+    if (!this.hasAppliedFilters) return [];
+    const chips: Array<{ key: string; label: string; removable: boolean }> = [];
+    const scopedInstitute = this.isSuperAdmin ? this.selectedInstitute : (this.loginInstituteId || this.selectedInstitute);
+    const instituteName = this.getInstituteLabel(scopedInstitute);
+    if (instituteName) chips.push({ key: 'institute', label: `Institute: ${instituteName}`, removable: this.isSuperAdmin });
+    if (this.filterName) chips.push({ key: 'category', label: `Category: ${this.filterName}`, removable: true });
+    (this.selectedDepartments || []).forEach(id => chips.push({ key: `department:${id}`, label: `Department: ${this.getSelectedName(this.departments, id)}`, removable: true }));
+    (this.selectedTeams || []).forEach(id => chips.push({ key: `team:${id}`, label: `Team: ${this.getSelectedName(this.teams, id)}`, removable: true }));
+    if (this.filterCreationDateAfter) chips.push({ key: 'created_after', label: `Created after: ${this.formatFilterDate(this.filterCreationDateAfter)}`, removable: true });
+    if (this.filterCreationDate) chips.push({ key: 'created_before', label: `Created before: ${this.formatFilterDate(this.filterCreationDate)}`, removable: true });
+    if (this.filterActiveStatus !== null && typeof this.filterActiveStatus !== 'undefined') chips.push({ key: 'active_status', label: `Status: ${this.filterActiveStatus ? 'Active' : 'Inactive'}`, removable: true });
+    if (this.filterCreatedByMe) chips.push({ key: 'created_by_me', label: 'Created by me', removable: true });
+    if (this.filterPublicAccess !== null && typeof this.filterPublicAccess !== 'undefined') chips.push({ key: 'public_access', label: `Access: ${this.filterPublicAccess ? 'Public' : 'Restricted'}`, removable: true });
+    return chips;
+  }
+
+  removeAppliedFilter(key: string) {
+    if (!key) return;
+    if (key === 'institute' && this.isSuperAdmin) {
+      this.selectedInstitute = null;
+      this.instituteSearch = '';
+      this.selectedDepartments = [];
+      this.selectedTeams = [];
+      this.loadGlobalDepartmentTeamLists();
+      this.loadCategoryOptions();
+    } else if (key === 'category') this.filterName = '';
+    else if (key.startsWith('department:')) this.selectedDepartments = this.selectedDepartments.filter(id => String(id) !== key.split(':')[1]);
+    else if (key.startsWith('team:')) this.selectedTeams = this.selectedTeams.filter(id => String(id) !== key.split(':')[1]);
+    else if (key === 'created_after') this.filterCreationDateAfter = null;
+    else if (key === 'created_before') this.filterCreationDate = null;
+    else if (key === 'active_status') this.filterActiveStatus = null;
+    else if (key === 'created_by_me') this.filterCreatedByMe = false;
+    else if (key === 'public_access') this.filterPublicAccess = null;
+
+    if (this.appliedFilterChips.length) {
+      this.fetchCategories();
+    } else {
+      this.hasAppliedFilters = false;
+      this.categories = [];
+      this.dataSource.data = [];
+      if (this.paginator) this.paginator.length = 0;
+    }
+  }
+
+  clearAppliedFilters() {
+    this.onReset();
+  }
+
+  private getInstituteLabel(id: any): string {
+    if (!id) return '';
+    const found = this.institutes.find(i => String(i.institute_id) === String(id));
+    return found?.short_name || String(id);
+  }
+
+  private getSelectedName(list: Array<{ id: string; name: string }>, selectedId: string): string {
+    return list.find(item => String(item.id) === String(selectedId))?.name || String(selectedId);
+  }
+
+  private formatFilterDate(value: Date): string {
+    try { return value.toISOString().slice(0, 10); } catch(e) { return String(value || ''); }
+  }
   deleteCategory(c: any){
     const id = c.category_id || c.id;
     if (!id) return;

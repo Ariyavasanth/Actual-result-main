@@ -204,6 +204,32 @@ export class ViewInstitutesComponent {
     if (this.dataSource.paginator) this.dataSource.paginator.firstPage();
   }
 
+  get appliedFilterChips(): Array<{ key: string; label: string; removable: boolean }> {
+    if (!this.hasAppliedFilters) return [];
+    const chips: Array<{ key: string; label: string; removable: boolean }> = [];
+    if (this.filters.name) chips.push({ key: 'name', label: `Institute: ${this.filters.name}`, removable: true });
+    if (this.filters.industry) chips.push({ key: 'industry', label: `Industry: ${this.filters.industry}`, removable: true });
+    if (this.filters.sector) chips.push({ key: 'sector', label: `Sector: ${this.filters.sector}`, removable: true });
+    if (this.filters.country) chips.push({ key: 'country', label: `Country: ${this.getSelectedName(this.countries, this.filters.country, 'code')}`, removable: true });
+    if (this.filters.city) chips.push({ key: 'city', label: `City: ${this.getSelectedName(this.cities, this.filters.city, 'code')}`, removable: true });
+    if (this.filters.active_status !== '') chips.push({ key: 'active_status', label: `Status: ${this.filters.active_status ? 'Active' : 'Inactive'}`, removable: true });
+    return chips;
+  }
+
+  removeAppliedFilter(key: string) {
+    if (!key) return;
+    if (key === 'name') this.filters.name = '';
+    else if (key === 'industry') this.filters.industry = '';
+    else if (key === 'sector') this.filters.sector = '';
+    else if (key === 'country') { this.filters.country = ''; this.filters.city = ''; }
+    else if (key === 'city') this.filters.city = '';
+    else if (key === 'active_status') this.filters.active_status = '';
+    this.refreshAfterFilterChipChange();
+  }
+
+  clearAppliedFilters() { this.resetFilters(); }
+  private refreshAfterFilterChipChange() { if (this.appliedFilterChips.length) this.loadInstitutes(); else { this.hasAppliedFilters = false; this.institutes = []; this.rawRecords = []; this.dataSource.data = []; } }
+  private getSelectedName(list: any[], selectedId: any, idKey: string = 'id'): string { const found = (list || []).find(item => String(item?.[idKey]) === String(selectedId)); return found?.name || String(selectedId || ''); }
   loadInstitutes() {
     const params: any = {};
   if(this.filters.name) params.name = this.filters.name;

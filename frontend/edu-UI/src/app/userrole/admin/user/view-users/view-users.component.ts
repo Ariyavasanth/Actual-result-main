@@ -186,6 +186,56 @@ export class ViewUsersComponent {
     );
   }
 
+  get appliedFilterChips(): Array<{ key: string; label: string; removable: boolean }> {
+    if (!this.hasAppliedFilters) return [];
+    const chips: Array<{ key: string; label: string; removable: boolean }> = [];
+    const instituteId = this.filters.institute || this.selectedInstitute;
+    if (instituteId) chips.push({ key: 'institute', label: `Institute: ${this.getInstituteLabel(instituteId)}`, removable: this.isSuperAdmin });
+    if (this.filters.name) chips.push({ key: 'name', label: `Name: ${this.filters.name}`, removable: true });
+    if (this.filters.department) chips.push({ key: 'department', label: `Department: ${this.getSelectedName(this.departments, this.filters.department)}`, removable: true });
+    if (this.filters.team) chips.push({ key: 'team', label: `Team: ${this.getSelectedName(this.teams, this.filters.team)}`, removable: true });
+    if (this.filters.country) chips.push({ key: 'country', label: `Country: ${this.getSelectedName(this.countries, this.filters.country, 'code')}`, removable: true });
+    if (this.filters.city) chips.push({ key: 'city', label: `City: ${this.getSelectedName(this.cities, this.filters.city, 'code')}`, removable: true });
+    if (this.filters.active_status !== '') chips.push({ key: 'active_status', label: `Status: ${this.filters.active_status ? 'Active' : 'Inactive'}`, removable: true });
+    return chips;
+  }
+
+  removeAppliedFilter(key: string) {
+    if (!key) return;
+    if (key === 'institute' && this.isSuperAdmin) {
+      this.selectedInstitute = '';
+      this.filters.institute = '';
+      this.instituteSearch = '';
+      this.departments = [];
+      this.teams = [];
+      this.countries = [];
+      this.cities = [];
+    } else if (key === 'name') this.filters.name = '';
+    else if (key === 'department') this.filters.department = '';
+    else if (key === 'team') this.filters.team = '';
+    else if (key === 'country') { this.filters.country = ''; this.filters.city = ''; }
+    else if (key === 'city') this.filters.city = '';
+    else if (key === 'active_status') this.filters.active_status = '';
+    this.pageIndex = 0;
+    this.refreshAfterFilterChipChange();
+  }
+
+  clearAppliedFilters() { this.resetFilters(); }
+
+  private refreshAfterFilterChipChange() {
+    if (this.appliedFilterChips.length) this.loadUsers();
+    else { this.hasAppliedFilters = false; this.users = []; this.rawRecords = []; this.dataSource.data = []; this.totalCount = 0; }
+  }
+
+  private getInstituteLabel(id: any): string {
+    const found = this.institutes.find(i => String(i.institute_id) === String(id));
+    return found?.short_name || String(id || '');
+  }
+
+  private getSelectedName(list: any[], selectedId: any, idKey: string = 'id'): string {
+    const found = (list || []).find(item => String(item?.[idKey]) === String(selectedId));
+    return found?.name || String(selectedId || '');
+  }
   toggleActive(u: UserRow){
     const newState = !u.active;
     const action = newState ? 'Activate' : 'Deactivate';

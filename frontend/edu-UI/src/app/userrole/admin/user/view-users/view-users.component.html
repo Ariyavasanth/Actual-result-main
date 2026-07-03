@@ -33,6 +33,15 @@
     </div>
   </div>
 
+  <div class="applied-filters" *ngIf="appliedFilterChips.length">
+    <span class="applied-filters-title">Applied filters</span>
+    <button type="button" class="applied-filter-chip" *ngFor="let chip of appliedFilterChips"
+      [class.applied-filter-chip--locked]="!chip.removable" (click)="chip.removable && removeAppliedFilter(chip.key)">
+      <span>{{ chip.label }}</span>
+      <mat-icon *ngIf="chip.removable">close</mat-icon>
+    </button>
+    <button type="button" class="applied-filter-clear" (click)="clearAppliedFilters()">Clear all</button>
+  </div>
   <div class="list-card">
     <!-- Filters panel -->
     <ng-template #filtersPanel>
