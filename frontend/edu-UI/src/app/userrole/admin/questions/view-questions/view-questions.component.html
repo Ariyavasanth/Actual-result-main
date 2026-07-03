@@ -56,12 +56,14 @@
                 <div class="filter-block">
                     <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
                         <mat-label>Institute</mat-label>
-                        <mat-select [(ngModel)]="selectedInstitute"
-                            (selectionChange)="onInstituteChange($event.value)">
+                        <input matInput placeholder="All Institutes" [(ngModel)]="instituteSearch"
+                            [matAutocomplete]="questionInstituteAuto" />
+                        <mat-autocomplete #questionInstituteAuto="matAutocomplete"
+                            (optionSelected)="onInstituteAutocompleteSelected($event.option.value)">
                             <mat-option value="">All Institutes</mat-option>
-                            <mat-option *ngFor="let inst of institutes"
+                            <mat-option *ngFor="let inst of filteredInstitutes()"
                                 [value]="inst.institute_id">{{inst.name}}</mat-option>
-                        </mat-select>
+                        </mat-autocomplete>
                     </mat-form-field>
 
                     <!-- <mat-form-field appearance="outline" class="filter-item">

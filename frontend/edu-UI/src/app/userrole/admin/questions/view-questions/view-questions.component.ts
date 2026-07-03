@@ -65,6 +65,7 @@ export class ViewQuestionsComponent implements OnDestroy {
   institutes: Array<{ name: string; institute_id?: string }> = [];
   exams: Array<{ title: string; exam_id?: string }> = [];
   selectedInstitute = '';
+  instituteSearch = '';
   // multi-select categories with search
   selectedCategories: string[] = [];
   categoryFilterName = '';
@@ -188,6 +189,7 @@ export class ViewQuestionsComponent implements OnDestroy {
               if (found) {
                 // ensure exact match type/value and load schedules
                 this.selectedInstitute = found.institute_id as any;
+                this.syncInstituteSearch();
                     // load dependent lists scoped to the institute
                     this.loadDepartments(this.selectedInstitute);
                     this.loadTeams(this.selectedInstitute);
@@ -206,6 +208,7 @@ export class ViewQuestionsComponent implements OnDestroy {
                 const found = this.institutes.find(i => String(i.institute_id) === String(instId));
                 if (found) {
                   this.selectedInstitute = found.institute_id as any;
+                  this.syncInstituteSearch();
                   // ensure departments/teams also load for this institute
                   this.loadDepartments(this.selectedInstitute);
                   this.loadTeams(this.selectedInstitute);
@@ -234,6 +237,7 @@ export class ViewQuestionsComponent implements OnDestroy {
   onInstituteChange(value: any) {
     const v = value !== undefined ? value : '';
     this.selectedInstitute = v;
+    this.syncInstituteSearch();
     // this.loadExams(v);
     // reload categories for the selected institute (optional)
     this.loadCategories(v);
@@ -339,6 +343,23 @@ export class ViewQuestionsComponent implements OnDestroy {
       },
       error: (err) => { console.warn('Failed to load questions', err); this.questions = []; this.dataSource.data = []; this.loading.hide(); }
     });
+  }
+
+  filteredInstitutes() {
+    const q = (this.instituteSearch || '').trim().toLowerCase();
+    if (!q) return this.institutes;
+    return this.institutes.filter((i: any) => (i.name || '').toLowerCase().includes(q));
+  }
+
+  onInstituteAutocompleteSelected(id: string) {
+    this.selectedInstitute = id || '';
+    this.syncInstituteSearch();
+    this.onInstituteChange(this.selectedInstitute);
+  }
+
+  private syncInstituteSearch() {
+    const found = this.institutes.find(i => String(i.institute_id) === String(this.selectedInstitute || ''));
+    this.instituteSearch = found ? found.name : '';
   }
 
   loadCategories(instId?: string) {

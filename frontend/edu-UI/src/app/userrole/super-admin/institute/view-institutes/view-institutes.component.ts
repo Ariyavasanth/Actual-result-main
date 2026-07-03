@@ -8,6 +8,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -53,7 +54,7 @@ export interface Institute {
 @Component({
   selector: 'app-view-institutes',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatIconModule, SharedModule, MatButtonModule, MatSlideToggleModule, MatTabsModule, MatInputModule, MatFormFieldModule, MatSelectModule, FormsModule, ReactiveFormsModule, RouterModule, MatPaginatorModule, MatSortModule, OverlayModule, PortalModule],
+  imports: [CommonModule, MatTableModule, MatIconModule, SharedModule, MatButtonModule, MatSlideToggleModule, MatTabsModule, MatInputModule, MatFormFieldModule, MatSelectModule, MatAutocompleteModule, FormsModule, ReactiveFormsModule, RouterModule, MatPaginatorModule, MatSortModule, OverlayModule, PortalModule],
   templateUrl: './view-institutes.component.html',
   styleUrls: ['./view-institutes.component.scss']
 })
@@ -71,6 +72,7 @@ export class ViewInstitutesComponent {
   countries: Array<{ code: string; name: string }> = [];
   states: Array<{ code: string; name: string }> = [];
   cities: Array<{ code: string; name: string }> = [];
+  instituteOptions: Array<{ id: string; name: string }> = [];
   // raw location hierarchy returned by API (countries -> states -> cities)
   private locationHierarchyRaw: any[] = [];
 
@@ -97,6 +99,7 @@ export class ViewInstitutesComponent {
   private filtersOverlayRef: OverlayRef | null = null;
   
   constructor(private http: HttpClient, private router: Router, private loader: LoaderService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private confirmService: ConfirmService) {
+    this.loadInstituteOptions();
     this.loadCountries();
 
   }
@@ -313,6 +316,30 @@ export class ViewInstitutesComponent {
   closeFiltersOverlay(){ if(this.filtersOverlayRef){ try{ this.filtersOverlayRef.dispose(); }catch(e){}; this.filtersOverlayRef = null; } }
 
   // country -> city filtering removed: we now load all cities in loadCountries()
+
+  loadInstituteOptions(){
+    const url = `${API_BASE}/get-institute-list`;
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        try {
+          const data = Array.isArray(res?.data) ? res.data : [];
+          this.instituteOptions = data.map((i: any) => ({
+            id: i.institute_id || i.id || i._id || i.name || i.institute_name || '',
+            name: i.name || i.institute_name || i.short_name || ''
+          })).filter((i: any) => !!i.name);
+        } catch (e) {
+          this.instituteOptions = [];
+        }
+      },
+      error: () => { this.instituteOptions = []; }
+    });
+  }
+
+  filteredInstituteOptions(){
+    const q = String(this.filters.name || '').trim().toLowerCase();
+    if (!q) return this.instituteOptions;
+    return this.instituteOptions.filter(i => String(i.name || '').toLowerCase().includes(q));
+  }
 
   loadCountries(){
     const url = `${API_BASE}/location-hierarchy`;

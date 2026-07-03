@@ -45,7 +45,11 @@
       <div class="filter-block">
         <mat-form-field appearance="outline" class="filter-item">
           <mat-label>Institute</mat-label>
-          <input matInput placeholder="Institute name" [(ngModel)]="filters.name" />
+          <input matInput placeholder="Any" [(ngModel)]="filters.name" [matAutocomplete]="instituteAuto" />
+          <mat-autocomplete #instituteAuto="matAutocomplete">
+            <mat-option value="">Any</mat-option>
+            <mat-option *ngFor="let i of filteredInstituteOptions()" [value]="i.name">{{i.name}}</mat-option>
+          </mat-autocomplete>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="filter-item">

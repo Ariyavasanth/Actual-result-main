@@ -6,6 +6,7 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -32,7 +33,7 @@ import { DirectivesModule } from 'src/app/shared/directives/directives.module';
 @Component({
   selector: 'app-admin-exams',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HttpClientModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatButtonModule, MatTableModule, MatPaginatorModule, MatSortModule, MatIconModule, MatListModule, MatTabsModule, MatDatepickerModule, MatCheckboxModule, OverlayModule, PortalModule, DirectivesModule],
+  imports: [CommonModule, FormsModule, RouterModule, HttpClientModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatAutocompleteModule, MatButtonModule, MatTableModule, MatPaginatorModule, MatSortModule, MatIconModule, MatListModule, MatTabsModule, MatDatepickerModule, MatCheckboxModule, OverlayModule, PortalModule, DirectivesModule],
 
   templateUrl: './exams.component.html',
   styleUrls: ['./exams.component.scss']
@@ -40,6 +41,7 @@ import { DirectivesModule } from 'src/app/shared/directives/directives.module';
 export class AdminExamsComponent implements AfterViewInit {
   institutes: Array<{ short_name: string; institute_id?: string }> = [];
   selectedInstitute = '';
+  instituteSearch = '';
   filter = '';
   // new filter fields
   filterName: string = '';
@@ -319,6 +321,7 @@ export class AdminExamsComponent implements AfterViewInit {
               if (found) {
                 // ensure exact match type/value and load schedules
                 this.selectedInstitute = found.institute_id as any;
+                this.syncInstituteSearch();
                 // load dependent lists scoped to the institute
                 this.loadDepartments(this.selectedInstitute);
                 this.loadTeams(this.selectedInstitute);
@@ -339,6 +342,7 @@ export class AdminExamsComponent implements AfterViewInit {
                 const found = this.institutes.find(i => String(i.institute_id) === String(instId));
                 if (found) {
                   this.selectedInstitute = found.institute_id as any;
+                  this.syncInstituteSearch();
                   // load dependent lists scoped to the institute
                   this.loadDepartments(this.selectedInstitute);
                   this.loadTeams(this.selectedInstitute);
@@ -358,6 +362,23 @@ export class AdminExamsComponent implements AfterViewInit {
     if (!this.shouldLoadExamsAfterInstitutes) return;
     this.shouldLoadExamsAfterInstitutes = false;
     setTimeout(() => this.loadExamsForInstitute(this.selectedInstitute || undefined));
+  }
+
+  filteredInstitutes() {
+    const q = (this.instituteSearch || '').trim().toLowerCase();
+    if (!q) return this.institutes;
+    return this.institutes.filter((i: any) => (i.short_name || '').toLowerCase().includes(q));
+  }
+
+  onInstituteAutocompleteSelected(id: string) {
+    this.selectedInstitute = id || '';
+    this.syncInstituteSearch();
+    this.onInstituteChange(this.selectedInstitute);
+  }
+
+  private syncInstituteSearch() {
+    const found = this.institutes.find(i => String(i.institute_id) === String(this.selectedInstitute || ''));
+    this.instituteSearch = found ? found.short_name : '';
   }
   onApply() {
     this.hasAppliedFilters = true;

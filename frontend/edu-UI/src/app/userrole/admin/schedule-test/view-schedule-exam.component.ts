@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { RouterModule, Router } from '@angular/router';
@@ -31,7 +32,7 @@ import { notify } from 'src/app/shared/global-notify';
 @Component({
   selector: 'app-view-schedule-exam',
   standalone: true,
-  imports: [CommonModule, SharedModule, MatPaginatorModule, FormsModule, MatFormFieldModule, MatInputModule, MatTableModule, MatSortModule, MatIconModule, MatButtonModule, MatSlideToggleModule, RouterModule, HttpClientModule, A11yModule, MatSelectModule, MatDatepickerModule, MatCheckboxModule, OverlayModule, PortalModule, MatTabsModule],
+  imports: [CommonModule, SharedModule, MatPaginatorModule, FormsModule, MatFormFieldModule, MatInputModule, MatTableModule, MatSortModule, MatIconModule, MatButtonModule, MatSlideToggleModule, RouterModule, HttpClientModule, A11yModule, MatSelectModule, MatAutocompleteModule, MatDatepickerModule, MatCheckboxModule, OverlayModule, PortalModule, MatTabsModule],
   templateUrl: './view-schedule-exam.component.html',
   styleUrls: ['./view-schedule-exam.component.scss']
 })
@@ -39,6 +40,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
   search = '';
   institutes: Array<{ name: string; institute_id?: string }> = [];
   selectedInstitute = '';
+  instituteSearch = '';
   // new filter fields
   filterName = '';
   selectedDepartments: string[] = [];
@@ -127,6 +129,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
               if (found) {
                 // ensure exact match type/value and load schedules
                 this.selectedInstitute = found.institute_id as any;
+                this.syncInstituteSearch();
                 // load dependent lists as well
                 this.loadDepartments(this.selectedInstitute);
                 this.loadTeams(this.selectedInstitute);
@@ -146,6 +149,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
                 const found = this.institutes.find(i => String(i.institute_id) === String(instId));
                 if (found) {
                   this.selectedInstitute = found.institute_id as any;
+                  this.syncInstituteSearch();
                   this.loadDepartments(this.selectedInstitute);
                   this.loadTeams(this.selectedInstitute);
                   // this.loadCategoriesForInstitute(this.selectedInstitute);
@@ -168,6 +172,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
 
   onReset() {
     this.selectedInstitute = '';
+    this.instituteSearch = '';
     this.filterName = '';
     this.selectedDepartments = [];
     this.selectedTeams = [];
@@ -187,6 +192,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
 
   onInstituteChange(id: string) {
     this.selectedInstitute = id || '';
+    this.syncInstituteSearch();
     if (this.selectedInstitute) {
       this.loadDepartments(this.selectedInstitute);
       this.loadTeams(this.selectedInstitute);
@@ -196,6 +202,23 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
       this.teams = [];
       this.categories = [];
     }
+  }
+
+  filteredInstitutes() {
+    const q = (this.instituteSearch || '').trim().toLowerCase();
+    if (!q) return this.institutes;
+    return this.institutes.filter((i: any) => (i.name || '').toLowerCase().includes(q));
+  }
+
+  onInstituteAutocompleteSelected(id: string) {
+    this.selectedInstitute = id || '';
+    this.syncInstituteSearch();
+    this.onInstituteChange(this.selectedInstitute);
+  }
+
+  private syncInstituteSearch() {
+    const found = this.institutes.find(i => String(i.institute_id) === String(this.selectedInstitute || ''));
+    this.instituteSearch = found ? found.name : '';
   }
 
   loadDepartments(instId?: string) {

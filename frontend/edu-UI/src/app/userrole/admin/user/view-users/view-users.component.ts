@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatPaginatorModule, MatPaginator, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, MatSort } from '@angular/material/sort';
 import { RouterModule } from '@angular/router';
@@ -45,7 +46,7 @@ export interface UserRow {
 @Component({
   selector: 'app-view-users',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatIconModule, MatButtonModule, MatSlideToggleModule, MatInputModule, MatTabsModule, MatFormFieldModule, MatSelectModule, FormsModule, RouterModule, HttpClientModule, MatPaginatorModule, MatSortModule,OverlayModule, PortalModule, SharedModule],
+  imports: [CommonModule, MatTableModule, MatIconModule, MatButtonModule, MatSlideToggleModule, MatInputModule, MatTabsModule, MatFormFieldModule, MatSelectModule, MatAutocompleteModule, FormsModule, RouterModule, HttpClientModule, MatPaginatorModule, MatSortModule,OverlayModule, PortalModule, SharedModule],
   templateUrl: './view-users.component.html',
   styleUrls: ['./view-users.component.scss']
 })
@@ -55,6 +56,7 @@ export class ViewUsersComponent {
   columns = ['name','institute','role','department','team','active','actions'];
   filter = '';
   selectedInstitute = '';
+  instituteSearch = '';
   users: UserRow[] = [];
   dataSource = new MatTableDataSource<UserRow>([]);
   hasAppliedFilters = false;
@@ -124,6 +126,7 @@ export class ViewUsersComponent {
     try {
       this.selectedInstitute = iid || '';
       this.filters.institute = iid || '';
+      this.syncInstituteSearch();
       this.pageIndex = 0;
 
       if (iid) {
@@ -301,6 +304,7 @@ export class ViewUsersComponent {
     this.pageIndex = 0;
     this.filters = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '' };
     this.selectedInstitute = '';
+    this.instituteSearch = '';
     this.filter = '';
     this.states=[];
     this.departments = [];
@@ -313,6 +317,7 @@ export class ViewUsersComponent {
         if (instId) {
           this.selectedInstitute = instId;
           this.filters.institute = String(instId);
+          this.syncInstituteSearch();
           this.loadDepartments(instId);
           this.loadTeams(instId);
           this.loadCountries(instId);
@@ -375,6 +380,7 @@ export class ViewUsersComponent {
                 // ensure exact match type/value and load schedules
                 this.selectedInstitute = found.institute_id as any;
                 try { this.filters.institute = String(this.selectedInstitute); } catch (e) { /* ignore */ }
+                this.syncInstituteSearch();
                 this.loadDepartments(this.selectedInstitute);
                 this.loadTeams(this.selectedInstitute);
                 this.loadCountries(this.selectedInstitute);
@@ -394,6 +400,7 @@ export class ViewUsersComponent {
                 if (found) {
                   this.selectedInstitute = found.institute_id as any;
                   try { this.filters.institute = String(this.selectedInstitute); } catch (e) { /* ignore */ }
+                  this.syncInstituteSearch();
                   this.loadDepartments(this.selectedInstitute);
                   this.loadTeams(this.selectedInstitute);
                   this.loadCountries(this.selectedInstitute);
@@ -401,6 +408,7 @@ export class ViewUsersComponent {
                   // institute list shape didn't match or id not present in fetched list - still set and load using raw instId
                   this.selectedInstitute = instId as any;
                   try { this.filters.institute = String(instId); } catch (e) { /* ignore */ }
+                  this.syncInstituteSearch();
                   this.loadCountries(this.selectedInstitute);
                 }
               }
@@ -408,6 +416,24 @@ export class ViewUsersComponent {
           } catch (e) { /* ignore malformed session data */ }
     }, error: () => { this.institutes = []; this.loading.hide(); } });
     this.loading.hide();
+  }
+
+  filteredInstitutes() {
+    const q = (this.instituteSearch || '').trim().toLowerCase();
+    if (!q) return this.institutes;
+    return this.institutes.filter((i: any) => (i.short_name || '').toLowerCase().includes(q));
+  }
+
+  onInstituteAutocompleteSelected(id: string) {
+    this.selectedInstitute = id || '';
+    this.filters.institute = this.selectedInstitute;
+    this.syncInstituteSearch();
+    this.onInstituteChange(this.selectedInstitute);
+  }
+
+  private syncInstituteSearch() {
+    const found = this.institutes.find(i => String(i.institute_id) === String(this.selectedInstitute || ''));
+    this.instituteSearch = found ? found.short_name : '';
   }
 
   loadCountries( instituteId: string){ 

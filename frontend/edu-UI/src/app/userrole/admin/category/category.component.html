@@ -49,12 +49,13 @@
 
                         <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
                             <mat-label>Institute</mat-label>
-                            <mat-select [(ngModel)]="selectedInstitute" placeholder="Select institute"
-                                (selectionChange)="onInstituteChange($event.value)">
+                            <input matInput placeholder="All" [(ngModel)]="instituteSearch" [matAutocomplete]="categoryInstituteAuto" />
+                            <mat-autocomplete #categoryInstituteAuto="matAutocomplete"
+                                (optionSelected)="onInstituteAutocompleteSelected($event.option.value)">
                                 <mat-option [value]="null">All</mat-option>
-                                <mat-option *ngFor="let i of institutes"
+                                <mat-option *ngFor="let i of filteredInstitutes()"
                                     [value]="i.institute_id">{{i.short_name}}</mat-option>
-                            </mat-select>
+                            </mat-autocomplete>
                             <mat-hint *ngIf="!isSuperAdmin">You cannot change institute (only super admin)</mat-hint>
                         </mat-form-field>
 
