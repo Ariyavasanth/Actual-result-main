@@ -5,7 +5,7 @@
             <mat-form-field appearance="outline" class="search-field">
                 <mat-icon matPrefix aria-hidden="true">search</mat-icon>
                 <input matInput 
-                    placeholder="Search by text or type" 
+                    placeholder="Search within filtered results" 
                     [(ngModel)]="filter"
                     (ngModelChange)="applyFilter($event)" 
                     aria-label="Search exams by title or type" />
@@ -30,13 +30,14 @@
                     aria-label="Open filters panel"
                     title="Filter exams">
                     <mat-icon svgIcon="filter"></mat-icon>
-                    <span>Filters</span>
+                    <span>Filter</span>
                 </button>
                 <button mat-flat-button 
                     color="primary" 
-                    (click)="refresh()"
+                    type="button"
+                    (click)="refresh(); $event.stopPropagation()"
                     aria-label="Refresh exam list"
-                    title="Refresh data" >
+                    title="Refresh filtered exams" >
                     <mat-icon svgIcon="refresh"></mat-icon>
                     <span>Refresh</span>
                 </button>
@@ -219,6 +220,11 @@
                 </thead>
                 <tbody>
                     <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+                    <tr class="mat-row" *matNoDataRow>
+                        <td class="mat-cell empty-table-cell" [attr.colspan]="displayedColumns.length">
+                            {{ hasAppliedFilters ? 'No exams found for the selected filters.' : 'Apply filters to view exams.' }}
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             <mat-paginator [pageSizeOptions]="[25,50,100]" 

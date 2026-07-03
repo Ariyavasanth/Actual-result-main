@@ -58,6 +58,7 @@ export class AdminExamsComponent implements AfterViewInit {
   showModal = false;
   displayedColumns: string[] = ['title', 'description', 'total_questions', 'duration_mins', 'number_of_attempts', 'actions'];
   dataSource = new MatTableDataSource<any>([]);
+  hasAppliedFilters = false;
   private apiUrl = `${API_BASE}/get-institute-list`;
 
   isSuperAdmin = false;
@@ -85,6 +86,10 @@ export class AdminExamsComponent implements AfterViewInit {
   @ViewChild('filtersPanel') filtersPanelTpl!: TemplateRef<any>;
 
   refresh() {
+    if (!this.hasAppliedFilters) {
+      try { notify('Apply filters to fetch exams', 'info'); } catch (e) {}
+      return;
+    }
     this.loadExamsForInstitute(this.selectedInstitute || undefined);
   }
   applyFilter(filterValue: string) {
@@ -309,7 +314,6 @@ export class AdminExamsComponent implements AfterViewInit {
                 // load dependent lists scoped to the institute
                 this.loadDepartments(this.selectedInstitute);
                 this.loadTeams(this.selectedInstitute);
-                this.loadExamsForInstitute(this.selectedInstitute);
                 return;
               }
             }
@@ -328,7 +332,6 @@ export class AdminExamsComponent implements AfterViewInit {
                   // load dependent lists scoped to the institute
                   this.loadDepartments(this.selectedInstitute);
                   this.loadTeams(this.selectedInstitute);
-                  this.loadExamsForInstitute(this.selectedInstitute);
                 }
               }
             }
@@ -340,7 +343,9 @@ export class AdminExamsComponent implements AfterViewInit {
     });
   }
   onApply() {
+    this.hasAppliedFilters = true;
     this.loadExamsForInstitute(this.selectedInstitute || undefined);
+    this.closeFiltersOverlay();
   }
   onReset() {
     // clear filter fields (preserve selectedInstitute unless you want to clear it)
@@ -351,8 +356,11 @@ export class AdminExamsComponent implements AfterViewInit {
     this.filterCreationDate = null;
     this.filterActiveStatus = null;
     this.filterCreatedByMe = false;
-    // reload with cleared filters
-    this.loadExamsForInstitute(this.selectedInstitute || undefined);
+    this.filter = '';
+    this.exams = [];
+    this.dataSource.data = [];
+    this.hasAppliedFilters = false;
+    this.closeFiltersOverlay();
   }
   // ngAfterViewInit(): void {
   //   this.loadExamsForInstitute(this.selectedInstitute || undefined);
@@ -430,7 +438,10 @@ export class AdminExamsComponent implements AfterViewInit {
 
   onInstituteSelected(id: string) {
     this.selectedInstitute = id || '';
-    if (this.selectedInstitute) this.loadExamsForInstitute(this.selectedInstitute);
+    if (this.selectedInstitute) {
+      this.loadDepartments(this.selectedInstitute);
+      this.loadTeams(this.selectedInstitute);
+    }
   }
 
   onInstituteChange(value: any) {
@@ -439,12 +450,10 @@ export class AdminExamsComponent implements AfterViewInit {
     if (this.selectedInstitute) {
       this.loadDepartments(this.selectedInstitute);
       this.loadTeams(this.selectedInstitute);
-      this.loadExamsForInstitute(this.selectedInstitute);
     } else {
       // clear dependent lists
       this.departments = [];
       this.teams = [];
-      this.loadExamsForInstitute(undefined);
     }
   }
 

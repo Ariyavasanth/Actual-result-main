@@ -184,6 +184,7 @@ $shadow-lg: 0 0.75rem 1.875rem rgba(6,18,30,0.06);
 .item-info { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; }
 .item-name { font-weight: 600; color: var(--theme-3-text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .item-sub { font-size: 0.75rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty-table-cell { padding: 2rem 1rem!important; text-align: center; color: var(--theme-3-text-3); font-weight: 500; }
 
 // Modal header – enhanced
 .modal-header-left { display: flex; align-items: center; gap: 0.875rem; flex: 1; min-width: 0; }
