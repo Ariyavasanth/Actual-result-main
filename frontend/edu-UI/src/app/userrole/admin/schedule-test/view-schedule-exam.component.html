@@ -18,16 +18,16 @@
         <div class="controls">
             <div class="action-row">
                 <button #filtersBtn mat-flat-button type="button"
-                    (click)="openFiltersOverlay(); $event.stopPropagation()" class="button-one">
+                    (click)="openFiltersOverlay(); $event.stopPropagation()" class="button-one" title="Open filters">
                     <mat-icon svgIcon="filter"></mat-icon>
                     <span>Filters</span>
                 </button>
                 <button mat-flat-button color="primary" type="button" (click)="refresh(); $event.stopPropagation()"
-                    class="button-one" title="Refresh filtered scheduled exams">
+                    class="button-one" title="Refresh filtered results">
                     <mat-icon svgIcon="refresh"></mat-icon>
                     <span>Refresh</span>
                 </button>
-                <button *hasAccess="'Schedule Exam'; hasAccessAction: 'add'" mat-flat-button type="button" routerLink="/schedule-exam">
+                <button *hasAccess="'Schedule Exam'; hasAccessAction: 'add'" mat-flat-button type="button" class="button-one" routerLink="/schedule-exam">
                     <mat-icon svgIcon="add"></mat-icon>
                     <span>Schedule exam</span>
                 </button>

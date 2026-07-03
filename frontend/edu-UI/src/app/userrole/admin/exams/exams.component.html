@@ -28,22 +28,23 @@
                     (click)="openFiltersOverlay(); $event.stopPropagation()" 
                     class="button-one"
                     aria-label="Open filters panel"
-                    title="Filter exams">
+                    title="Open filters">
                     <mat-icon svgIcon="filter"></mat-icon>
-                    <span>Filter</span>
+                    <span>Filters</span>
                 </button>
                 <button mat-flat-button 
                     color="primary" 
                     type="button"
                     (click)="refresh(); $event.stopPropagation()"
+                    class="button-one"
                     aria-label="Refresh exam list"
-                    title="Refresh filtered exams" >
+                    title="Refresh filtered results" >
                     <mat-icon svgIcon="refresh"></mat-icon>
                     <span>Refresh</span>
                 </button>
                 <button *hasAccess="'Exams'; hasAccessAction: 'add'" 
                     mat-flat-button 
-                    color="primary" type="button" routerLink="/create-exam"
+                    color="primary" type="button" class="button-one" routerLink="/create-exam"
                     aria-label="Create new exam">
                     <mat-icon svgIcon="add"></mat-icon>
                     <span>Add Exam</span>

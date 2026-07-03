@@ -19,18 +19,18 @@
         <div class="controls">
             <div class="action-row">
                 <button #filtersBtn mat-flat-button type="button"
-                    (click)="openFiltersOverlay(); $event.stopPropagation()" class="button-one">
+                    (click)="openFiltersOverlay(); $event.stopPropagation()" class="button-one" title="Open filters">
                     <mat-icon svgIcon="filter"></mat-icon>
-                    <span>Filter</span>
+                    <span>Filters</span>
                 </button>
                 <button mat-flat-button color="primary" type="button" (click)="refresh(); $event.stopPropagation()"
-                    class="button-one" title="Refresh filtered questions">
+                    class="button-one" title="Refresh filtered results">
                     <mat-icon svgIcon="refresh"></mat-icon>
                     <span>Refresh</span>
                 </button>
 
                 <button *hasAccess="'Questions'; hasAccessAction: 'add'" mat-flat-button color="primary"
-                    routerLink="/questions">
+                    class="button-one" routerLink="/questions">
                     <mat-icon svgIcon="add"></mat-icon> Add Questions
                 </button>
             </div>
