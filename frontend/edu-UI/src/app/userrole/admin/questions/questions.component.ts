@@ -34,6 +34,7 @@ export class AdminQuestionsComponent {
   isEditing = false;
   plaintextEditor: boolean = false;
   editId: string | number | undefined;
+  pendingDeletedQuestionId: string | number | undefined;
   questionTypes = [
     { value: 'choose', label: 'Single choice' },
     { value: 'multi', label: 'Multiple choice' },
@@ -209,9 +210,9 @@ export class AdminQuestionsComponent {
           correct: correct,
           answerText: q.answer || q.answerText || optionAnswer || (typeof q.correct === 'string' ? q.correct : ''),
           // copy global selections if provided
-          institute_id: q.institute_id || (q.institute && (q.institute.institute_id || q.institute.id)) || '',
-          exam_id: q.exam_id || (q.exam && (q.exam.exam_id || q.exam.id)) || '',
-          category_id: q.category_id || (q.category && (q.category.category_id || q.category.id)) || '',
+          institute_id: q.institute_id || q.instituteId || q.instituteID || (q.institute && (q.institute.institute_id || q.institute.id || q.institute._id)) || '',
+          exam_id: q.exam_id || q.examId || q.examID || (q.exam && (q.exam.exam_id || q.exam.id || q.exam._id)) || '',
+          category_id: q.category_id || q.categoryId || q.categoryID || (q.category && (q.category.category_id || q.category.id || q.category._id)) || '',
           // keep original id for reference if backend uses it
           id: q.id || q.question_id || q._id || undefined
         };
@@ -466,7 +467,14 @@ export class AdminQuestionsComponent {
   }
 
   removeQuestion(index: number) {
-    if (this.questions.length <= 1) return; // keep at least one
+    const q = this.questions && this.questions[index];
+    if (!q) return;
+    if (this.isEditing) {
+      this.pendingDeletedQuestionId = q.id || q.question_id || q._id || this.editId;
+      this.questions.splice(index, 1);
+      return;
+    }
+    if (this.questions.length <= 1) return; // keep at least one while adding new questions
     this.questions.splice(index, 1);
   }
 
@@ -682,12 +690,17 @@ export class AdminQuestionsComponent {
 
   removeOption(qIndex:number, i:number){
     const q = this.questions[qIndex];
+    if (!q || !Array.isArray(q.options) || i < 0 || i >= q.options.length) return;
     q.options.splice(i,1);
-    // clean correct answers if necessary
-    if (q.type === 'choose' && q.correct === i) q.correct = null;
+    // Keep selected correct indexes aligned with the remaining option rows.
+    if (q.type === 'choose') {
+      if (q.correct === i) q.correct = null;
+      else if (typeof q.correct === 'number' && q.correct > i) q.correct = q.correct - 1;
+    }
     if (q.type === 'multi' && Array.isArray(q.correct)){
-      const idx = q.correct.indexOf(i);
-      if (idx > -1) q.correct.splice(idx,1);
+      q.correct = q.correct
+        .filter((idx: number) => idx !== i)
+        .map((idx: number) => idx > i ? idx - 1 : idx);
     }
   }
 
@@ -802,9 +815,34 @@ export class AdminQuestionsComponent {
       return;
     }
 
+    if (this.isEditing && this.pendingDeletedQuestionId && (!this.questions || this.questions.length === 0)) {
+      const deleteId = this.pendingDeletedQuestionId;
+      const url = `${API_BASE}/delete/question/${encodeURIComponent(String(deleteId))}`;
+      this.http.delete<any>(url).subscribe({
+        next: (res) => {
+          try {
+            const ok = typeof res?.status === 'undefined' ? true : !!res.status;
+            const msg = ok ? 'Question deleted successfully.' : (res?.statusMessage || res?.message || 'Failed to delete question.');
+            notify(msg, ok ? 'success' : 'error');
+            if (ok) {
+              this.pendingDeletedQuestionId = undefined;
+              this.editId = undefined;
+              this.isEditing = false;
+            }
+          } catch(e){}
+        },
+        error: (err) => {
+          console.error('Failed to delete question', err);
+          try { notify(err?.error?.statusMessage || err?.error?.message || 'Failed to delete question.', 'error'); } catch(e){}
+          this.loader.hide();
+        },
+        complete: () => { this.loader.hide(); }
+      });
+      return;
+    }
     const selectedInstituteId = this.questions && this.questions[0] && (this.questions[0] as any).institute_id;
     const selectedCategoryId = this.questions && this.questions[0] && (this.questions[0] as any).category_id;
-    if (!selectedInstituteId || !selectedCategoryId) {
+    if (!this.isEditing && (!selectedInstituteId || !selectedCategoryId)) {
       this.loader.hide();
       try { notify('Please select an Institution and Category before saving.', 'error'); } catch(e){}
       return;
@@ -819,12 +857,13 @@ export class AdminQuestionsComponent {
 
     // Submit all questions as a batch; basic validation per question
     for (let q of validQuestions){
-      if (q.type === 'choose' && (q.correct === null || q.correct === undefined)){
+      const optionCount = Array.isArray(q.options) ? q.options.length : 0;
+      if (q.type === 'choose' && optionCount > 0 && (q.correct === null || q.correct === undefined)){
         try { notify('Please select the correct option for single choice in all question blocks', 'error'); } catch(e){}
         this.loader.hide();
         return;
       }
-      if (q.type === 'multi' && (!Array.isArray(q.correct) || (q.correct as number[]).length === 0)){
+      if (q.type === 'multi' && optionCount > 0 && (!Array.isArray(q.correct) || (q.correct as number[]).length === 0)){
         try { notify('Please select one or more correct options for multiple choice in all question blocks', 'error'); } catch(e){}
         this.loader.hide();
         return;
@@ -833,13 +872,21 @@ export class AdminQuestionsComponent {
 
     const payload = validQuestions.map((q:any) => {
       const p = JSON.parse(JSON.stringify(q));
-      if (q.type === 'choose' && typeof q.correct === 'number'){
+      p.options = Array.isArray(q.options) ? q.options.slice() : [];
+      if (q.type === 'choose' && typeof q.correct === 'number' && p.options[q.correct] !== undefined){
         p.correct_indices = [q.correct];
-        p.correct_values = [q.options[q.correct]];
+        p.correct_values = [p.options[q.correct]];
+      } else if (q.type === 'choose') {
+        p.correct_indices = [];
+        p.correct_values = [];
       }
       if (q.type === 'multi' && Array.isArray(q.correct)){
-        p.correct_indices = q.correct;
-        p.correct_values = q.correct.map((i:number) => q.options[i]);
+        const validCorrect = q.correct.filter((i:number) => p.options[i] !== undefined);
+        p.correct_indices = validCorrect;
+        p.correct_values = validCorrect.map((i:number) => p.options[i]);
+      } else if (q.type === 'multi') {
+        p.correct_indices = [];
+        p.correct_values = [];
       }
       // p.created_by = sessionStorage.getItem('user_id') || sessionStorage.getItem('username') || 'admin';
       return p;
@@ -857,7 +904,8 @@ export class AdminQuestionsComponent {
     if (this.isEditing && this.editId) {
       // update single question
       const q = payload[0];
-      // ensure category_id is included on update (use question-level or global selection)
+      // ensure hidden global selections are kept on update when available
+      if (!q.institute_id && (this.questions[0] as any).institute_id) q.institute_id = (this.questions[0] as any).institute_id;
       if (!q.category_id && (this.questions[0] as any).category_id) q.category_id = (this.questions[0] as any).category_id;
       q.updated_by = userId || undefined;
       const url = `${API_BASE}/update-question/${encodeURIComponent(String(this.editId))}`;
@@ -867,19 +915,12 @@ export class AdminQuestionsComponent {
           const ok = typeof res?.status === 'undefined' ? true : !!res.status;
           notify(msg, ok ? 'success' : 'error');
         } catch(e){}
-        // optionally reset editing state
-        this.isEditing = false;
-        this.editId = undefined;
+        // Keep edit mode active so the user stays on the same page after update.
       }, error: (err) => {
         console.error('Failed to update question', err);
         try { notify(err?.error?.statusMessage || err?.error?.message || 'Failed to update question', 'error'); } catch(e){}
         this.loader.hide();
       }, complete: () => { this.loader.hide(); } });
-        // After successful update go back to view question page
-      try {
-        window.location.href = '/view-questions';
-      } catch(e){  console.warn('Failed to redirect to view-question after update', e);
-        }
     } else {
       this.http.post<any>(this.apiUrl, body).subscribe({
         next: (res) => {

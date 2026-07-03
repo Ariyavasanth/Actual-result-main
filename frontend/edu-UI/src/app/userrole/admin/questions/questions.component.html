@@ -259,6 +259,9 @@
                </button>
             </div>
 
+            <div class="pending-delete-message" *ngIf="isEditing && pendingDeletedQuestionId && (!questions || !questions.length)">
+               Question marked for deletion. Click Update to delete it permanently.
+            </div>
             <mat-accordion class="questions-accordion" multi>
                <mat-expansion-panel class="question-panel"
                   *ngFor="let q of questions; let qi = index; trackBy: trackByIndex" [expanded]="q._expanded"
@@ -280,7 +283,7 @@
                            <div class="badge marks">{{ q.marks || 0 }} Marks</div>
                            <div class="panel-actions">
                               <button type="button" mat-icon-button aria-label="Remove question"
-                                 (click)="removeQuestion(qi)" [disabled]="questions.length<=1">
+                                 (click)="removeQuestion(qi)" [disabled]="!isEditing && questions.length<=1">
                                  <mat-icon svgIcon="delete"></mat-icon>
                               </button>
                            </div>
@@ -327,8 +330,7 @@
                                     <input matInput [(ngModel)]="q.options[i]" [ngModelOptions]="{standalone: true}"
                                        class="option-input" placeholder="Option {{i+1}}" />
                                  </mat-form-field>
-                                 <button type="button" class="btn small" (click)="removeOption(qi, i)"
-                                    [disabled]="q.options.length<=2"><mat-icon>delete</mat-icon></button>
+                                 <button type="button" class="btn small" (click)="removeOption(qi, i)"><mat-icon>delete</mat-icon></button>
                               </div>
                            </mat-radio-group>
 
@@ -342,8 +344,7 @@
                                     <input matInput [(ngModel)]="q.options[i]" [ngModelOptions]="{standalone: true}"
                                        placeholder="Option {{i+1}}" />
                                  </mat-form-field>
-                                 <button type="button" class="btn small" (click)="removeOption(qi, i)"
-                                    [disabled]="q.options.length<=2"><mat-icon color="warn">delete</mat-icon></button>
+                                 <button type="button" class="btn small" (click)="removeOption(qi, i)"><mat-icon color="warn">delete</mat-icon></button>
                               </div>
                            </div>
 
@@ -395,7 +396,7 @@
                <span>Cancel</span>
             </button>
             <button type="button" mat-flat-button color="primary" class="submit-btn" (click)="submit()"
-               [disabled]="!questions || !questions.length">
+               [disabled]="(!questions || !questions.length) && !pendingDeletedQuestionId">
                <mat-icon>save</mat-icon>
                <span *ngIf="!isEditing">Save All</span>
                <span *ngIf="isEditing">Update</span>

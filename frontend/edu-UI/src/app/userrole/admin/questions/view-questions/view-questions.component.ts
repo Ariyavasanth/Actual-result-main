@@ -44,6 +44,9 @@ export interface QuestionRow {
   question: string;
   category: string;
   category_description: string;
+  category_id?: string | number;
+  institute_id?: string | number;
+  exam_id?: string | number;
   type: QuestionType | string;
   originalType?: string;
   options?: QuestionOption[]; // for MCQ
@@ -337,7 +340,21 @@ export class ViewQuestionsComponent implements OnDestroy {
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
         // map to QuestionRow shape conservatively
-        this.questions = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || i + 1, question: q.question || q.text || q.title || '',  type: (q.type || 'Subjective') as QuestionType, originalType: q.type || q.original_type || q.question_type, options: q.options || q.choices || [], answer: q.answer || q.correct || '', marks: q.marks || q.points || 0, category: q.category || '', category_description: q.category_description || '' }));
+        this.questions = arr.map((q: any, i: number) => ({
+          ...q,
+          id: q.id || q.question_id || q._id || i + 1,
+          question: q.question || q.text || q.title || '',
+          type: (q.type || q.question_type || q.original_type || 'Subjective') as QuestionType,
+          originalType: q.type || q.original_type || q.question_type,
+          options: q.options || q.choices || [],
+          answer: q.answer || q.answerText || q.correct || '',
+          marks: q.marks || q.points || 0,
+          category: q.category || q.category_name || '',
+          category_description: q.category_description || '',
+          category_id: q.category_id || q.categoryId || q.categoryID || q.category?.category_id || q.category?.id || q.category?._id || '',
+          institute_id: q.institute_id || q.instituteId || q.instituteID || q.institute?.institute_id || q.institute?.id || q.institute?._id || this.selectedInstitute || '',
+          exam_id: q.exam_id || q.examId || q.examID || q.exam?.exam_id || q.exam?.id || q.exam?._id || ''
+        }));
         this.dataSource.data = this.questions;
         this.loading.hide();
       },
