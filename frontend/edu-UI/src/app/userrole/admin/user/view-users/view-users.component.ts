@@ -57,6 +57,7 @@ export class ViewUsersComponent {
   selectedInstitute = '';
   users: UserRow[] = [];
   dataSource = new MatTableDataSource<UserRow>([]);
+  hasAppliedFilters = false;
   rawRecords: any[] = [];
 
   // pagination
@@ -289,14 +290,48 @@ export class ViewUsersComponent {
     });
   }
 
-  applyFilters(){ this.pageIndex = 0; this.loadUsers(); }
+  applyFilters(){
+    this.pageIndex = 0;
+    this.hasAppliedFilters = true;
+    this.loadUsers();
+    this.closeFiltersOverlay();
+  }
 
-  resetFilters(){ this.pageIndex = 0; this.filters = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '' }; this.states=[]; /* keep cities loaded so options remain visible */ this.loadUsers(); }
+  resetFilters(){
+    this.pageIndex = 0;
+    this.filters = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '' };
+    this.selectedInstitute = '';
+    this.filter = '';
+    this.states=[];
+    this.departments = [];
+    this.teams = [];
+    if (!this.isSuperAdmin) {
+      try {
+        const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
+        const user = raw ? JSON.parse(raw) : null;
+        const instId = user?.institute_id || user?.instituteId || user?.institute || '';
+        if (instId) {
+          this.selectedInstitute = instId;
+          this.filters.institute = String(instId);
+          this.loadDepartments(instId);
+          this.loadTeams(instId);
+          this.loadCountries(instId);
+        }
+      } catch (e) { /* ignore malformed session data */ }
+    }
+    this.users = [];
+    this.rawRecords = [];
+    this.dataSource.data = [];
+    this.totalCount = 0;
+    this.hasAppliedFilters = false;
+    this.closeFiltersOverlay();
+  }
 
   onPageEvent(ev: PageEvent){
     try{
       this.pageIndex = ev.pageIndex || 0;
       this.pageSize = ev.pageSize || this.pageSize;
+      if (!this.hasAppliedFilters) return;
       this.loadUsers();
     }catch(e){}
   }
@@ -339,9 +374,10 @@ export class ViewUsersComponent {
               if (found) {
                 // ensure exact match type/value and load schedules
                 this.selectedInstitute = found.institute_id as any;
-                this.loadUsers(this.selectedInstitute);
+                try { this.filters.institute = String(this.selectedInstitute); } catch (e) { /* ignore */ }
                 this.loadDepartments(this.selectedInstitute);
                 this.loadTeams(this.selectedInstitute);
+                this.loadCountries(this.selectedInstitute);
                 return;
               }
             }
@@ -357,7 +393,7 @@ export class ViewUsersComponent {
                 const found = this.institutes.find(i => String(i.institute_id) === String(instId));
                 if (found) {
                   this.selectedInstitute = found.institute_id as any;
-                  this.loadUsers(this.selectedInstitute);
+                  try { this.filters.institute = String(this.selectedInstitute); } catch (e) { /* ignore */ }
                   this.loadDepartments(this.selectedInstitute);
                   this.loadTeams(this.selectedInstitute);
                   this.loadCountries(this.selectedInstitute);
@@ -365,7 +401,7 @@ export class ViewUsersComponent {
                   // institute list shape didn't match or id not present in fetched list - still set and load using raw instId
                   this.selectedInstitute = instId as any;
                   try { this.filters.institute = String(instId); } catch (e) { /* ignore */ }
-                  this.loadUsers(this.selectedInstitute);
+                  this.loadCountries(this.selectedInstitute);
                 }
               }
             }
@@ -454,7 +490,13 @@ export class ViewUsersComponent {
 
   closeFiltersOverlay(){ if(this.filtersOverlayRef){ try{ this.filtersOverlayRef.dispose(); }catch(e){}; this.filtersOverlayRef = null; } }
 
-  refresh(){ this.loadUsers(); }
+  refresh(){
+    if (!this.hasAppliedFilters) {
+      try { notify('Apply filters to fetch users', 'info'); } catch (e) {}
+      return;
+    }
+    this.loadUsers();
+  }
 
   // Modal / actions
     viewDetails(u: UserRow){
@@ -640,7 +682,7 @@ export class ViewUsersComponent {
             this.users = this.users.filter(x => (x.id !== uuid && x.id !== u.id));
             try { notify('User deleted successfully', 'success'); } catch (e) {}
             // reload current list to reflect server state
-            try { this.loadUsers(this.selectedInstitute); } catch(e) {}
+            try { if (this.hasAppliedFilters) this.loadUsers(this.selectedInstitute); } catch(e) {}
           },
           error: (err) => {
             try { this.loading.hide(); } catch(e) {}

@@ -76,6 +76,7 @@ export class ViewInstitutesComponent {
 
   institutes: Institute[] = [];
   dataSource = new MatTableDataSource<Institute>([]);
+  hasAppliedFilters = false;
   // keep raw response objects so detail modal can show full fields
   private rawRecords: any[] = [];
 
@@ -96,7 +97,6 @@ export class ViewInstitutesComponent {
   private filtersOverlayRef: OverlayRef | null = null;
   
   constructor(private http: HttpClient, private router: Router, private loader: LoaderService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private confirmService: ConfirmService) {
-    this.loadInstitutes();
     this.loadCountries();
 
   }
@@ -264,9 +264,29 @@ export class ViewInstitutesComponent {
     });
   }
 
-  applyFilters(){ this.loadInstitutes(); }
+  applyFilters(){
+    this.hasAppliedFilters = true;
+    this.loadInstitutes();
+    this.closeFiltersOverlay();
+  }
 
-  resetFilters(){ this.filters = { name: '', industry: '', sector: '', country: '', city: '', active_status: '' };  this.loadInstitutes(); }
+  resetFilters(){
+    this.filters = { name: '', industry: '', sector: '', country: '', city: '', active_status: '' };
+    this.filter = '';
+    this.institutes = [];
+    this.rawRecords = [];
+    this.dataSource.data = [];
+    this.hasAppliedFilters = false;
+    this.closeFiltersOverlay();
+  }
+
+  refresh(){
+    if (!this.hasAppliedFilters) {
+      try { notify('Apply filters to fetch institutes', 'info'); } catch (e) {}
+      return;
+    }
+    this.loadInstitutes();
+  }
 
   toggleFilters(){ this.showFilters = !this.showFilters }
 
@@ -489,7 +509,7 @@ export class ViewInstitutesComponent {
             // remove from list
             this.institutes = this.institutes.filter(x => x.institute_id !== uuid && x.id !== i.id);
             try { notify('Institute deleted successfully', 'success'); } catch (e) {}
-            this.loadInstitutes();
+            if (this.hasAppliedFilters) this.loadInstitutes();
           },
           error: (err) => {
             try{ this.loader.hide(); }catch(e){}
