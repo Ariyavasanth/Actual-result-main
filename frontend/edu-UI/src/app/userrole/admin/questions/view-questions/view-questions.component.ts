@@ -74,6 +74,7 @@ export class ViewQuestionsComponent implements OnDestroy {
   questions: QuestionRow[] = [];
   displayedColumns: string[] = ['select','question', 'category', 'type', 'marks', 'options', 'actions'];
   dataSource = new MatTableDataSource<QuestionRow>([]);
+  hasAppliedFilters = false;
   // selection for batch operations
   selectedQuestionIds = new Set<string|number>();
   targetCategories: Array<{ name: string; category_id?: string }> = [];
@@ -166,6 +167,10 @@ export class ViewQuestionsComponent implements OnDestroy {
   closeFiltersOverlay(){ if(this.filtersOverlayRef){ try{ this.filtersOverlayRef.dispose(); }catch(e){}; this.filtersOverlayRef = null; } }
 
   refresh() {
+    if (!this.hasAppliedFilters) {
+      try { notify('Apply filters to fetch questions', 'info'); } catch(e) {}
+      return;
+    }
     this.loadQuestions();
   }
 
@@ -184,7 +189,6 @@ export class ViewQuestionsComponent implements OnDestroy {
                     // load dependent lists scoped to the institute
                     this.loadDepartments(this.selectedInstitute);
                     this.loadTeams(this.selectedInstitute);
-                    this.loadQuestions(this.selectedInstitute);
                 return;
               }
             }
@@ -331,7 +335,7 @@ export class ViewQuestionsComponent implements OnDestroy {
         this.dataSource.data = this.questions;
         this.loading.hide();
       },
-      error: (err) => { console.warn('Failed to load questions', err); this.questions = []; this.loading.hide(); }
+      error: (err) => { console.warn('Failed to load questions', err); this.questions = []; this.dataSource.data = []; this.loading.hide(); }
     });
   }
 
@@ -433,14 +437,18 @@ export class ViewQuestionsComponent implements OnDestroy {
     });
   }
 
-  // Apply and Reset handlers: call get-questions-details on Apply (with filters) and Reset (clears filters and reloads)
+  // Apply fetches with filters; reset clears filters and leaves the table empty.
   onApply() {
+    this.hasAppliedFilters = true;
     this.loadQuestions();
+    this.closeFiltersOverlay();
   }
 
   onReset() {
     this.selectedCategories = [];
+    this.categoryFilterName = '';
     this.categorySearch = '';
+    this.categoryCtrl.setValue('');
     this.selectedDepartments = [];
     this.selectedTeams = [];
     this.filterCreationDateAfter = null;
@@ -448,11 +456,12 @@ export class ViewQuestionsComponent implements OnDestroy {
     this.filterActiveStatus = null;
     this.filterCreatedByMe = false;
     this.filterPublicAccess = null;
-    // also clear table
+    this.filter = '';
     this.questions = [];
     this.dataSource.data = this.questions;
-    // call API without filters to load default/unfiltered questions if backend supports it
-    this.loadQuestions();
+    this.selectedQuestionIds.clear();
+    this.hasAppliedFilters = false;
+    this.closeFiltersOverlay();
   }
 
   // keep existing constructor-less usage working for tests
