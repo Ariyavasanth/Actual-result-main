@@ -507,6 +507,11 @@ export class ViewQuestionsComponent implements OnDestroy {
     return typeMap[lowerType] || this.toTitleCase(type);
   }
 
+  isAnswerType(type: string | undefined | null): boolean {
+    const normalized = String(type || '').toLowerCase();
+    return normalized === 'fill' || normalized === 'descriptive';
+  }
+
   private toTitleCase(str: string): string {
     return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
   }

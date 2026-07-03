@@ -296,7 +296,7 @@
                                     <div class="value">{{ viewedQuestion?.category ||
                                         viewedQuestion?.category_description || '—' }}</div>
                                     <!-- options -->
-                                    <div class="label">Options</div>
+                                    <div class="label">{{ isAnswerType(viewedQuestion?.originalType || viewedQuestion?.type) ? 'Answer' : 'Options' }}</div>
                                     <div class="value">
                                         <div *ngIf="viewedQuestion?.options && viewedQuestion?.options.length">
                                             <div *ngFor="let o of viewedQuestion?.options; let idx = index"
