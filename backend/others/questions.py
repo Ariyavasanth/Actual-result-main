@@ -113,18 +113,46 @@ def bulk_upload_questions(request):
     if not file:
         return {"statusMessage": "No file provided", "status": False}, 400
     # read file using pandas
-    df = pd.read_csv(file)
+    filename = (getattr(file, "filename", "") or "").lower()
+    df = pd.read_excel(file) if filename.endswith((".xlsx", ".xls")) else pd.read_csv(file)
+
+    def parse_correct_indices(value):
+        indices = []
+        for part in str(value or "").split(","):
+            part = part.strip()
+            if not part:
+                continue
+            try:
+                numeric_value = float(part)
+                if numeric_value.is_integer():
+                    indices.append(int(numeric_value))
+            except Exception:
+                pass
+        return indices
     
     for index, row in df.iterrows():
-        question_type = "fill"
+        uploaded_type = row.get("Type", "")
+        question_type = str(uploaded_type).strip().lower() if not pd.isna(uploaded_type) else ""
+        if question_type == "choice":
+            question_type = "choose"
+        if question_type not in ["choose", "multi", "fill", "descriptive"]:
+            question_type = "fill"
         question_text = row.get("Question")
         marks = row.get("marks", 1)
-        question_correct = row.get("Correct_answer")
+        question_correct_raw = row.get("Correct_answer", "")
+        question_correct = "" if pd.isna(question_correct_raw) else str(question_correct_raw).strip()
 
-        if ',' in question_correct or (len(question_correct) ==1 and question_correct in '1234567890'):
+        question_correct_indices = []
+        if question_type in ["choose", "multi"]:
+            question_correct_indices = parse_correct_indices(question_correct)
+            if len(question_correct_indices) > 1:
+                question_type = "multi"
+            elif len(question_correct_indices) == 1:
+                question_type = "choose"
+        elif question_type == "fill" and (',' in question_correct or (len(question_correct) == 1 and question_correct in '1234567890')):
             question_type = 'choose'
-            question_correct_indices = [int(i) for i in question_correct.split(',')]
-            if len(question_correct_indices) >1:
+            question_correct_indices = parse_correct_indices(question_correct)
+            if len(question_correct_indices) > 1:
                 question_type = 'multi'
         
         question_options_list = []

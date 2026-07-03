@@ -72,10 +72,16 @@
                   <h2 class="section-heading">Bulk Upload</h2>
                   <p class="section-desc">Upload multiple questions via CSV or Excel file.</p>
                </div>
-               <button mat-stroked-button color="accent" type="button" (click)="downloadTemplate()">
-                  <mat-icon>file_download</mat-icon>
-                  <span>Download Template</span>
-               </button>
+               <div class="template-actions">
+                  <button mat-stroked-button color="accent" type="button" (click)="downloadTemplate('objective')">
+                     <mat-icon>file_download</mat-icon>
+                     <span>Objective Template</span>
+                  </button>
+                  <button mat-stroked-button color="accent" type="button" (click)="downloadTemplate('descriptive')">
+                     <mat-icon>file_download</mat-icon>
+                     <span>Descriptive Template</span>
+                  </button>
+               </div>
             </div>
 
             <div class="bulk-card">

@@ -283,23 +283,24 @@ export class AdminQuestionsComponent {
     setTimeout(()=>{ try{ this.resizeAll(); }catch(e){} }, 50);
   }
 
-  downloadTemplate() {
-    // Create a simple CSV template that Excel can open.
-    const headers = [
-      'Question','Type', 'Correct_answer',	'option_1',	'option_2',	'option_3',	'option_4'
-    ];
-    const sample = [
-      ['What is 2+2?','choice', '4', '2', '3', '4', '5'],
-      ['Select prime numbers','multi', '2,3', '2', '3', '4', '5'],
-      ['The capital of France is ___.','fill', 'Paris'],
-      ['Describe the water cycle.','descriptive', '']
-    ];
+  downloadTemplate(templateType: 'objective' | 'descriptive') {
+    const headers = ['Question', 'Type', 'Correct_answer', 'marks', 'option_1', 'option_2', 'option_3', 'option_4'];
+    const sample = templateType === 'objective'
+      ? [
+          ['What is 2+2?', 'choose', '3', '1', '2', '3', '4', '5'],
+          ['Select prime numbers', 'multi', '1,2', '1', '2', '3', '4', '5'],
+          ['The capital of France is ___.', 'fill', 'Paris', '1', '', '', '', '']
+        ]
+      : [
+          ['Describe the water cycle.', 'descriptive', 'Evaporation, condensation, and precipitation move water through the environment.', '5', '', '', '', ''],
+          ['Explain the importance of photosynthesis.', 'descriptive', 'Photosynthesis helps plants make food and releases oxygen.', '5', '', '', '', '']
+        ];
     const rows = [headers, ...sample].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([rows], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'Questions-template.csv';
+    a.download = `${templateType === 'objective' ? 'Objective' : 'Descriptive'}-questions-template.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
