@@ -41,6 +41,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   description = '';
   // filters
   filterName = '';
+  categoryOptions: Array<{ id: string; name: string }> = [];
   selectedCategory: any = null;
   editing = false;
   selectedInstitute: string | null = null;
@@ -192,6 +193,22 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     this.http.get<any>(`${API_BASE}/get-department-list`).subscribe({ next: (res) => { const data = Array.isArray(res) ? res : (res?.data || []); this.departments = (data || []).map((d:any)=> ({ id: d.department_id || d.dept_id || d.id || d.deptId, name: d.department_name || d.dept_name || d.name })); }, error: () => { this.departments = []; } });
     this.http.get<any>(`${API_BASE}/get-teams-list`).subscribe({ next: (res) => { const data = Array.isArray(res) ? res : (res?.data || []); this.teams = (data || []).map((t:any)=> ({ id: t.team_id || t.id || t.teamId, name: t.team_name || t.name })); }, error: () => { this.teams = []; } });
   }
+  loadCategoryOptions() {
+    const scopedInstitute = this.isSuperAdmin ? this.selectedInstitute : (this.loginInstituteId || this.selectedInstitute);
+    let params = new HttpParams();
+    if (scopedInstitute) params = params.set('institute', scopedInstitute);
+    this.http.get<any>(`${API_BASE}/category-details`, { params }).subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data || []);
+        this.categoryOptions = (items || []).map((it: any, idx: number) => ({
+          id: it.category_id || it.id || it._id || String(idx),
+          name: it.name || it.category_name || ''
+        })).filter((c: any) => !!c.name);
+      },
+      error: () => { this.categoryOptions = []; }
+    });
+  }
+
   filteredInstitutes() {
     const q = (this.instituteSearch || '').trim().toLowerCase();
     if (!q) return this.institutes;
@@ -219,13 +236,19 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     }
     this.selectedDepartments = [];
     this.selectedTeams = [];
+    this.filterName = '';
+    this.categoryOptions = [];
     // called when institute selection changes; fetch departments and teams scoped to institute
     if (!iid) {
       this.departments = [];
       this.teams = [];
-      if (this.isSuperAdmin) this.loadGlobalDepartmentTeamLists();
+      if (this.isSuperAdmin) {
+        this.loadGlobalDepartmentTeamLists();
+        this.loadCategoryOptions();
+      }
       return;
     }
+    this.loadCategoryOptions();
     // departments
     this.http.get<any>(`${API_BASE}/get-department-list`, { params: { institute_id: iid } }).subscribe({
       next: (res) => {
@@ -337,6 +360,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
 
   onReset(){
     this.filterName = '';
+    if (this.selectedInstitute || this.loginInstituteId || this.isSuperAdmin) this.loadCategoryOptions();
     // this.selectedInstitute = null;
     this.selectedDepartments = [];
     this.selectedTeams = [];

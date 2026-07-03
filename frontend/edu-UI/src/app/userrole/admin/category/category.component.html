@@ -61,7 +61,10 @@
 
                         <mat-form-field appearance="outline" class="filter-item">
                             <mat-label>Category Name</mat-label>
-                            <input matInput placeholder="Category name" [(ngModel)]="filterName" />
+                            <mat-select [(ngModel)]="filterName" placeholder="Select category">
+                                <mat-option value="">All Categories</mat-option>
+                                <mat-option *ngFor="let c of categoryOptions" [value]="c.name">{{c.name}}</mat-option>
+                            </mat-select>
                         </mat-form-field>
 
                         <mat-form-field appearance="outline" class="filter-item">
@@ -304,3 +307,4 @@
         </div>
     </div>
 </div>
+
