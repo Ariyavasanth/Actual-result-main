@@ -172,7 +172,6 @@
                     <col style="width: 150px;" /> <!-- Category Column -->
                     <col style="width: 100px;" /> <!-- Type Column -->
                     <col style="width: 80px;" /> <!-- Marks Column -->
-                    <col /> <!-- Options Column -->
                     <col style="width: 120px;" /> <!-- Actions Column -->
                 </colgroup>
                 <!-- Selection Column -->
@@ -218,32 +217,6 @@
                     <td mat-cell *matCellDef="let q">{{ q.marks || 0 }}</td>
                 </ng-container>
 
-                <!-- Options Column -->
-                <ng-container matColumnDef="options">
-                    <th mat-header-cell *matHeaderCellDef>Options</th>
-                    <td mat-cell *matCellDef="let q">
-                        <div *ngIf="q.options && q.options.length">
-                            <div *ngFor="let o of q.options; let idx = index" class="opt-row">
-                                <div class="opt-left">
-                                    <span class="opt-label" *ngIf="q.type === 'multi' || q.type === 'choose'">{{
-                                        ('ABCDEFGHIJKLMNOPQRSTUVWXYZ')[idx] || idx+1
-                                        }}.</span>
-                                    <span class="opt-text">
-                                        <ng-container *ngIf="o?.text && o.text.length > 300; else fullText">
-                                            {{ o.text | slice:0:300 }}…
-                                            <a href="javascript:void(0)" class="more-link" (click)="viewDetails(q)">more</a>
-                                        </ng-container>
-                                        <ng-template #fullText>{{ o?.text }}</ng-template>
-                                    </span>
-                                </div>
-                                <div class="opt-right" *ngIf="q.type === 'multi' || q.type === 'choose'">
-                                    <span *ngIf="o?.is_correct === 1" class="correct-mark">✔</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div *ngIf="!q.options || !q.options.length" class="muted">{{ q.answer || '—' }}</div>
-                    </td>
-                </ng-container>
 
                 <!-- Actions Column -->
                 <ng-container matColumnDef="actions">
