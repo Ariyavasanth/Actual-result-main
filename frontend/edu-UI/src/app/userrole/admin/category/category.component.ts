@@ -56,7 +56,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   filterPublicAccess: boolean | null = null; // tri-state: null = any, true = public, false = restricted
   // role
   isSuperAdmin: boolean = false;
-
+  private loginInstituteId: string | null = null;
   institutes: Array<{ institute_id: string; short_name: string }> = [];
   departments: Array<{ id: string; name: string }> = [];
   teams: Array<{ id: string; name: string }> = [];
@@ -80,19 +80,17 @@ export class CategoryComponent implements OnInit, AfterViewInit {
         const obj = JSON.parse(raw);
         // detect super admin role
         const role = obj?.role || obj?.user_role || obj?.role_name || '';
-        this.isSuperAdmin = (String(role) === 'super_admin' || String(role) === 'super-admin');
+        const normalizedRole = String(role || '').toLowerCase();
+        this.isSuperAdmin = ['super_admin', 'superadmin', 'super-admin'].includes(normalizedRole);
         // if user belongs to an institute, pre-select it
         const iid = obj?.institute_id || obj?.instituteId || obj?.institute || null;
         if (iid) {
-          this.selectedInstitute = iid;
+          this.loginInstituteId = String(iid);
+          this.selectedInstitute = this.isSuperAdmin ? this.selectedInstitute : this.loginInstituteId;
         }
       }
     } catch (e) { /* ignore */ }
     this.loadFilterLists();
-    // if an institute was auto-selected, load its departments/teams and fetch categories scoped
-    if (this.selectedInstitute) {
-      this.onInstituteChange(this.selectedInstitute);
-    }
   }
 
   @ViewChild(MatSort) sort!: MatSort;
@@ -176,18 +174,24 @@ export class CategoryComponent implements OnInit, AfterViewInit {
 
   // load initial lists for institute/department/team filters (best-effort endpoints)
   loadFilterLists(){
-    // try to load institutes, departments, teams if endpoints available
+    // Load institutes first, then load department/team lists according to the allowed institute scope.
     this.http.get<any>(`${API_BASE}/get-institute-list`).subscribe({ next: (res) => {
         const data = Array.isArray(res) ? res : (res?.data || []);
         this.institutes = (data || []).map((i: any) => ({ institute_id: i.institute_id || i.id || i.instituteId || null, short_name: i.short_name || i.name || i.institute_name || '' }));
         this.syncInstituteSearch();
+        if (this.selectedInstitute) {
+          this.onInstituteChange(this.selectedInstitute);
+        } else if (this.isSuperAdmin) {
+          this.loadGlobalDepartmentTeamLists();
+        }
       }, error: () => {} });
-
-    // load unscoped departments/teams as fallback
-    this.http.get<any>(`${API_BASE}/get-department-list`).subscribe({ next: (res) => { const data = Array.isArray(res) ? res : (res?.data || []); this.departments = (data || []).map((d:any)=> ({ id: d.department_id || d.dept_id || d.id || d.deptId, name: d.department_name || d.dept_name || d.name })); }, error: () => {} });
-    this.http.get<any>(`${API_BASE}/get-teams-list`).subscribe({ next: (res) => { const data = Array.isArray(res) ? res : (res?.data || []); this.teams = (data || []).map((t:any)=> ({ id: t.team_id || t.id || t.teamId, name: t.team_name || t.name })); }, error: () => {} });
   }
 
+  private loadGlobalDepartmentTeamLists() {
+    if (!this.isSuperAdmin) return;
+    this.http.get<any>(`${API_BASE}/get-department-list`).subscribe({ next: (res) => { const data = Array.isArray(res) ? res : (res?.data || []); this.departments = (data || []).map((d:any)=> ({ id: d.department_id || d.dept_id || d.id || d.deptId, name: d.department_name || d.dept_name || d.name })); }, error: () => { this.departments = []; } });
+    this.http.get<any>(`${API_BASE}/get-teams-list`).subscribe({ next: (res) => { const data = Array.isArray(res) ? res : (res?.data || []); this.teams = (data || []).map((t:any)=> ({ id: t.team_id || t.id || t.teamId, name: t.team_name || t.name })); }, error: () => { this.teams = []; } });
+  }
   filteredInstitutes() {
     const q = (this.instituteSearch || '').trim().toLowerCase();
     if (!q) return this.institutes;
@@ -195,6 +199,9 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   }
 
   onInstituteAutocompleteSelected(id: string | null) {
+    if (!this.isSuperAdmin && this.loginInstituteId) {
+      id = this.loginInstituteId;
+    }
     this.selectedInstitute = id;
     this.syncInstituteSearch();
     this.onInstituteChange(id);
@@ -206,10 +213,17 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   }
 
   onInstituteChange(iid: any) {
+    if (!this.isSuperAdmin && this.loginInstituteId) {
+      iid = this.loginInstituteId;
+      this.selectedInstitute = this.loginInstituteId;
+    }
+    this.selectedDepartments = [];
+    this.selectedTeams = [];
     // called when institute selection changes; fetch departments and teams scoped to institute
     if (!iid) {
       this.departments = [];
       this.teams = [];
+      if (this.isSuperAdmin) this.loadGlobalDepartmentTeamLists();
       return;
     }
     // departments
@@ -232,8 +246,9 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   fetchCategories(){
     this.loader.show();
     let params = new HttpParams();
+    const scopedInstitute = this.isSuperAdmin ? this.selectedInstitute : (this.loginInstituteId || this.selectedInstitute);
     if (this.filterName) params = params.set('name', this.filterName);
-    if (this.selectedInstitute) params = params.set('institute', this.selectedInstitute);
+    if (scopedInstitute) params = params.set('institute', scopedInstitute);
     if (this.selectedDepartments && this.selectedDepartments.length) params = params.set('departments', this.selectedDepartments.join(','));
     if (this.selectedTeams && this.selectedTeams.length) params = params.set('teams', this.selectedTeams.join(','));
     // optional date filters
@@ -404,3 +419,4 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     return [];
   }
 }
+
