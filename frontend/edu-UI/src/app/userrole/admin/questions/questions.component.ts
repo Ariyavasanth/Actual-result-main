@@ -13,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { startWith, map } from 'rxjs/operators';
 import { API_BASE } from 'src/app/shared/api.config';
@@ -133,7 +134,7 @@ export class AdminQuestionsComponent {
   private institutesUrl = `${API_BASE}/get-institute-list`;
   private examsUrl = `${API_BASE}/get-exams-list`;
   private categoriesUrl = `${API_BASE}/get-categories-list`;
-  constructor(private http: HttpClient,private pageMeta: PageMetaService, private loader: LoaderService) {
+  constructor(private http: HttpClient,private pageMeta: PageMetaService, private loader: LoaderService, private router: Router) {
     // infer super-admin role and default institute from session data when available
     try {
       const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
@@ -150,6 +151,10 @@ export class AdminQuestionsComponent {
 
     // call to populate institutes dropdown; loadCategories will be triggered after institutes load if an institute is prefilled
     this.loadInstitutes();
+  }
+
+  goBackToQuestions(): void {
+    this.router.navigate(['/view-questions']);
   }
 
   ngOnInit(): void {

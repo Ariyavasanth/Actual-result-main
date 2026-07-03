@@ -94,6 +94,7 @@ export class ViewQuestionsComponent implements OnDestroy {
   private examsUrl = `${API_BASE}/get-exams-list`;
   private questionsUrl = `${API_BASE}/get-questions-details`;
   private categoriesUrl = `${API_BASE}/get-categories-list`;
+  private readonly questionsReturnStateKey = 'questions_return_state';
   categories: Array<any> = [];
   categoryCtrl = new FormControl('');
   filteredCategories$: Observable<any[]> = of([]);
@@ -118,6 +119,7 @@ export class ViewQuestionsComponent implements OnDestroy {
 
   ngOnInit(): void {
     this.pageMeta.setMeta('Questions', 'Browse and review question bank');
+    this.restoreQuestionsReturnState();
   }
 
   ngAfterViewInit(): void {
@@ -409,6 +411,7 @@ export class ViewQuestionsComponent implements OnDestroy {
 
   editQuestion(q: QuestionRow) {
     // store the question into session storage and navigate to the editor
+    this.saveQuestionsReturnState();
     try { sessionStorage.setItem('edit_question', JSON.stringify(q)); } catch (e) { /* ignore */ }
     this.viewedQuestion = null;
     // navigate to the questions editor route - reuse same route as Insert Question
@@ -506,5 +509,60 @@ export class ViewQuestionsComponent implements OnDestroy {
 
   private toTitleCase(str: string): string {
     return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+  }
+
+  private saveQuestionsReturnState(): void {
+    try {
+      const state = {
+        filter: this.filter,
+        selectedInstitute: this.selectedInstitute,
+        selectedCategories: this.selectedCategories,
+        categoryFilterName: this.categoryFilterName,
+        categorySearch: this.categorySearch,
+        selectedDepartments: this.selectedDepartments,
+        selectedTeams: this.selectedTeams,
+        filterCreationDateAfter: this.filterCreationDateAfter ? this.filterCreationDateAfter.toISOString() : null,
+        filterCreationDate: this.filterCreationDate ? this.filterCreationDate.toISOString() : null,
+        filterActiveStatus: this.filterActiveStatus,
+        filterCreatedByMe: this.filterCreatedByMe,
+        filterPublicAccess: this.filterPublicAccess,
+        hasAppliedFilters: this.hasAppliedFilters,
+        questions: this.questions
+      };
+      sessionStorage.setItem(this.questionsReturnStateKey, JSON.stringify(state));
+    } catch (e) { /* ignore storage errors */ }
+  }
+
+  private restoreQuestionsReturnState(): void {
+    try {
+      const raw = sessionStorage.getItem(this.questionsReturnStateKey);
+      if (!raw) return;
+      const state = JSON.parse(raw);
+      sessionStorage.removeItem(this.questionsReturnStateKey);
+
+      this.selectedInstitute = state?.selectedInstitute || '';
+      this.selectedCategories = Array.isArray(state?.selectedCategories) ? state.selectedCategories : [];
+      this.categoryFilterName = state?.categoryFilterName || '';
+      this.categorySearch = state?.categorySearch || '';
+      this.categoryCtrl.setValue(this.categoryFilterName || '');
+      this.selectedDepartments = Array.isArray(state?.selectedDepartments) ? state.selectedDepartments : [];
+      this.selectedTeams = Array.isArray(state?.selectedTeams) ? state.selectedTeams : [];
+      this.filterCreationDateAfter = state?.filterCreationDateAfter ? new Date(state.filterCreationDateAfter) : null;
+      this.filterCreationDate = state?.filterCreationDate ? new Date(state.filterCreationDate) : null;
+      this.filterActiveStatus = typeof state?.filterActiveStatus === 'undefined' ? null : state.filterActiveStatus;
+      this.filterCreatedByMe = !!state?.filterCreatedByMe;
+      this.filterPublicAccess = typeof state?.filterPublicAccess === 'undefined' ? null : state.filterPublicAccess;
+      this.hasAppliedFilters = !!state?.hasAppliedFilters;
+      this.questions = Array.isArray(state?.questions) ? state.questions : [];
+      this.dataSource.data = this.questions;
+      this.selectedQuestionIds.clear();
+      if (this.selectedInstitute) {
+        this.loadDepartments(this.selectedInstitute);
+        this.loadTeams(this.selectedInstitute);
+      }
+      this.applyFilter(state?.filter || '');
+    } catch (e) {
+      try { sessionStorage.removeItem(this.questionsReturnStateKey); } catch (_) {}
+    }
   }
 }
