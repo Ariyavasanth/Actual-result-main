@@ -8,7 +8,7 @@
         <div class="search">
             <mat-form-field appearance="outline" class="search-field">
                 <mat-icon matPrefix aria-hidden="false" aria-label="Search icon">search</mat-icon>
-                <input matInput placeholder="Search question bank" [(ngModel)]="filter"
+                <input matInput placeholder="Search within filtered results" [(ngModel)]="filter"
                     (ngModelChange)="applyFilter($event)" aria-label="Search question bank" />
                 <button mat-icon-button matSuffix *ngIf="filter" (click)="filter = ''; applyFilter('')"
                     aria-label="Clear search">
@@ -17,12 +17,14 @@
             </mat-form-field>
         </div>
         <div class="controls">
-            <div class="action-row" (click)="openFiltersOverlay(); $event.stopPropagation()">
-                <button #filtersBtn mat-flat-button type="button" class="button-one">
+            <div class="action-row">
+                <button #filtersBtn mat-flat-button type="button" class="button-one"
+                    (click)="openFiltersOverlay(); $event.stopPropagation()">
                     <mat-icon svgIcon="filter"></mat-icon>
-                    <span>Filters</span>
+                    <span>Filter</span>
                 </button>
-                <button mat-flat-button (click)="refresh()" class="button-one">
+                <button mat-flat-button type="button" (click)="refresh(); $event.stopPropagation()" class="button-one"
+                    title="Refresh filtered categories">
                     <mat-icon svgIcon="refresh"></mat-icon>
                     <span>Refresh</span>
                 </button>
@@ -182,6 +184,11 @@
                 </thead>
                 <tbody>
                     <tr mat-row *matRowDef="let row; columns: columns"></tr>
+                    <tr class="mat-row" *matNoDataRow>
+                        <td class="mat-cell empty-table-cell" [attr.colspan]="columns.length">
+                            {{ hasAppliedFilters ? 'No categories found for the selected filters.' : 'Apply filters to view categories.' }}
+                        </td>
+                    </tr>
                 </tbody>
 
             </table>

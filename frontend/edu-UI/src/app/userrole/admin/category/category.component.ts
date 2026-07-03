@@ -62,6 +62,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   categories: Array<{ id: string; name: string; description?: string; institute?: any; departments?: any[]; teams?: any[] }> = [];
   dataSource = new MatTableDataSource<any>([]);
   columns = ['name','description','active','actions'];
+  hasAppliedFilters = false;
 
   private filtersOverlayRef: OverlayRef | null = null;
   constructor(private http: HttpClient, private router: Router, private loader: LoaderService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private confirmService: ConfirmService) {}
@@ -90,7 +91,6 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     if (this.selectedInstitute) {
       this.onInstituteChange(this.selectedInstitute);
     }
-    this.fetchCategories();
   }
 
   @ViewChild(MatSort) sort!: MatSort;
@@ -104,6 +104,10 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   }
 
   refresh(){
+    if (!this.hasAppliedFilters) {
+      try { notify('Apply filters to fetch categories', 'info'); } catch(e) {}
+      return;
+    }
     this.fetchCategories();
   }
 
@@ -291,7 +295,9 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   }
 
   onApply(){
+    this.hasAppliedFilters = true;
     this.fetchCategories();
+    this.closeFiltersOverlay();
   }
 
   onReset(){
@@ -304,7 +310,11 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     this.filterActiveStatus = null;
     this.filterCreatedByMe = false;
     this.filterPublicAccess = null;
-    this.fetchCategories();
+    this.filter = '';
+    this.categories = [];
+    this.dataSource.data = [];
+    this.hasAppliedFilters = false;
+    this.closeFiltersOverlay();
   }
 
   // toggle active state locally and try to persist to server (best-effort)
