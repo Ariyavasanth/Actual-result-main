@@ -193,10 +193,10 @@ export class AdminQuestionsComponent {
           else if (correctIdxs.length > 1) correct = correctIdxs;
         }
 
-        const questionType = q.type || q.originalType || q.question_type || '';
+        const rawQuestionType = q.type || q.originalType || q.question_type || q.questionType || '';
+        const questionType = this.normalizeQuestionType(rawQuestionType, q);
         let optionAnswer = '';
-        const normalizedQuestionType = String(questionType).toLowerCase();
-        if ((normalizedQuestionType === 'fill' || normalizedQuestionType === 'descriptive') && Array.isArray(q.options)) {
+        if ((questionType === 'fill' || questionType === 'descriptive') && Array.isArray(q.options)) {
           const answerOption = q.options.find((o: any) => o && typeof o === 'object' && (o.is_correct === 1 || o.is_correct === true || o.is_correct === '1' || o.is_correct === 'true')) || q.options[0];
           if (typeof answerOption === 'string') optionAnswer = answerOption;
           else if (answerOption && typeof answerOption === 'object') optionAnswer = answerOption.text || answerOption.option_text || answerOption.option || answerOption.value || answerOption.label || '';
@@ -610,10 +610,30 @@ export class AdminQuestionsComponent {
     return this.questionTypes;
   }
 
+  getQuestionTypeOptions(q: any) {
+    const options = this.isEditing ? [...this.questionTypes] : [...this.filteredQuestionTypes];
+    const currentType = q?.type ? this.normalizeQuestionType(q.type, q) : '';
+    if (currentType && !options.some(t => t.value === currentType)) {
+      const found = (this.questionTypes || []).find(t => t.value === currentType);
+      if (found) options.unshift(found);
+    }
+    return options;
+  }
+
   private normalizeCategoryType(type: any): string {
     const normalized = String(type || '').trim().toLowerCase();
     if (normalized === 'descriptive') return 'descriptive';
     if (normalized === 'objective') return 'objective';
+    return normalized;
+  }
+
+  private normalizeQuestionType(type: any, question?: any): string {
+    const normalized = String(type || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+    if (['choose', 'single', 'single_choice', 'singlechoice', 'mcq', 'objective'].includes(normalized)) return 'choose';
+    if (['multi', 'multiple', 'multiple_choice', 'multiplechoice', 'multi_choice'].includes(normalized)) return 'multi';
+    if (['fill', 'fill_blank', 'fill_in_the_blank', 'fillintheblank', 'blank'].includes(normalized)) return 'fill';
+    if (['descriptive', 'description', 'subjective', 'essay', 'long_answer'].includes(normalized)) return 'descriptive';
+    if (question && Array.isArray(question.options) && question.options.length) return 'choose';
     return normalized;
   }
 
@@ -622,7 +642,7 @@ export class AdminQuestionsComponent {
     try {
       if (this.aiQuestionType && !allowed.has(this.aiQuestionType)) this.aiQuestionType = '';
       (this.questions || []).forEach((q: any) => {
-        if (q?.type && !allowed.has(q.type)) q.type = '';
+        if (!this.isEditing && q?.type && !allowed.has(q.type)) q.type = '';
       });
     } catch(e) {}
   }

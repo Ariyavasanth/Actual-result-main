@@ -298,7 +298,7 @@
                            <mat-label>Type</mat-label>
                            <mat-select id="q-type-{{qi}}" title="Question type" [(ngModel)]="q.type">
                               <mat-option value="">Select type</mat-option>
-                              <mat-option *ngFor="let t of filteredQuestionTypes" [value]="t.value">{{t.label}}</mat-option>
+                              <mat-option *ngFor="let t of getQuestionTypeOptions(q)" [value]="t.value">{{t.label}}</mat-option>
                            </mat-select>
                         </mat-form-field>
 
