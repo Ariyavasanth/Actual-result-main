@@ -68,6 +68,7 @@
                         <input matInput placeholder="All Institutes" [(ngModel)]="instituteSearch"
                             [matAutocomplete]="questionInstituteAuto" />
                         <mat-autocomplete #questionInstituteAuto="matAutocomplete"
+                            [displayWith]="displayInstitute"
                             (optionSelected)="onInstituteAutocompleteSelected($event.option.value)">
                             <mat-option value="">All Institutes</mat-option>
                             <mat-option *ngFor="let inst of filteredInstitutes()"

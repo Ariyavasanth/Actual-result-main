@@ -404,6 +404,11 @@ export class ViewQuestionsComponent implements OnDestroy {
     });
   }
 
+  displayInstitute = (value: string | null): string => {
+    if (!value) return '';
+    const found = this.institutes.find(i => String(i.institute_id) === String(value));
+    return found ? found.name : String(value);
+  };
   filteredInstitutes() {
     const q = (this.instituteSearch || '').trim().toLowerCase();
     if (!q) return this.institutes;
