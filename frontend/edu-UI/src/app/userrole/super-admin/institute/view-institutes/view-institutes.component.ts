@@ -302,11 +302,11 @@ export class ViewInstitutesComponent {
   resetFilters(){
     this.filters = { name: '', industry: '', sector: '', country: '', city: '', active_status: '' };
     this.filter = '';
+    this.dataSource.filter = '';
     this.institutes = [];
     this.rawRecords = [];
     this.dataSource.data = [];
     this.hasAppliedFilters = false;
-    this.closeFiltersOverlay();
   }
 
   refresh(){
