@@ -545,7 +545,7 @@ export class ViewInstitutesComponent {
 
   confirmDelete(i: Institute){
     try {
-      this.confirmService.confirm({ title: 'Delete Institute', message: `Delete institute ${i.name}? This action cannot be undone.`, confirmText: 'Delete', cancelText: 'Cancel' }).subscribe((ok) => {
+      this.confirmService.confirm({ title: 'Confirm Delete', message: `Are you sure you want to delete institute "${i.name}"? This action cannot be undone.`, confirmText: 'Delete', cancelText: 'Cancel' }).subscribe((ok) => {
         if (!ok) return;
         const uuid = i.institute_id || (i.raw && (i.raw.institute_id || i.raw.id || i.raw._id));
         if(!uuid){
