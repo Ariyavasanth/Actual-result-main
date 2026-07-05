@@ -188,7 +188,6 @@
                     <td mat-cell *matCellDef="let element">
                             <div class="actions-inline">
                             <button *hasAccess="'Categories'; hasAccessAction: 'view'" mat-icon-button color="primary" (click)="viewDetails(element)" title="View details"><mat-icon svgIcon="view"></mat-icon></button>
-                            <button *hasAccess="'Categories'; hasAccessAction: 'edit'" mat-icon-button color="accent" (click)="EditCategory(element)" title="Edit" class="edit-btn"><mat-icon svgIcon="edit"></mat-icon></button>
                             <button *hasAccess="'Categories'; hasAccessAction: 'delete'" mat-icon-button color="warn" (click)="deleteCategory(element)" title="Delete" class="delete-btn"><mat-icon svgIcon="delete"></mat-icon></button>
                         </div>
                     </td>
@@ -229,7 +228,6 @@
                         </div>
                     </div>
                 </div>
-                <button mat-icon-button (click)="closeModal()"><mat-icon>close</mat-icon></button>
             </div>
 
             <div class="modal-body">
@@ -313,9 +311,11 @@
 
                 <div class="modal-actions">
                     <button mat-button (click)="closeModal()">Close</button>
+                    <button mat-flat-button (click)="EditCategory(selectedCategory)" class="modal-btn-edit">
+                        <mat-icon>edit</mat-icon> Edit
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
-

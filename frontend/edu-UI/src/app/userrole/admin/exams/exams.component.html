@@ -204,15 +204,6 @@
                                 title="View exam">
                                 <mat-icon svgIcon="view"></mat-icon>
                             </button>
-                            <button *hasAccess="'Exams'; hasAccessAction: 'edit'" 
-                                mat-icon-button 
-                                color="accent" 
-                                (click)="onEdit(e)"
-                                aria-label="Edit exam"
-                                title="Edit exam"
-                                class="edit-btn">
-                                <mat-icon svgIcon="edit"></mat-icon>
-                            </button>
                             <button *hasAccess="'Exams'; hasAccessAction: 'delete'" 
                                 mat-icon-button 
                                 color="warn" 
@@ -265,12 +256,6 @@
                         </div>
                     </div>
                 </div>
-                <button mat-icon-button 
-                    (click)="closeModal()" 
-                    aria-label="Close exam details modal"
-                    class="close-modal-btn">
-                    <mat-icon>close</mat-icon>
-                </button>
             </div>
 
             <!-- Modal Body with Tabs -->
@@ -406,11 +391,9 @@
 
             <!-- Modal Footer -->
             <div class="modal-actions">
-                <button mat-stroked-button 
-                    color="primary" 
-                    (click)="closeModal()"
-                    aria-label="Close modal">
-                    Close
+                <button mat-stroked-button color="primary" (click)="closeModal()" aria-label="Close modal">Close</button>
+                <button mat-flat-button color="primary" (click)="onEdit(selectedExam)" aria-label="Edit exam">
+                    <mat-icon>edit</mat-icon> Edit
                 </button>
             </div>
         </div>

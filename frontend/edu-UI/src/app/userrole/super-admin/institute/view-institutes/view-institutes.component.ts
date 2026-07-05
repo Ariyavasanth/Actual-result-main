@@ -293,7 +293,22 @@ export class ViewInstitutesComponent {
     });
   }
 
+  private hasFilterValues(): boolean {
+    return !!(
+      this.filters.name ||
+      this.filters.industry ||
+      this.filters.sector ||
+      this.filters.country ||
+      this.filters.city ||
+      (this.filters.active_status !== '')
+    );
+  }
+
   applyFilters(){
+    if (!this.hasFilterValues()) {
+      try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
+      return;
+    }
     this.hasAppliedFilters = true;
     this.loadInstitutes();
     this.closeFiltersOverlay();

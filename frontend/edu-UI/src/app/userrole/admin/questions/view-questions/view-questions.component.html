@@ -280,13 +280,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-header-actions">
-                    <button *hasAccess="'Questions'; hasAccessAction: 'edit'" mat-icon-button color="accent"
-                        (click)="editQuestion(viewedQuestion)" title="Edit question" class="edit-btn">
-                        <mat-icon svgIcon="edit"></mat-icon>
-                    </button>
-                    <button mat-icon-button (click)="closeViewModal()" title="Close"><mat-icon>close</mat-icon></button>
-                </div>
             </div>
             <div class="modal-body">
                 <ng-container *ngIf="viewedQuestion">
@@ -349,6 +342,12 @@
                         </mat-tab-group>
                     </div>
                 </ng-container>
+            </div>
+            <div class="modal-actions">
+                <button mat-button (click)="closeViewModal()">Close</button>
+                <button *hasAccess="'Questions'; hasAccessAction: 'edit'" mat-flat-button color="primary" (click)="editQuestion(viewedQuestion)" class="modal-btn-edit">
+                    <mat-icon>edit</mat-icon> Edit
+                </button>
             </div>
         </div>
     </div>
