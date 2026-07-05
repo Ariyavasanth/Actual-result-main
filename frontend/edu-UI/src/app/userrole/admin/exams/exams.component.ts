@@ -65,7 +65,7 @@ export class AdminExamsComponent implements AfterViewInit {
   private apiUrl = `${API_BASE}/get-institute-list`;
 
   isSuperAdmin = false;
-  constructor(private http: HttpClient, private auth: AuthService, private loader: LoaderService, private overlay: Overlay, private vcr: ViewContainerRef, private pageMeta: PageMetaService, private confirmService: ConfirmService) {
+  constructor(private http: HttpClient, private auth: AuthService, private loader: LoaderService, private overlay: Overlay, private vcr: ViewContainerRef, private pageMeta: PageMetaService, private confirmService: ConfirmService, private router: Router) {
     // initialize isSuperAdmin from AuthService (synchronous helper)
     try {
       this.isSuperAdmin = !!this.auth.currentUserValue && ['super_admin', 'superadmin', 'super-admin'].includes((this.auth.currentUserValue.role || '').toLowerCase());
@@ -80,7 +80,7 @@ export class AdminExamsComponent implements AfterViewInit {
 
   clearEditAndCreate() {
     try { sessionStorage.removeItem('edit_exam'); } catch (e) { }
-    (window as any).location.href = '/create-exam';
+    this.openCreateExam();
   }
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -101,8 +101,9 @@ export class AdminExamsComponent implements AfterViewInit {
   private filtersOverlayRef: OverlayRef | null = null;
   ngOnInit(): void {
     this.pageMeta.setMeta('Exams', 'Browse and review exams');
+    const restoredReturnState = this.restoreExamsReturnState();
     try {
-      if (sessionStorage.getItem('exams_return_state') === 'true') {
+      if (!restoredReturnState && sessionStorage.getItem('exams_return_state') === 'true') {
         sessionStorage.removeItem('exams_return_state');
         this.hasAppliedFilters = true;
         this.shouldLoadExamsAfterInstitutes = true;
@@ -200,7 +201,8 @@ export class AdminExamsComponent implements AfterViewInit {
           });
           const editPayload = { ...item, categories: mapped };
           try { sessionStorage.setItem('edit_exam', JSON.stringify(editPayload)); } catch (_) { }
-          (window as any).location.href = '/create-exam';
+          this.saveExamsReturnState();
+          this.router.navigate(['/create-exam']);
         }, error: () => {
           // fallback: store the row object we already have (try to normalize if possible)
           try {
@@ -217,13 +219,15 @@ export class AdminExamsComponent implements AfterViewInit {
             const editPayloadFallback = { ...src, categories: mappedFallback };
             sessionStorage.setItem('edit_exam', JSON.stringify(editPayloadFallback));
           } catch (_) { try { sessionStorage.setItem('edit_exam', JSON.stringify(e)); } catch (_) { } }
-          (window as any).location.href = '/create-exam';
+          this.saveExamsReturnState();
+          this.router.navigate(['/create-exam']);
         }
       });
       return;
     }
     try { sessionStorage.setItem('edit_exam', JSON.stringify(e)); } catch (_) { }
-    (window as any).location.href = '/create-exam';
+    this.saveExamsReturnState();
+    this.router.navigate(['/create-exam']);
   }
 
   deleteSchedule(row: any) {
@@ -571,5 +575,56 @@ export class AdminExamsComponent implements AfterViewInit {
         this.teams = arr.map((t: any) => ({ id: t.team_id || t.id || t.teamId, name: t.name || t.team_name || t.title || '' }));
       }, error: (err) => { console.warn('Failed to load teams', err); this.teams = []; }
     });
+  }
+  openCreateExam(): void {
+    this.saveExamsReturnState();
+    this.router.navigate(['/create-exam']);
+  }
+
+  saveExamsReturnState(): void {
+    try {
+      sessionStorage.setItem('exams_table_return_state', JSON.stringify({
+        filter: this.filter,
+        selectedInstitute: this.selectedInstitute,
+        instituteSearch: this.instituteSearch,
+        filterName: this.filterName,
+        selectedDepartments: this.selectedDepartments,
+        selectedTeams: this.selectedTeams,
+        filterCreationDateAfter: this.filterCreationDateAfter ? this.filterCreationDateAfter.toISOString() : null,
+        filterCreationDate: this.filterCreationDate ? this.filterCreationDate.toISOString() : null,
+        filterActiveStatus: this.filterActiveStatus,
+        filterCreatedByMe: this.filterCreatedByMe,
+        hasAppliedFilters: this.hasAppliedFilters,
+        exams: this.exams
+      }));
+    } catch (e) { }
+  }
+
+  private restoreExamsReturnState(): boolean {
+    try {
+      const raw = sessionStorage.getItem('exams_table_return_state');
+      if (!raw) return false;
+      sessionStorage.removeItem('exams_table_return_state');
+      sessionStorage.removeItem('exams_return_state');
+      const state = JSON.parse(raw);
+      this.filter = state?.filter || '';
+      this.selectedInstitute = state?.selectedInstitute || '';
+      this.instituteSearch = state?.instituteSearch || '';
+      this.filterName = state?.filterName || '';
+      this.selectedDepartments = Array.isArray(state?.selectedDepartments) ? state.selectedDepartments : [];
+      this.selectedTeams = Array.isArray(state?.selectedTeams) ? state.selectedTeams : [];
+      this.filterCreationDateAfter = state?.filterCreationDateAfter ? new Date(state.filterCreationDateAfter) : null;
+      this.filterCreationDate = state?.filterCreationDate ? new Date(state.filterCreationDate) : null;
+      this.filterActiveStatus = typeof state?.filterActiveStatus === 'undefined' ? null : state.filterActiveStatus;
+      this.filterCreatedByMe = !!state?.filterCreatedByMe;
+      this.hasAppliedFilters = !!state?.hasAppliedFilters;
+      this.exams = Array.isArray(state?.exams) ? state.exams : [];
+      this.dataSource.data = this.exams;
+      this.applyFilter(this.filter || '');
+      return true;
+    } catch (e) {
+      try { sessionStorage.removeItem('exams_table_return_state'); } catch (_) { }
+      return false;
+    }
   }
 }

@@ -92,6 +92,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
       }
     } catch (e) { /* ignore */ }
     this.loadFilterLists();
+    this.restoreCategoryReturnState();
   }
 
   @ViewChild(MatSort) sort!: MatSort;
@@ -494,10 +495,12 @@ export class CategoryComponent implements OnInit, AfterViewInit {
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data || []);
         const category = items && items.length ? items[0] : element;
+        this.saveCategoryReturnState();
         try{ sessionStorage.setItem('edit_category', JSON.stringify(category)); }catch(e){}
         this.router.navigate(['/category/create']);
       },
       error: () => {
+        this.saveCategoryReturnState();
         try{ sessionStorage.setItem('edit_category', JSON.stringify(element)); }catch(e){}
         this.router.navigate(['/category/create']);
       },
@@ -526,5 +529,55 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     if (Array.isArray(v)) return v;
     if (typeof v === 'object') return Object.keys(v).map(k => v[k]);
     return [];
+  }
+  openCreateCategory(): void {
+    this.saveCategoryReturnState();
+    this.router.navigate(['/category/create']);
+  }
+
+  saveCategoryReturnState(): void {
+    try {
+      sessionStorage.setItem('category_return_state', JSON.stringify({
+        filter: this.filter,
+        filterName: this.filterName,
+        selectedInstitute: this.selectedInstitute,
+        instituteSearch: this.instituteSearch,
+        selectedDepartments: this.selectedDepartments,
+        selectedTeams: this.selectedTeams,
+        filterCreationDateAfter: this.filterCreationDateAfter ? this.filterCreationDateAfter.toISOString() : null,
+        filterCreationDate: this.filterCreationDate ? this.filterCreationDate.toISOString() : null,
+        filterActiveStatus: this.filterActiveStatus,
+        filterCreatedByMe: this.filterCreatedByMe,
+        filterPublicAccess: this.filterPublicAccess,
+        hasAppliedFilters: this.hasAppliedFilters,
+        categories: this.categories
+      }));
+    } catch (e) { }
+  }
+
+  private restoreCategoryReturnState(): void {
+    try {
+      const raw = sessionStorage.getItem('category_return_state');
+      if (!raw) return;
+      sessionStorage.removeItem('category_return_state');
+      const state = JSON.parse(raw);
+      this.filter = state?.filter || '';
+      this.filterName = state?.filterName || '';
+      this.selectedInstitute = state?.selectedInstitute || this.selectedInstitute;
+      this.instituteSearch = state?.instituteSearch || '';
+      this.selectedDepartments = Array.isArray(state?.selectedDepartments) ? state.selectedDepartments : [];
+      this.selectedTeams = Array.isArray(state?.selectedTeams) ? state.selectedTeams : [];
+      this.filterCreationDateAfter = state?.filterCreationDateAfter ? new Date(state.filterCreationDateAfter) : null;
+      this.filterCreationDate = state?.filterCreationDate ? new Date(state.filterCreationDate) : null;
+      this.filterActiveStatus = typeof state?.filterActiveStatus === 'undefined' ? null : state.filterActiveStatus;
+      this.filterCreatedByMe = !!state?.filterCreatedByMe;
+      this.filterPublicAccess = typeof state?.filterPublicAccess === 'undefined' ? null : state.filterPublicAccess;
+      this.hasAppliedFilters = !!state?.hasAppliedFilters;
+      this.categories = Array.isArray(state?.categories) ? state.categories : [];
+      this.dataSource.data = this.categories;
+      this.applyFilter(this.filter || '');
+    } catch (e) {
+      try { sessionStorage.removeItem('category_return_state'); } catch (_) { }
+    }
   }
 }

@@ -193,6 +193,7 @@ export class ViewInstitutesComponent {
     try {
       this.pageMeta.setMeta('Institutes', 'View and manage registered institutes');
     } catch (e) { /* ignore if service not available */ }
+    this.restoreInstituteReturnState();
   }
   ngAfterViewInit(): void {
     try{ this.dataSource.paginator = this.paginator; this.dataSource.sort = this.sort; }catch(e){}
@@ -526,6 +527,7 @@ export class ViewInstitutesComponent {
       try { payload.subscription_end = fmt(raw.subscription_end || raw.subscriptionEnd || ''); } catch(e) { payload.subscription_end = ''; }
       sessionStorage.setItem('edit_institute', JSON.stringify(payload));
     } catch(e) {}
+    this.saveInstituteReturnState();
     this.router.navigate(['/institute-register']);
     return;
     // build a reactive edit form mirroring the register form for consistent UX
@@ -653,5 +655,39 @@ export class ViewInstitutesComponent {
       } as Institute;
     }
     this.closeModal();
+  }
+  openInstituteRegister(): void {
+    this.saveInstituteReturnState();
+    this.router.navigate(['/institute-register']);
+  }
+
+  saveInstituteReturnState(): void {
+    try {
+      sessionStorage.setItem('institute_return_state', JSON.stringify({
+        filter: this.filter,
+        filters: this.filters,
+        hasAppliedFilters: this.hasAppliedFilters,
+        institutes: this.institutes,
+        rawRecords: this.rawRecords
+      }));
+    } catch (e) { }
+  }
+
+  private restoreInstituteReturnState(): void {
+    try {
+      const raw = sessionStorage.getItem('institute_return_state');
+      if (!raw) return;
+      sessionStorage.removeItem('institute_return_state');
+      const state = JSON.parse(raw);
+      this.filter = state?.filter || '';
+      this.filters = state?.filters || this.filters;
+      this.hasAppliedFilters = !!state?.hasAppliedFilters;
+      this.institutes = Array.isArray(state?.institutes) ? state.institutes : [];
+      this.rawRecords = Array.isArray(state?.rawRecords) ? state.rawRecords : [];
+      this.dataSource.data = this.institutes;
+      this.applyFilter(this.filter || '');
+    } catch (e) {
+      try { sessionStorage.removeItem('institute_return_state'); } catch (_) { }
+    }
   }
 }

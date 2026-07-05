@@ -84,6 +84,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.pageMeta.setMeta('Scheduled Exams', 'Browse and review scheduled exams');
     this.loadInstitutes();
+    this.restoreScheduleReturnState();
   }
 
   refresh() {
@@ -499,6 +500,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
       sessionStorage.setItem('edit_exam', JSON.stringify(payload));
     } catch (e) { /* ignore storage errors */ }
     // navigate to the schedule editor page (route used for creating/editing schedules)
+    this.saveScheduleReturnState();
     this.router.navigate(['/schedule-exam']);
   }
 
@@ -547,5 +549,53 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
         try { notify(msg, 'error'); } catch(e) {}
       } });
     });
+  }
+  openScheduleExam(): void {
+    this.saveScheduleReturnState();
+    this.router.navigate(['/schedule-exam']);
+  }
+
+  saveScheduleReturnState(): void {
+    try {
+      sessionStorage.setItem('schedule_return_state', JSON.stringify({
+        search: this.search,
+        selectedInstitute: this.selectedInstitute,
+        instituteSearch: this.instituteSearch,
+        filterName: this.filterName,
+        selectedDepartments: this.selectedDepartments,
+        selectedTeams: this.selectedTeams,
+        filterCreationDateAfter: this.filterCreationDateAfter ? this.filterCreationDateAfter.toISOString() : null,
+        filterCreationDate: this.filterCreationDate ? this.filterCreationDate.toISOString() : null,
+        filterActiveStatus: this.filterActiveStatus,
+        filterCreatedByMe: this.filterCreatedByMe,
+        hasAppliedFilters: this.hasAppliedFilters,
+        schedules: this.schedules
+      }));
+    } catch (e) { }
+  }
+
+  private restoreScheduleReturnState(): void {
+    try {
+      const raw = sessionStorage.getItem('schedule_return_state');
+      if (!raw) return;
+      sessionStorage.removeItem('schedule_return_state');
+      const state = JSON.parse(raw);
+      this.search = state?.search || '';
+      this.selectedInstitute = state?.selectedInstitute || '';
+      this.instituteSearch = state?.instituteSearch || '';
+      this.filterName = state?.filterName || '';
+      this.selectedDepartments = Array.isArray(state?.selectedDepartments) ? state.selectedDepartments : [];
+      this.selectedTeams = Array.isArray(state?.selectedTeams) ? state.selectedTeams : [];
+      this.filterCreationDateAfter = state?.filterCreationDateAfter ? new Date(state.filterCreationDateAfter) : null;
+      this.filterCreationDate = state?.filterCreationDate ? new Date(state.filterCreationDate) : null;
+      this.filterActiveStatus = typeof state?.filterActiveStatus === 'undefined' ? null : state.filterActiveStatus;
+      this.filterCreatedByMe = !!state?.filterCreatedByMe;
+      this.hasAppliedFilters = !!state?.hasAppliedFilters;
+      this.schedules = Array.isArray(state?.schedules) ? state.schedules : [];
+      this.dataSource.data = this.schedules;
+      this.applyFilter(this.search || '');
+    } catch (e) {
+      try { sessionStorage.removeItem('schedule_return_state'); } catch (_) { }
+    }
   }
 }

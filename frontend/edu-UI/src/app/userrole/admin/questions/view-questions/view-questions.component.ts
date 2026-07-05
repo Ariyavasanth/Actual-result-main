@@ -621,7 +621,12 @@ export class ViewQuestionsComponent implements OnDestroy {
     return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
   }
 
-  private saveQuestionsReturnState(): void {
+  openAddQuestions(): void {
+    this.saveQuestionsReturnState();
+    this.router.navigate(['/questions']);
+  }
+
+  saveQuestionsReturnState(): void {
     try {
       const state = {
         filter: this.filter,

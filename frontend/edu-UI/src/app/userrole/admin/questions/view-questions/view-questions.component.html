@@ -30,7 +30,7 @@
                 </button>
 
                 <button *hasAccess="'Questions'; hasAccessAction: 'add'" mat-flat-button color="primary"
-                    class="button-one" routerLink="/questions">
+                    class="button-one" (click)="openAddQuestions()">
                     <mat-icon svgIcon="add"></mat-icon> Add Questions
                 </button>
             </div>

@@ -25,7 +25,7 @@
           <span>Refresh</span>
         </button>
         <button *hasAccess="'Users'; hasAccessAction: 'add'" type="button" mat-flat-button color="primary"
-          routerLink="/user-register" class="button-one register-btn">
+          class="button-one register-btn" (click)="openUserRegister()">
           <mat-icon>person_add</mat-icon>
           <span>Register User</span>
         </button>

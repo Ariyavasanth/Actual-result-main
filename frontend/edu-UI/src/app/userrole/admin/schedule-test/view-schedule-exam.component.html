@@ -27,7 +27,7 @@
                     <mat-icon svgIcon="refresh"></mat-icon>
                     <span>Refresh</span>
                 </button>
-                <button *hasAccess="'Schedule Exam'; hasAccessAction: 'add'" mat-flat-button type="button" class="button-one" routerLink="/schedule-exam">
+                <button *hasAccess="'Schedule Exam'; hasAccessAction: 'add'" mat-flat-button type="button" class="button-one" (click)="openScheduleExam()">
                     <mat-icon svgIcon="add"></mat-icon>
                     <span>Schedule exam</span>
                 </button>

@@ -116,6 +116,7 @@ export class ViewUsersComponent {
 
     this.pageMeta.setMeta('Users', 'Manage platform users');
     this.loadInstitutes();
+    this.restoreUsersReturnState();
     // this.loadCountries();
     // this.loadCities();
 
@@ -741,6 +742,7 @@ export class ViewUsersComponent {
 
       sessionStorage.setItem('edit_user', JSON.stringify(payload));
     } catch(e) {}
+    this.saveUsersReturnState();
     this.router.navigate(['/user-register']);
   }
 
@@ -794,4 +796,48 @@ export class ViewUsersComponent {
   }
 
   closeModal(){ this.selectedUser = null; this.editing = false; this.editableUser = null }
+  openUserRegister(): void {
+    this.saveUsersReturnState();
+    this.router.navigate(['/user-register']);
+  }
+
+  saveUsersReturnState(): void {
+    try {
+      sessionStorage.setItem('users_return_state', JSON.stringify({
+        filter: this.filter,
+        selectedInstitute: this.selectedInstitute,
+        instituteSearch: this.instituteSearch,
+        filters: this.filters,
+        users: this.users,
+        rawRecords: this.rawRecords,
+        hasAppliedFilters: this.hasAppliedFilters,
+        pageSize: this.pageSize,
+        pageIndex: this.pageIndex,
+        totalCount: this.totalCount
+      }));
+    } catch (e) { }
+  }
+
+  private restoreUsersReturnState(): void {
+    try {
+      const raw = sessionStorage.getItem('users_return_state');
+      if (!raw) return;
+      sessionStorage.removeItem('users_return_state');
+      const state = JSON.parse(raw);
+      this.filter = state?.filter || '';
+      this.selectedInstitute = state?.selectedInstitute || '';
+      this.instituteSearch = state?.instituteSearch || '';
+      this.filters = state?.filters || this.filters;
+      this.users = Array.isArray(state?.users) ? state.users : [];
+      this.rawRecords = Array.isArray(state?.rawRecords) ? state.rawRecords : [];
+      this.hasAppliedFilters = !!state?.hasAppliedFilters;
+      this.pageSize = Number(state?.pageSize || this.pageSize);
+      this.pageIndex = Number(state?.pageIndex || 0);
+      this.totalCount = Number(state?.totalCount || this.users.length || 0);
+      this.dataSource.data = this.users;
+      this.applyFilter(this.filter || '');
+    } catch (e) {
+      try { sessionStorage.removeItem('users_return_state'); } catch (_) { }
+    }
+  }
 }
