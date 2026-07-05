@@ -1,19 +1,6 @@
 <div class="page institute-register">
 
-  <!-- ── Top Toolbar ── -->
-  <div class="toolbar">
-    <div class="title">
-
-    </div>
-    <div class="form-actions">
-      <button mat-flat-button color="accent" type="button" class="btn-cancel" routerLink="/view-institutes">
-        <mat-icon svgIcon="arrow_back"></mat-icon>
-        <span>View Institutes</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- ── Form Card ── -->
+<!-- ── Form Card ── -->
   <div class="form-card">
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
       <mat-horizontal-stepper linear #stepper>
@@ -80,10 +67,15 @@
 
             <div class="form-actions">
               <span></span>
-              <button type="button" mat-button matStepperNext class="next-btn">
-                <span>Next</span>
-                <mat-icon svgIcon="arrow_forward"></mat-icon>
-              </button>
+              <div class="footer-actions-right">
+                <button type="button" mat-button class="prev-btn" routerLink="/view-institutes">
+                  <span>Cancel</span>
+                </button>
+                <button type="button" mat-button matStepperNext class="next-btn">
+                  <span>Next</span>
+                  <mat-icon svgIcon="arrow_forward"></mat-icon>
+                </button>
+              </div>
             </div>
           </div>
         </mat-step>
