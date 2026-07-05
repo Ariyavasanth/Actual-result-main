@@ -527,7 +527,27 @@ export class ViewQuestionsComponent implements OnDestroy {
   }
 
   // Apply fetches with filters; reset clears filters and leaves the table empty.
+  private hasFilterValues(): boolean {
+    return !!(
+      this.selectedInstitute ||
+      this.selectedCategories.length ||
+      this.categoryFilterName ||
+      this.categorySearch ||
+      this.selectedDepartments.length ||
+      this.selectedTeams.length ||
+      this.filterCreationDateAfter ||
+      this.filterCreationDate ||
+      this.filterActiveStatus !== null ||
+      this.filterCreatedByMe ||
+      this.filterPublicAccess !== null
+    );
+  }
+
   onApply() {
+    if (!this.hasFilterValues()) {
+      try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
+      return;
+    }
     this.hasAppliedFilters = true;
     this.loadQuestions();
     this.closeFiltersOverlay();
@@ -546,11 +566,11 @@ export class ViewQuestionsComponent implements OnDestroy {
     this.filterCreatedByMe = false;
     this.filterPublicAccess = null;
     this.filter = '';
+    this.dataSource.filter = '';
     this.questions = [];
     this.dataSource.data = this.questions;
     this.selectedQuestionIds.clear();
     this.hasAppliedFilters = false;
-    this.closeFiltersOverlay();
   }
 
   // keep existing constructor-less usage working for tests

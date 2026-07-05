@@ -417,7 +417,24 @@ export class AdminExamsComponent implements AfterViewInit {
     const found = this.institutes.find(i => String(i.institute_id) === String(this.selectedInstitute || ''));
     this.instituteSearch = found ? found.short_name : '';
   }
+  private hasFilterValues(): boolean {
+    return !!(
+      this.filterName ||
+      this.selectedInstitute ||
+      this.selectedDepartments.length ||
+      this.selectedTeams.length ||
+      this.filterCreationDateAfter ||
+      this.filterCreationDate ||
+      this.filterActiveStatus !== null ||
+      this.filterCreatedByMe
+    );
+  }
+
   onApply() {
+    if (!this.hasFilterValues()) {
+      try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
+      return;
+    }
     this.hasAppliedFilters = true;
     this.loadExamsForInstitute(this.selectedInstitute || undefined);
     this.closeFiltersOverlay();
@@ -432,10 +449,10 @@ export class AdminExamsComponent implements AfterViewInit {
     this.filterActiveStatus = null;
     this.filterCreatedByMe = false;
     this.filter = '';
+    this.dataSource.filter = '';
     this.exams = [];
     this.dataSource.data = [];
     this.hasAppliedFilters = false;
-    this.closeFiltersOverlay();
   }
   // ngAfterViewInit(): void {
   //   this.loadExamsForInstitute(this.selectedInstitute || undefined);

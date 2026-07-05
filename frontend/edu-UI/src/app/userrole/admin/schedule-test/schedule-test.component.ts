@@ -530,9 +530,23 @@ export class AdminScheduleTestComponent {
       complete: () => { this.loader.hide(); }
     });
   }
+  private hasExamFilterValues(): boolean {
+    return !!(
+      this.filterExamName ||
+      (this.selectedDepartments && this.selectedDepartments.length) ||
+      (this.selectedTeams && this.selectedTeams.length) ||
+      this.filterCreationDateAfter ||
+      this.filterCreationDate ||
+      this.filterCreatedByMe
+    );
+  }
 
   // Called when Apply button is clicked (explicit apply wrapper)
   applyFilters() {
+    if (!this.hasExamFilterValues()) {
+      try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
+      return;
+    }
     this.loader.show();
     // Build the exams API URL using the active filters (include departments/teams explicitly)
     let url = `${API_BASE}/get-exams-list`;

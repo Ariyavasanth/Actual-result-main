@@ -194,9 +194,24 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
       error: (err) => console.warn('Failed to load institutes', err)
     });
   }
+  private hasFilterValues(): boolean {
+    return !!(
+      this.selectedInstitute ||
+      this.filterName ||
+      this.selectedDepartments.length ||
+      this.selectedTeams.length ||
+      this.filterCreationDateAfter ||
+      this.filterCreationDate ||
+      this.filterActiveStatus !== null ||
+      this.filterCreatedByMe
+    );
+  }
 
   onApply() {
-    // build filters and call loadSchedules with selected institute and query params
+    if (!this.hasFilterValues()) {
+      try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
+      return;
+    }
     this.hasAppliedFilters = true;
     this.loadSchedules(this.selectedInstitute || undefined);
     this.closeFiltersOverlay();
@@ -213,10 +228,10 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
     this.filterActiveStatus = null;
     this.filterCreatedByMe = false;
     this.search = '';
+    this.dataSource.filter = '';
     this.schedules = [];
     this.dataSource.data = [];
     this.hasAppliedFilters = false;
-    this.closeFiltersOverlay();
   }
   onInstituteSelected(id: string) {
     this.selectedInstitute = id || '';

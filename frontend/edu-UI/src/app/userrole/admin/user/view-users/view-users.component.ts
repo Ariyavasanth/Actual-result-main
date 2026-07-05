@@ -342,8 +342,25 @@ export class ViewUsersComponent {
       error: (err) => { console.error('Failed loading users', err); this.loading.hide(); this.users = []; }
     });
   }
+  private hasFilterValues(): boolean {
+    return !!(
+      this.filters.institute ||
+      this.filters.name ||
+      this.filters.department ||
+      this.filters.team ||
+      this.filters.joining_from ||
+      this.filters.joining_to ||
+      this.filters.active_status !== '' ||
+      this.filters.country ||
+      this.filters.city
+    );
+  }
 
   applyFilters(){
+    if (!this.hasFilterValues()) {
+      try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
+      return;
+    }
     this.pageIndex = 0;
     this.hasAppliedFilters = true;
     this.loadUsers();
@@ -356,6 +373,7 @@ export class ViewUsersComponent {
     this.selectedInstitute = '';
     this.instituteSearch = '';
     this.filter = '';
+    this.dataSource.filter = '';
     this.states=[];
     this.departments = [];
     this.teams = [];
@@ -379,7 +397,6 @@ export class ViewUsersComponent {
     this.dataSource.data = [];
     this.totalCount = 0;
     this.hasAppliedFilters = false;
-    this.closeFiltersOverlay();
   }
 
   onPageEvent(ev: PageEvent){

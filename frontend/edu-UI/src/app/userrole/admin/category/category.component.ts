@@ -419,8 +419,25 @@ export class CategoryComponent implements OnInit, AfterViewInit {
 
     });
   }
+  private hasFilterValues(): boolean {
+    return !!(
+      this.filterName ||
+      this.selectedInstitute ||
+      this.selectedDepartments.length ||
+      this.selectedTeams.length ||
+      this.filterCreationDateAfter ||
+      this.filterCreationDate ||
+      this.filterActiveStatus !== null ||
+      this.filterCreatedByMe ||
+      this.filterPublicAccess !== null
+    );
+  }
 
   onApply(){
+    if (!this.hasFilterValues()) {
+      try { notify('Please add filters in the filter form.', 'info'); } catch(e) {}
+      return;
+    }
     this.hasAppliedFilters = true;
     this.fetchCategories();
     this.closeFiltersOverlay();
@@ -438,10 +455,10 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     this.filterCreatedByMe = false;
     this.filterPublicAccess = null;
     this.filter = '';
+    this.dataSource.filter = '';
     this.categories = [];
     this.dataSource.data = [];
     this.hasAppliedFilters = false;
-    this.closeFiltersOverlay();
   }
 
   // toggle active state locally and try to persist to server (best-effort)
@@ -511,4 +528,3 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     return [];
   }
 }
-

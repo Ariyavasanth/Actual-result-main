@@ -390,8 +390,22 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       this.filteredCategories$ = of(this.categories || []);
     }
   }
+  private hasCategoryFilterValues(): boolean {
+    return !!(
+      (this.selectedDepartments && this.selectedDepartments.length) ||
+      (this.selectedTeams && this.selectedTeams.length) ||
+      this.filterCreationDateAfter ||
+      this.filterCreationDate ||
+      this.filterCreatedByMe ||
+      this.filterPublicAccess !== null
+    );
+  }
 
   onApply() {
+    if (!this.hasCategoryFilterValues()) {
+      try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
+      return;
+    }
     const filters: any = { institute_id: this.institute };
     if (this.selectedDepartments && this.selectedDepartments.length) filters.departments = this.selectedDepartments;
     if (this.selectedTeams && this.selectedTeams.length) filters.teams = this.selectedTeams;
