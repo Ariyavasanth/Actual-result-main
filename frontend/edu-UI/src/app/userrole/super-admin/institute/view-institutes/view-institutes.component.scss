@@ -237,3 +237,36 @@ $modal-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 .applied-filter-chip mat-icon { width: 1rem; height: 1rem; font-size: 1rem; color: #64748b; }
 .applied-filter-chip--locked { cursor: default; background: #eef2f7; color: #475569; }
 .applied-filter-clear { min-height: 1.75rem; padding: 0.25rem 0.75rem; border-radius: 0.5rem; border: 0.0625rem solid #1f7bff; background: #fff; color: #1f7bff; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+// Keep the institutes table fitted to the card after reducing row actions.
+:host ::ng-deep .list-wrapper {
+  overflow-x: hidden;
+}
+
+:host ::ng-deep .premium-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+:host ::ng-deep .premium-table .mat-column-name { width: 28%; }
+:host ::ng-deep .premium-table .mat-column-industry_type { width: 10%; }
+:host ::ng-deep .premium-table .mat-column-industry_sector { width: 9%; }
+:host ::ng-deep .premium-table .mat-column-primary_contact_person { width: 15%; }
+:host ::ng-deep .premium-table .mat-column-subscription_start { width: 11%; }
+:host ::ng-deep .premium-table .mat-column-subscription_end { width: 11%; }
+:host ::ng-deep .premium-table .mat-column-active { width: 8%; }
+:host ::ng-deep .premium-table .mat-column-actions { width: 8%; text-align: center; }
+
+:host ::ng-deep .premium-table .mat-column-actions .actions-inline {
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+:host ::ng-deep .premium-table .mat-column-name,
+:host ::ng-deep .premium-table .mat-column-primary_contact_person,
+:host ::ng-deep .premium-table .mat-column-subscription_start,
+:host ::ng-deep .premium-table .mat-column-subscription_end {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
