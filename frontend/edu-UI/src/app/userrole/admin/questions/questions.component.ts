@@ -817,6 +817,23 @@ export class AdminQuestionsComponent {
     return !!q && !!String(q.type || '').trim() && !!String(q.text || '').trim();
   }
 
+  private hasRequiredAnswer(q: any): boolean {
+    if (!q) return false;
+    const type = this.normalizeQuestionType(q.type, q);
+    if (type === 'fill' || type === 'descriptive') {
+      return !!String(q.answerText || q.answer || '').trim();
+    }
+    if (type === 'choose') {
+      if (typeof q.correct !== 'number') return false;
+      return !!String((q.options || [])[q.correct] || '').trim();
+    }
+    if (type === 'multi') {
+      if (!Array.isArray(q.correct) || !q.correct.length) return false;
+      return q.correct.every((idx: number) => !!String((q.options || [])[idx] || '').trim());
+    }
+    return true;
+  }
+
   // Call backend fine-tune endpoint to improve question/answer pair
   generateModelAnswer(qIndex:number, qText:string, answerText:string, finetuneInstructions?:string){
     this.loader.show();
@@ -940,6 +957,11 @@ export class AdminQuestionsComponent {
       }
       if (q.type === 'multi' && optionCount > 0 && (!Array.isArray(q.correct) || (q.correct as number[]).length === 0)){
         try { notify('Please select one or more correct options for multiple choice in all question blocks', 'error'); } catch(e){}
+        this.loader.hide();
+        return;
+      }
+      if (!this.hasRequiredAnswer(q)) {
+        try { notify('Answer is required for all question blocks', 'error'); } catch(e){}
         this.loader.hide();
         return;
       }
