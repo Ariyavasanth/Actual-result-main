@@ -34,20 +34,20 @@ const routes: Routes = [
   , { path: 'super-admin-dashboard', component: SuperDashboardComponent, canActivate: [PermissionGuard], data: { requiredRole: ['super_admin','superadmin','super-admin'] } }
   , { path: 'user-register', component: AdminUserRegisterComponent, canActivate: [PermissionGuard], data: { pageName: 'Users', action: 'add' } }
   , { path: 'questions', component: AdminQuestionsComponent, canActivate: [PermissionGuard], data: { pageName: 'Questions', action: 'add' } }
-  , { path: 'schedule-exam', component: AdminScheduleTestComponent, canActivate: [PermissionGuard], data: { pageName: 'Schedule Test', action: 'add' } }
-  , { path: 'view-schedule-exam', component: ViewScheduleExamComponent, canActivate: [PermissionGuard], data: { pageName: 'Schedule Test', action: 'view' } }
-  , { path: 'exams', component: AdminExamsComponent, canActivate: [PermissionGuard], data: { pageName: 'Tests', action: 'view' } }
-  , { path: 'create-exam', component: CreateExamComponent, canActivate: [PermissionGuard], data: { pageName: 'Tests', action: 'add' } }
+  , { path: 'schedule-exam', component: AdminScheduleTestComponent, canActivate: [PermissionGuard], data: { pageName: 'Schedule Exam', action: 'add' } }
+  , { path: 'view-schedule-exam', component: ViewScheduleExamComponent, canActivate: [PermissionGuard], data: { pageName: 'Schedule Exam', action: 'view' } }
+  , { path: 'exams', component: AdminExamsComponent, canActivate: [PermissionGuard], data: { pageName: 'Exams', action: 'view' } }
+  , { path: 'create-exam', component: CreateExamComponent, canActivate: [PermissionGuard], data: { pageName: 'Exams', action: 'add' } }
   , { path: 'view-users', component: ViewUsersComponent, canActivate: [PermissionGuard], data: { pageName: 'Users', action: 'view' } }
   , { path: 'unauthorized', component: UnauthorizedComponent }
   , { path: 'view-questions', component: ViewQuestionsComponent, canActivate: [PermissionGuard], data: { pageName: 'Questions', action: 'view' } }
-  , { path: 'category', component: CategoryComponent, canActivate: [PermissionGuard], data: { pageName: 'Question Banks', action: 'view' } }
-  , { path: 'category/create', component: CategoryCreateComponent, canActivate: [PermissionGuard], data: { pageName: 'Question Banks', action: 'add' } }
-  , { path: 'admin-dashboard', component: AdminResultsComponent, canActivate: [PermissionGuard], data: { requiredRole: ['admin','super_admin'] } }
-  , { path: 'user/exam', component: UserExamComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin'] } }
-  , { path: 'user-dashboard', component: UserDashboardComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin'] } }
-  , { path: 'user/test-result', component: UserTestResultComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin'] } }
-  , { path: 'user-exam', component: UserExamRunnerComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin'] } }
+  , { path: 'category', component: CategoryComponent, canActivate: [PermissionGuard], data: { pageName: 'Categories', action: 'view' } }
+  , { path: 'category/create', component: CategoryCreateComponent, canActivate: [PermissionGuard], data: { pageName: 'Categories', action: 'add' } }
+  , { path: 'admin-dashboard', component: AdminResultsComponent, canActivate: [PermissionGuard], data: { requiredRole: ['admin','super_admin','superadmin','super-admin'] } }
+  , { path: 'user/exam', component: UserExamComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin','superadmin','super-admin'] } }
+  , { path: 'user-dashboard', component: UserDashboardComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin','superadmin','super-admin'] } }
+  , { path: 'user/test-result', component: UserTestResultComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin','superadmin','super-admin'] } }
+  , { path: 'user-exam', component: UserExamRunnerComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin','superadmin','super-admin'] } }
 ];
 
 @NgModule({

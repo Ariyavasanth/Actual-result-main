@@ -18,7 +18,22 @@ export class PageAccessService {
   // cache stores a shared Observable so multiple callers reuse the same in-flight request
   private cache = new Map<string, Observable<PageAccessRow[]>>();
 
+  private readonly permissionAliases: Record<string, string> = {
+    'test': 'Exam',
+    'tests': 'Exams',
+    'question bank': 'Categories',
+    'question banks': 'Categories',
+    'schedule test': 'Schedule Exam',
+    'scheduled tests': 'Schedule Exam',
+    'test reports': 'Exam Reports'
+  };
+
   constructor(private http: HttpClient) {}
+
+  private normalizePageName(pageName: string): string {
+    const key = (pageName || '').trim().toLowerCase();
+    return this.permissionAliases[key] || pageName;
+  }
 
   // fetch for a given user id (or use current user id)
   fetchForUser(userId: string): Observable<PageAccessRow[]> {
@@ -59,9 +74,10 @@ export class PageAccessService {
   hasPermission(userId: string, pageName: string, action: 'view'|'add'|'edit'|'delete'): Observable<boolean> {
     return this.fetchForUser(userId).pipe(
       map(rows => {
-        const r = rows.find(x => x.page_name && x.page_name.toLowerCase() === (pageName || '').toLowerCase());
+        const permissionPageName = this.normalizePageName(pageName);
+        const r = rows.find(x => x.page_name && x.page_name.toLowerCase() === (permissionPageName || '').toLowerCase());
         if (!r) return false;
-        console.debug('[PageAccessService] Checking permission for page:', pageName, 'action:', action);
+        console.debug('[PageAccessService] Checking permission for page:', permissionPageName, 'requested:', pageName, 'action:', action);
         console.debug('[PageAccessService] Available rows:', rows);
         switch (action) {
           case 'add': return !!r.can_add;

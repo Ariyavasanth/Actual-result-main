@@ -110,6 +110,7 @@ export class SideNavComponent implements OnInit, OnDestroy {
     if (label === 'Question Banks') return 'Categories';
     if (label === 'Tests') return 'Exams';
     if (label === 'Schedule Test') return 'Schedule Exam';
+    if (label === 'Test Reports') return 'Exam Reports';
     return label;
   }
 

@@ -13,8 +13,22 @@ export class PermissionGuard implements CanActivate {
     private router: Router
   ) {}
 
+  private normalizePageName(pageName: string): string {
+    const aliases: Record<string, string> = {
+      'test': 'Exam',
+      'tests': 'Exams',
+      'question bank': 'Categories',
+      'question banks': 'Categories',
+      'schedule test': 'Schedule Exam',
+      'scheduled tests': 'Schedule Exam',
+      'test reports': 'Exam Reports'
+    };
+    const key = (pageName || '').trim().toLowerCase();
+    return aliases[key] || pageName;
+  }
+
   canActivate(route: ActivatedRouteSnapshot): Observable<boolean | UrlTree> {
-    const pageName = (route.data && (route.data as any)['pageName']) || (route.data && (route.data as any)['page']) || '';
+    const pageName = this.normalizePageName((route.data && (route.data as any)['pageName']) || (route.data && (route.data as any)['page']) || '');
     const action = (route.data && (route.data as any)['action']) || 'view';
     // optional role-based access: route.data.requiredRole can be string or array of strings
     const requiredRole = (route.data && (route.data as any)['requiredRole']) || null;
