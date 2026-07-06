@@ -75,7 +75,7 @@ export class CategoryCreateComponent {
       }
     }catch(e){ /* ignore parse errors */ }
 
-    this.pageMeta.setMeta(this.isEditing ? 'Edit question bank':'Create question bank', this.isEditing ? 'Update the category details and click Update to save changes.' : 'Add a new category for the question bank. Fill required fields and save.');
+    this.pageMeta.setMeta(this.isEditing ? 'Edit question bank':'Create question bank', this.isEditing ? 'Update the question bank details and click Update to save changes.' : 'Add a new question bank. Fill required fields and save.');
     this.loadInstitutes();
     if (this.institute) {
       this.loadDepartments();
@@ -210,16 +210,16 @@ export class CategoryCreateComponent {
       if (this.currentUserId) payload.updated_by = this.currentUserId;
       const url = `${API_BASE}/update-category/${encodeURIComponent(String(this.editId))}`;
       this.http.put<any>(url, payload).subscribe({ next: (res) => {
-        this.snack.open(res?.message || 'Category updated successfully', 'Close', { duration: 3000, horizontalPosition: 'right', verticalPosition: 'top' });
+        this.snack.open(res?.message || 'Question Bank updated successfully', 'Close', { duration: 3000, horizontalPosition: 'right', verticalPosition: 'top' });
         this.router.navigate(['/category']);
-      }, complete: () => { this.loader.hide(); }, error: (err) => { this.loader.hide(); console.error('Failed to update category', err); const msg = err?.error?.statusMessage || err?.error?.message || err?.message || 'Failed to update category'; this.snack.open(msg, 'Close', { duration: 5000, horizontalPosition: 'right', verticalPosition: 'top' }); } });
+      }, complete: () => { this.loader.hide(); }, error: (err) => { this.loader.hide(); console.error('Failed to update question bank', err); const msg = err?.error?.statusMessage || err?.error?.message || err?.message || 'Failed to update question bank'; this.snack.open(msg, 'Close', { duration: 5000, horizontalPosition: 'right', verticalPosition: 'top' }); } });
     } else {
       if (this.currentUserId) payload.created_by = this.currentUserId;
       const url = `${API_BASE}/add-categories`;
       this.http.post<any>(url, payload).subscribe({ next: (res) => {
-        this.snack.open(res?.message || 'Category saved successfully', 'Close', { duration: 3000, horizontalPosition: 'right', verticalPosition: 'top' });
+        this.snack.open(res?.message || 'Question Bank saved successfully', 'Close', { duration: 3000, horizontalPosition: 'right', verticalPosition: 'top' });
         this.router.navigate(['/category']);
-      }, complete: () => { this.loader.hide(); }, error: (err) => { this.loader.hide(); console.error('Failed to save category', err); const msg = err?.error?.statusMessage || err?.error?.message || err?.message || 'Failed to save category'; this.snack.open(msg, 'Close', { duration: 5000, horizontalPosition: 'right', verticalPosition: 'top' }); } });
+      }, complete: () => { this.loader.hide(); }, error: (err) => { this.loader.hide(); console.error('Failed to save question bank', err); const msg = err?.error?.statusMessage || err?.error?.message || err?.message || 'Failed to save question bank'; this.snack.open(msg, 'Close', { duration: 5000, horizontalPosition: 'right', verticalPosition: 'top' }); } });
     }
   }
      // Reset the form fields to their defaults

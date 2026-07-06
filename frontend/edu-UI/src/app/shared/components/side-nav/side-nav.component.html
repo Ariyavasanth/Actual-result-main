@@ -16,8 +16,8 @@
     <!-- Navigation -->
     <nav class="menu" role="menubar" aria-label="Main menu">
         <ng-container *ngFor="let m of menus">
-            <ng-container *ngIf="['Users','Categories','Questions','Exams','Schedule Exam'].includes(m.label); else plainLink">
-                <a *hasAccess="m.label; hasAccessAction: 'view'"
+            <ng-container *ngIf="['Users','Question Banks','Questions','Tests','Schedule Test'].includes(m.label); else plainLink">
+                <a *hasAccess="permissionNameForMenu(m.label); hasAccessAction: 'view'"
                     [routerLink]="m.path"
                     class="menu-item"
                     role="menuitem"

@@ -26,7 +26,7 @@
                            <mat-icon class="section-icon">assignment</mat-icon>
                            <div class="section-header-text">
                               <h2 class="section-heading">Basic Information</h2>
-                              <p class="section-desc">Select institute and exam to schedule.</p>
+                              <p class="section-desc">Select institute and test to schedule.</p>
                            </div>
                            <button #filtersBtn mat-stroked-button color="primary" type="button"
                               (click)="openFiltersOverlay(); $event.stopPropagation()" [disabled]="readOnly"
@@ -51,17 +51,17 @@
 
                            <mat-form-field appearance="outline" class="field-half">
                               <mat-icon matPrefix>assignment</mat-icon>
-                              <mat-label>Exam*</mat-label>
-                              <input matInput [formControl]="examCtrl" [matAutocomplete]="examAuto" placeholder="Pick an exam" required />
+                              <mat-label>Test*</mat-label>
+                              <input matInput [formControl]="examCtrl" [matAutocomplete]="examAuto" placeholder="Pick a test" required />
                               <mat-autocomplete #examAuto="matAutocomplete" [displayWith]="displayExam.bind(this)" (optionSelected)="onExamAutocompleteSelected($event.option.value)">
                                  <mat-option *ngFor="let ex of (filteredExams$ | async)" [value]="ex">{{ ex.title }}</mat-option>
                               </mat-autocomplete>
                               <mat-hint align="start">Required</mat-hint>
-                              <mat-error *ngIf="!model.exam_id">Exam is required.</mat-error>
+                              <mat-error *ngIf="!model.exam_id">Test is required.</mat-error>
                            </mat-form-field>
                         </div>
 
-                        <!-- Exam preview -->
+                        <!-- Test preview -->
                         <div *ngIf="selectedExam" class="exam-preview">
                            <div class="exam-preview-header">
                               <h4 class="exam-title">
@@ -186,7 +186,7 @@
                      <mat-icon class="section-icon">people</mat-icon>
                      <div class="section-header-text">
                         <h2 class="section-heading">Select Users</h2>
-                        <p class="section-desc">Choose which users to assign this exam to.</p>
+                        <p class="section-desc">Choose which users to assign this test to.</p>
                      </div>
                      <button #userFiltersBtn mat-stroked-button color="primary" type="button"
                         (click)="openUserFiltersOverlay(); $event.stopPropagation()" aria-haspopup="true"
@@ -353,7 +353,7 @@
                         </h4>
                         <div class="review-items">
                            <div class="review-item"><span class="review-label">Institute</span><span class="review-value">{{ (model.institute && (getInstituteName(model.institute) || model.institute)) || '—' }}</span></div>
-                           <div class="review-item"><span class="review-label">Exam</span><span class="review-value">{{ selectedExam?.title || model.exam_id || '—' }}</span></div>
+                           <div class="review-item"><span class="review-label">Test</span><span class="review-value">{{ selectedExam?.title || model.exam_id || '—' }}</span></div>
                            <div class="review-item"><span class="review-label">Scheduler name</span><span class="review-value">{{ model.schedulerName || '—' }}</span></div>
                         </div>
                      </div>
@@ -398,7 +398,7 @@
                   </button>
                   <button *ngIf="!readOnly" mat-flat-button color="primary" type="button" class="submit-btn" (click)="schedule()">
                      <mat-icon>event_available</mat-icon>
-                     <span>{{ model && (model.testName || model.schedulerName) ? 'Update' : 'Schedule Exam' }}</span>
+                     <span>{{ model && (model.testName || model.schedulerName) ? 'Update' : 'Schedule Test' }}</span>
                   </button>
                   <button *ngIf="readOnly" mat-stroked-button type="button" (click)="goBack()">
                      <mat-icon>arrow_back</mat-icon>
@@ -410,14 +410,14 @@
 
       </mat-horizontal-stepper>
 
-      <!-- Exam filters overlay -->
+      <!-- Test filters overlay -->
       <ng-template #filtersPanel>
          <div *ngIf="filterEnabled" class="filters-panel" (click)="filterEnabled = false">
             <div class="filter-block" (click)="$event.stopPropagation()">
 
                <mat-form-field appearance="outline" class="filter-item">
-                  <mat-label>Exam name</mat-label>
-                  <input matInput placeholder="Exam name" [(ngModel)]="filterExamName" />
+                  <mat-label>Test name</mat-label>
+                  <input matInput placeholder="Test name" [(ngModel)]="filterExamName" />
                </mat-form-field>
 
                <!-- <mat-form-field appearance="outline" class="filter-item">

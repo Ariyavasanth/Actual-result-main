@@ -114,8 +114,8 @@
             <mat-icon>quiz</mat-icon>
           </div>
           <div class="kpi-body">
-            <div class="kpi-val">{{ summary.totalExams }}</div>
-            <div class="kpi-label">Total Exams</div>
+            <div class="kpi-val">{{ summary.totalTests }}</div>
+            <div class="kpi-label">Total Tests</div>
           </div>
           <div class="kpi-decoration"></div>
         </div>
@@ -321,7 +321,7 @@
                 <strong>{{ a.user }}</strong> registered
               </span>
               <span class="activity-text" *ngIf="a.type !== 'user_registered'">
-                Exam <strong>{{ a.exam }}</strong> created
+                Test <strong>{{ a.exam }}</strong> created
               </span>
               <span class="activity-time">{{ a.timestamp || 'Recently' }}</span>
             </div>

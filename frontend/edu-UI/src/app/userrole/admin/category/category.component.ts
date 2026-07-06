@@ -72,7 +72,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
 
-    this.pageMeta.setMeta('Categories', 'View and manage question bank categories');
+    this.pageMeta.setMeta('Question Banks', 'View and manage question banks');
 
     // try to auto-select institute based on logged-in user
     try {
@@ -107,7 +107,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
 
   refresh(){
     if (!this.hasAppliedFilters) {
-      try { notify('Apply filters to fetch categories', 'info'); } catch(e) {}
+      try { notify('Apply filters to fetch question banks', 'info'); } catch(e) {}
       return;
     }
     this.fetchCategories();
@@ -158,7 +158,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     const scopedInstitute = this.isSuperAdmin ? this.selectedInstitute : (this.loginInstituteId || this.selectedInstitute);
     const instituteName = this.getInstituteLabel(scopedInstitute);
     if (instituteName) chips.push({ key: 'institute', label: `Institute: ${instituteName}`, removable: this.isSuperAdmin });
-    if (this.filterName) chips.push({ key: 'category', label: `Category: ${this.filterName}`, removable: true });
+    if (this.filterName) chips.push({ key: 'category', label: `Question Bank: ${this.filterName}`, removable: true });
     (this.selectedDepartments || []).forEach(id => chips.push({ key: `department:${id}`, label: `Department: ${this.getSelectedName(this.departments, id)}`, removable: true }));
     (this.selectedTeams || []).forEach(id => chips.push({ key: `team:${id}`, label: `Team: ${this.getSelectedName(this.teams, id)}`, removable: true }));
     if (this.filterCreationDateAfter) chips.push({ key: 'created_after', label: `Created after: ${this.formatFilterDate(this.filterCreationDateAfter)}`, removable: true });
@@ -217,7 +217,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   deleteCategory(c: any){
     const id = c.category_id || c.id;
     if (!id) return;
-    this.confirmService.confirm({ title: 'Delete Category', message: `Delete category ${c.name}? This action cannot be undone.`, confirmText: 'Delete', cancelText: 'Cancel' }).subscribe(ok => {
+    this.confirmService.confirm({ title: 'Delete Question Bank', message: `Delete question bank ${c.name}? This action cannot be undone.`, confirmText: 'Delete', cancelText: 'Cancel' }).subscribe(ok => {
       if (!ok) return;
       // optimistic remove
       const prev = [...this.categories];
@@ -227,8 +227,8 @@ export class CategoryComponent implements OnInit, AfterViewInit {
       const url = `${API_BASE}/delete/category/${encodeURIComponent(String(id))}?current_user=${encodeURIComponent(String(current_user))}`;
       // call backend generic manage route (category/delete)
       this.http.delete<any>(url , { }).subscribe({
-        next: (res) => { try { notify('Category deleted', 'success'); } catch(e) {} },
-        error: (err) => { console.error('Failed deleting category', err); try { notify('Failed to delete category', 'error'); } catch(e) {}; this.categories = prev; this.dataSource.data = this.categories; }
+        next: (res) => { try { notify('Question Bank deleted', 'success'); } catch(e) {} },
+        error: (err) => { console.error('Failed deleting question bank', err); try { notify('Failed to delete question bank', 'error'); } catch(e) {}; this.categories = prev; this.dataSource.data = this.categories; }
       });
     });
   }
@@ -466,7 +466,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
   toggleActive(element: any){
     const newState = !element.active;
     const action = newState ? 'activate' : 'deactivate';
-    this.confirmService.confirm({ title: `${action[0].toUpperCase()+action.slice(1)} Category`, message: `${action[0].toUpperCase()+action.slice(1)} category ${element.name}?`, confirmText: action[0].toUpperCase()+action.slice(1), cancelText: 'Cancel' }).subscribe(ok => {
+    this.confirmService.confirm({ title: `${action[0].toUpperCase()+action.slice(1)} Question Bank`, message: `${action[0].toUpperCase()+action.slice(1)} question bank ${element.name}?`, confirmText: action[0].toUpperCase()+action.slice(1), cancelText: 'Cancel' }).subscribe(ok => {
       if (!ok) return;
       const prev = element.active;
       element.active = newState;
@@ -475,8 +475,8 @@ export class CategoryComponent implements OnInit, AfterViewInit {
       if (!id) { element.active = prev; return; }
       const url = `${API_BASE}/category/${action}/${encodeURIComponent(String(id))}`;
       this.http.put<any>(url, { current_user: sessionStorage.getItem('user_id') || sessionStorage.getItem('user') || '' }).subscribe({
-        next: () => { try { notify(`Category ${action}d`, 'success'); } catch(e) {} },
-        error: (err) => { console.error('Failed updating category state', err); try { notify('Failed to update category status', 'error'); } catch(e) {} ; element.active = prev; element.active_status = prev; }
+        next: () => { try { notify(`Question Bank ${action}d`, 'success'); } catch(e) {} },
+        error: (err) => { console.error('Failed updating category state', err); try { notify('Failed to update question bank status', 'error'); } catch(e) {} ; element.active = prev; element.active_status = prev; }
       });
     });
   }

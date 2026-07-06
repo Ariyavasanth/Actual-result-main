@@ -150,16 +150,16 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   ngOnInit(): void {
     if (this.editMode) {
-      this.pageMeta.setMeta('Update Exam', 'Update the exam details and click Update to save changes.')
+      this.pageMeta.setMeta('Update Test', 'Update the exam details and click Update to save changes.')
     } else {
-      this.pageMeta.setMeta('Create Exam', 'Fill required fields and save the exam.')
+      this.pageMeta.setMeta('Create Test', 'Fill required fields and save the exam.')
     }
 
 
     // load institutes and edit payload, then ensure institute selection is reconciled
     this.loadInstitutes();
     // load edit payload first so it can override session
-    this.loadEditExam();
+    this.loadEditTest();
 
     // if an institute is already present (from edit payload), ensure dependent lists load
     if (this.institute) {
@@ -186,7 +186,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
    * If an exam has been marked for edit (stored in sessionStorage by the list page),
    * populate the form with its values so the user can edit and save.
    */
-  loadEditExam() {
+  loadEditTest() {
     this.loader.show();
     try {
       const raw = sessionStorage.getItem('edit_exam');
@@ -603,7 +603,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       const url = `${API_BASE}/update-exam`;
       this.http.post<any>(url, payload).subscribe({
         next: (res) => {
-          try { const msg = res?.statusMessage || res?.message || 'Exam updated'; const ok = typeof res?.status === 'undefined' ? true : !!res.status; notify(msg, ok ? 'success' : 'error'); } catch(e){}
+          try { const msg = res?.statusMessage || res?.message || 'Test updated'; const ok = typeof res?.status === 'undefined' ? true : !!res.status; notify(msg, ok ? 'success' : 'error'); } catch(e){}
           try { sessionStorage.removeItem('edit_exam'); } catch (e) { }
           this.router.navigate(['/exams']);
         }, error: (err) => {
@@ -618,7 +618,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loader.show();
     this.http.post<any>(url, payload).subscribe({
       next: (res) => {
-        try { const msg = res?.statusMessage || res?.message || 'Exam created'; const ok = typeof res?.status === 'undefined' ? true : !!res.status; notify(msg, ok ? 'success' : 'error'); } catch(e){}
+        try { const msg = res?.statusMessage || res?.message || 'Test created'; const ok = typeof res?.status === 'undefined' ? true : !!res.status; notify(msg, ok ? 'success' : 'error'); } catch(e){}
         try { sessionStorage.removeItem('edit_exam'); } catch (e) { }
         this.router.navigate(['/exams']);
       }, error: (err) => {

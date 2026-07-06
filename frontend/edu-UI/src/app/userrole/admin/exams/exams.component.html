@@ -1,6 +1,6 @@
 <div class="page admin-exams">
     <!-- ─── Toolbar / Controls ─── -->
-    <div class="toolbar" role="toolbar" aria-label="Exams management controls">
+    <div class="toolbar" role="toolbar" aria-label="Tests management controls">
         <div class="search">
             <mat-form-field appearance="outline" class="search-field">
                 <mat-icon matPrefix aria-hidden="true">search</mat-icon>
@@ -44,10 +44,10 @@
                 </button>
                 <button *hasAccess="'Exams'; hasAccessAction: 'add'" 
                     mat-flat-button 
-                    color="primary" type="button" class="button-one" (click)="openCreateExam()"
-                    aria-label="Create new exam">
+                    color="primary" type="button" class="button-one" (click)="openCreateTest()"
+                    aria-label="Create new test">
                     <mat-icon svgIcon="add"></mat-icon>
-                    <span>Add Exam</span>
+                    <span>Add Test</span>
                 </button>
             </div>
         </div>
@@ -85,11 +85,11 @@
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="filter-item">
-                        <mat-label>Exam Name</mat-label>
+                        <mat-label>Test Name</mat-label>
                         <input matInput 
-                            placeholder="Exam name" 
+                            placeholder="Test name"
                             [(ngModel)]="filterName"
-                            aria-label="Filter by exam name" />
+                            aria-label="Filter by test name" />
                     </mat-form-field>
 
                     <mat-form-field appearance="outline" class="filter-item">
@@ -144,14 +144,14 @@
             </div>
         </ng-template>
 
-        <!-- Exams List Table -->
+        <!-- Tests List Table -->
         <div class="list-wrapper">
             <table mat-table 
                 [dataSource]="dataSource" 
                 class="mat-elevation-z1 compact premium-table" 
                 matSort
                 role="grid"
-                aria-label="Exams list table">
+                aria-label="Tests list table">
 
                 <!-- Title Column -->
                 <ng-container matColumnDef="title">
@@ -233,12 +233,12 @@
             <mat-paginator [pageSizeOptions]="[25,50,100]" 
                 showFirstLastButtons
                 class="custom-paginator"
-                aria-label="Exam list pagination">
+                aria-label="Test list pagination">
             </mat-paginator>
         </div>
     </div>
 
-    <!-- ─── Modal for Viewing Exam Details ─── -->
+    <!-- ─── Modal for Viewing Test Details ─── -->
     <div *ngIf="showModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="examDetailsTitle">
         <div class="modal" tabindex="0">
             <!-- Modal Header -->
@@ -266,7 +266,7 @@
                         <mat-tab label="Overview & Settings">
                             <div class="tab-panel">
                                 <div class="detail-grid">
-                                    <div class="label">Exam Name</div>
+                                    <div class="label">Test Name</div>
                                     <div class="value">{{ selectedExam.title || selectedExam.name || '—' }}</div>
 
                                     <div class="label">Description</div>
@@ -290,17 +290,17 @@
                             </div>
                         </mat-tab>
 
-                        <!-- Categories Tab -->
-                        <mat-tab label="Categories">
+                        <!-- Question Banks Tab -->
+                        <mat-tab label="Question Banks">
                             <div class="tab-panel">
                                 <div *ngIf="selectedExam.categories?.length; else noCats">
                                     <table mat-table 
                                         [dataSource]="selectedExam.categories" 
                                         class="mat-elevation-z1 compact premium-table"
                                         role="grid"
-                                        aria-label="Exam categories">
+                                        aria-label="Test question banks">
                                         <ng-container matColumnDef="category">
-                                            <th mat-header-cell *matHeaderCellDef>Category</th>
+                                            <th mat-header-cell *matHeaderCellDef>Question Bank</th>
                                             <td mat-cell *matCellDef="let c">{{ c.category?.category_name || c.category_name }}</td>
                                         </ng-container>
                                         <ng-container matColumnDef="description">
@@ -385,7 +385,7 @@
                     </mat-tab-group>
                 </ng-container>
                 <ng-template #noData>
-                    <div class="muted">No exam data available</div>
+                    <div class="muted">No test data available</div>
                 </ng-template>
             </div>
 

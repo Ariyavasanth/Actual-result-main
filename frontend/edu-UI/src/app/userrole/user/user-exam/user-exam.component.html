@@ -1,5 +1,5 @@
 <main class="page user-exam-runner">
-  <p *ngIf="!exam" class="muted">No exam loaded. Please launch an exam first.</p>
+  <p *ngIf="!exam" class="muted">No exam loaded. Please launch a test first.</p>
   
   <ng-container *ngIf="exam">
     <!-- Sticky Header -->
@@ -28,7 +28,7 @@
     </header>
 
     <!-- Progress Section -->
-    <section class="progress-section" aria-label="Exam progress">
+    <section class="progress-section" aria-label="Test progress">
       <div class="progress-stats">
         <div class="stat-item answered">
           <mat-icon>check_circle</mat-icon>
@@ -46,7 +46,7 @@
           <span class="stat-label">Complete</span>
         </div>
       </div>
-      <div class="progress-bar-outer" role="progressbar" [attr.aria-valuenow]="progressPercent" aria-valuemin="0" aria-valuemax="100" title="Exam progress">
+      <div class="progress-bar-outer" role="progressbar" [attr.aria-valuenow]="progressPercent" aria-valuemin="0" aria-valuemax="100" title="Test progress">
         <div class="progress-bar-inner" [style.width.%]="progressPercent"></div>
       </div>
     </section>
@@ -89,7 +89,7 @@
 
     <!-- Questions -->
     <div class="questions">
-      <section class="q-list" aria-label="Exam questions">
+      <section class="q-list" aria-label="Test questions">
         <article *ngFor="let q of questions; let i = index" class="q-card" [attr.id]="'q-' + i" 
           [class.current]="currentIndex === i"
           [class.completed]="answers[q.id || i]"
@@ -220,7 +220,7 @@
           You have <strong>{{ questions.length - answeredCount }}</strong> unanswered question(s). Are you sure you want to submit?
         </p>
         <p class="confirm-body" *ngIf="questions.length - answeredCount === 0">
-          Great job! You've answered all questions. Ready to submit your exam?
+          Great job! You've answered all questions. Ready to submit your test?
         </p>
 
         <div class="confirm-actions">
@@ -230,7 +230,7 @@
           </button>
           <button type="button" class="btn btn-primary" (click)="submit()">
             <mat-icon>send</mat-icon>
-            <span>Submit Exam</span>
+            <span>Submit Test</span>
           </button>
         </div>
       </div>

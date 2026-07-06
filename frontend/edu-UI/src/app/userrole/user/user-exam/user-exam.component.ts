@@ -184,7 +184,7 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
 
   autoSubmit() {
     if (this.submitting) return;
-    try { notify('Time is up! Your exam will be submitted automatically.', 'info'); } catch(e){}
+    try { notify('Time is up! Your test will be submitted automatically.', 'info'); } catch(e){}
     this.submit();
   }
   stopTimer(){ if (this.intervalRef){ clearInterval(this.intervalRef); this.intervalRef = null; } }
@@ -230,7 +230,7 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
   }
 
   openConfirm() {
-    this.confirmService.confirm({ title: 'Submit Exam', message: 'Are you sure you want to submit the exam now?', confirmText: 'Submit', cancelText: 'Cancel' }).subscribe(ok => {
+    this.confirmService.confirm({ title: 'Submit Test', message: 'Are you sure you want to submit the test now?', confirmText: 'Submit', cancelText: 'Cancel' }).subscribe(ok => {
       if (!ok) return; this.submit();
     });
   }
@@ -269,7 +269,7 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
       error: (err) => {
         console.warn('Submit failed', err);
         this.submitting = false;
-        try { notify('Failed to submit exam. Please try again.', 'error'); } catch(e) { console.warn('Failed to submit exam. Please try again.'); }
+        try { notify('Failed to submit test. Please try again.', 'error'); } catch(e) { console.warn('Failed to submit test. Please try again.'); }
       }
     });
   }

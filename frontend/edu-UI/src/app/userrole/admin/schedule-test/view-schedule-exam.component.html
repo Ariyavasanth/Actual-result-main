@@ -1,8 +1,8 @@
 <div class="page view-schedule-exam">
     <div class="toolbar">
         <!-- <div class="title"> -->
-            <!-- <h2>Scheduled Exams</h2>
-            <p class="muted">List of scheduled exams</p> -->
+            <!-- <h2>Scheduled Tests</h2>
+            <p class="muted">List of scheduled tests</p> -->
             <div class="search">
                 <mat-form-field appearance="outline" class="search-field">
                     <mat-icon matPrefix aria-hidden="false" aria-label="Search icon">search</mat-icon>
@@ -27,9 +27,9 @@
                     <mat-icon svgIcon="refresh"></mat-icon>
                     <span>Refresh</span>
                 </button>
-                <button *hasAccess="'Schedule Exam'; hasAccessAction: 'add'" mat-flat-button type="button" class="button-one" (click)="openScheduleExam()">
+                <button *hasAccess="'Schedule Exam'; hasAccessAction: 'add'" mat-flat-button type="button" class="button-one" (click)="openScheduleTest()">
                     <mat-icon svgIcon="add"></mat-icon>
-                    <span>Schedule exam</span>
+                    <span>Schedule test</span>
                 </button>
 
             </div>
@@ -189,7 +189,7 @@
                 <tr mat-row *matRowDef="let row; columns: columns"></tr>
                 <tr class="mat-row" *matNoDataRow>
                     <td class="mat-cell empty-table-cell" [attr.colspan]="columns.length">
-                        {{ hasAppliedFilters ? 'No scheduled exams found for the selected filters.' : 'Apply filters to view scheduled exams.' }}
+                        {{ hasAppliedFilters ? 'No scheduled tests found for the selected filters.' : 'Apply filters to view scheduled tests.' }}
                     </td>
                 </tr>
             </table>
@@ -228,7 +228,7 @@
                                     <div class="label">Title</div>
                                     <div class="value">{{ selectedSchedule.title || selectedSchedule.name || '—' }}</div>
 
-                                    <div class="label">Exam</div>
+                                    <div class="label">Test</div>
                                     <div class="value">{{ selectedSchedule.exam?.title || '—' }}</div>
 
                                     <div class="label">Institute</div>

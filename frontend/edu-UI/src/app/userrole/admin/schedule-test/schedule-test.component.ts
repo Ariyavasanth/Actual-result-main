@@ -94,7 +94,7 @@ export class AdminScheduleTestComponent {
 
   ngOnInit(): void {
     try {
-      this.pageMeta.setMeta('Exam Schedule', 'Schedule and manage exams for your institute');
+      this.pageMeta.setMeta('Test Schedule', 'Schedule and manage tests for your institute');
     } catch (e) { /* ignore if service not available */ }
   }
   // Load users from backend using filters (reuses get-users endpoint conventions)

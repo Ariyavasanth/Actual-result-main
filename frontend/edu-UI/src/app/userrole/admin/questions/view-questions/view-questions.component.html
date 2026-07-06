@@ -77,15 +77,15 @@
                     </mat-form-field>
 
                     <!-- <mat-form-field appearance="outline" class="filter-item">
-                            <mat-label>Category</mat-label>
-                            <input matInput placeholder="Enter category" [(ngModel)]="categoryFilterName">
+                            <mat-label>Question Bank</mat-label>
+                            <input matInput placeholder="Enter question bank" [(ngModel)]="categoryFilterName">
                         </mat-form-field> -->
 
                     <mat-form-field appearance="outline" class="filter-item">
                         <mat-icon matPrefix>category</mat-icon>
-                        <mat-label>Category</mat-label>
+                        <mat-label>Question Bank</mat-label>
                         <input matInput [formControl]="categoryCtrl" [matAutocomplete]="categoryAuto"
-                            placeholder="Pick a category" />
+                            placeholder="Pick a question bank" />
                         <mat-autocomplete #categoryAuto="matAutocomplete" [displayWith]="displayCategory"
                             (optionSelected)="onCategorySelected($event.option.value)">
                             <mat-option *ngFor="let c of (filteredCategories$ | async)" [value]="c">{{ c.name ||
@@ -162,7 +162,7 @@
         <div class="list-wrapper">
             <div class="batch-actions" *ngIf="selectedQuestionIds.size > 0">
                 <mat-form-field appearance="outline" class="half">
-                    <mat-label>Target Category</mat-label>
+                    <mat-label>Target Question Bank</mat-label>
                     <mat-select [(value)]="selectedTargetCategory">
                         <mat-option *ngFor="let c of categories" [value]="c.category_id">{{c.name}}</mat-option>
                     </mat-select>
@@ -181,7 +181,7 @@
                 <colgroup>
                     <col style="width: 40px;" /> <!-- Selection Column -->
                     <col style="width: 460px " /> <!-- Question Text Column -->
-                    <col style="width: 150px;" /> <!-- Category Column -->
+                    <col style="width: 150px;" /> <!-- Question Bank Column -->
                     <col style="width: 100px;" /> <!-- Type Column -->
                     <col style="width: 80px;" /> <!-- Marks Column -->
                     <col style="width: 120px;" /> <!-- Actions Column -->
@@ -211,9 +211,9 @@
                     </td>
                 </ng-container>
 
-                <!-- Category Column -->
+                <!-- Question Bank Column -->
                 <ng-container matColumnDef="category">
-                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Category</th>
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Question Bank</th>
                     <td mat-cell *matCellDef="let q">{{ q.category || q.category_description || '—' }}</td>
                 </ng-container>
 
@@ -297,7 +297,7 @@
                                     <div class="label">Marks</div>
                                     <div class="value">{{ viewedQuestion?.marks || 0 }}</div>
                                     <!-- category -->
-                                    <div class="label">Category</div>
+                                    <div class="label">Question Bank</div>
                                     <div class="value">{{ viewedQuestion?.category ||
                                         viewedQuestion?.category_description || '—' }}</div>
                                     <!-- options -->

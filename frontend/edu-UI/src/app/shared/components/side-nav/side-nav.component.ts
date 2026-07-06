@@ -74,17 +74,17 @@ export class SideNavComponent implements OnInit, OnDestroy {
   private readonly routeToMenuMap: Record<string, string> = {
     '/user-register': 'Users',
     '/view-users': 'Users',
-    '/category': 'Categories',
-    '/category-create': 'Categories',
+    '/category': 'Question Banks',
+    '/category-create': 'Question Banks',
     '/view-questions': 'Questions',
     '/questions': 'Questions',
-    '/exams': 'Exams',
-    '/create-exam': 'Exams',
-    '/view-schedule-exam': 'Schedule Exam',
-    '/schedule-exam': 'Schedule Exam',
+    '/exams': 'Tests',
+    '/create-exam': 'Tests',
+    '/view-schedule-exam': 'Schedule Test',
+    '/schedule-exam': 'Schedule Test',
     '/view-institutes': 'Institutes',
     '/institute-register': 'Institutes',
-    '/admin/exam-reports': 'Exam Reports',
+    '/admin/exam-reports': 'Test Reports',
   };
 
   /** Updates selectedMenu by finding which menu path matches the current URL */
@@ -104,6 +104,13 @@ export class SideNavComponent implements OnInit, OnDestroy {
 
   onMenuClick(menu: { label: string, path: string, icon?: string }){
     try{ this.selectedMenu = menu?.label || null; }catch(e){ this.selectedMenu = null; }
+  }
+
+  permissionNameForMenu(label: string): string {
+    if (label === 'Question Banks') return 'Categories';
+    if (label === 'Tests') return 'Exams';
+    if (label === 'Schedule Test') return 'Schedule Exam';
+    return label;
   }
 
   toggleCollapse() { this.collapsed = !this.collapsed; this.updateParentSidenavClass(); }
@@ -152,17 +159,17 @@ export class SideNavComponent implements OnInit, OnDestroy {
       // admin and super-admin may see admin tools
       this.menus.push({ label: 'Admin Dashboard', path: '/admin-dashboard', icon: 'admin' });
       this.menus.push({ label: 'Users', path: '/view-users', icon: 'users' });
-      this.menus.push({ label: 'Categories', path: '/category', icon: 'category' });
+      this.menus.push({ label: 'Question Banks', path: '/category', icon: 'category' });
       this.menus.push({ label: 'Questions', path: '/view-questions', icon: 'quiz' });
-      this.menus.push({ label: 'Exams', path: '/exams', icon: 'exam' });
-      this.menus.push({ label: 'Schedule Exam', path: '/view-schedule-exam', icon: 'calendar' });
-      this.menus.push({ label: 'Exam Reports', path: '/admin/exam-reports', icon: 'report' });
+      this.menus.push({ label: 'Tests', path: '/exams', icon: 'exam' });
+      this.menus.push({ label: 'Schedule Test', path: '/view-schedule-exam', icon: 'calendar' });
+      this.menus.push({ label: 'Test Reports', path: '/admin/exam-reports', icon: 'report' });
     }
 
     if (role === 'user' || role === 'candidate' || role === 'super_admin' || role === 'super-admin') {
       // typical user menus
       this.menus.push({ label: 'User Dashboard', path: '/user-dashboard', icon: 'user' });
-      this.menus.push({ label: 'Exam', path: '/user/exam', icon: 'assignment' });
+      this.menus.push({ label: 'Test', path: '/user/exam', icon: 'assignment' });
     }
 
     // After menus are set, update selected menu based on current URL

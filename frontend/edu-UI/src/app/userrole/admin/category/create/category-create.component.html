@@ -22,8 +22,8 @@
                         <div class="section-header">
                             <mat-icon class="section-icon">category</mat-icon>
                             <div class="section-header-text">
-                                <h2 class="section-heading">Category Information</h2>
-                                <p class="section-desc">Basic details for this category.</p>
+                                <h2 class="section-heading">Question Bank Information</h2>
+                                <p class="section-desc">Basic details for this question bank.</p>
                             </div>
                         </div>
 
@@ -32,7 +32,7 @@
                                 <mat-label>Name</mat-label>
                                 <mat-icon matPrefix>edit</mat-icon>
                                 <input matInput required [value]="name" (input)="setName($any($event.target).value)"
-                                    placeholder="Category name" />
+                                    placeholder="Question Bank name" />
                                 <mat-hint class="field-error" *ngIf="(formSubmitted || categoryInfoSubmitted) && isNameInvalid()">Name is required.</mat-hint>
                             </mat-form-field>
 
@@ -87,7 +87,7 @@
                             <mat-icon class="section-icon">apartment</mat-icon>
                             <div class="section-header-text">
                                 <h2 class="section-heading">Department & Team Access</h2>
-                                <p class="section-desc">Assign departments and teams for this category.</p>
+                                <p class="section-desc">Assign departments and teams for this question bank.</p>
                             </div>
                         </div>
 
@@ -248,7 +248,7 @@
                         </button>
                         <button mat-flat-button color="primary" (click)="save()" type="button" class="submit-btn">
                             <mat-icon>save</mat-icon>
-                            <span>{{ isEditing ? 'Update' : 'Create Category' }}</span>
+                            <span>{{ isEditing ? 'Update' : 'Create Question Bank' }}</span>
                         </button>
                     </div>
                 </div>

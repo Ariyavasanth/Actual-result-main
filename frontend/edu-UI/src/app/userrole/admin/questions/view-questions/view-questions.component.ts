@@ -275,7 +275,7 @@ export class ViewQuestionsComponent implements OnDestroy {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
         this.exams = arr.map((e: any) => ({ title: e.title || e.name || '', exam_id: e.exam_id || e.id || e.examId }));
       },
-      error: (err) => { console.warn('Failed to load exams', err); this.exams = []; }
+      error: (err) => { console.warn('Failed to load tests', err); this.exams = []; }
     });
   }
 

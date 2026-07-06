@@ -15,12 +15,12 @@
 
                <mat-form-field appearance="outline">
                     <mat-icon matPrefix svgIcon="exam"></mat-icon>
-                    <mat-label>Scheduled Exams</mat-label>
+                    <mat-label>Scheduled Tests</mat-label>
                     <input type="text" matInput [formControl]="examCtrl" [matAutocomplete]="auto"
-                         placeholder="Pick a exam" />
-                    <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayExam.bind(this)"
-                         (optionSelected)="onExamAutocompleteSelected($event.option.value)">
-                         <mat-option *ngFor="let exam of (filteredExams$ | async)" [value]="exam">
+                         placeholder="Pick a test" />
+                    <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayTest.bind(this)"
+                         (optionSelected)="onTestAutocompleteSelected($event.option.value)">
+                         <mat-option *ngFor="let exam of (filteredTests$ | async)" [value]="exam">
                               <div class="option-main">{{ exam.title || exam.name }}</div>
                               <!-- <div class="option-sub muted">{{ exam.schedule_id || exam.id || '' }}</div> -->
                          </mat-option>
@@ -99,17 +99,17 @@
                               </mat-form-field>
 
                               <mat-form-field appearance="outline" class="filter-item">
-                                   <mat-label>Exam schedule after</mat-label>
+                                   <mat-label>Test schedule after</mat-label>
                                    <input matInput [matDatepicker]="joinAfter" [(ngModel)]="userFilters.joined_after"
-                                        placeholder="Exam schedule after" />
+                                        placeholder="Test schedule after" />
                                    <mat-datepicker-toggle matSuffix [for]="joinAfter"></mat-datepicker-toggle>
                                    <mat-datepicker #joinAfter></mat-datepicker>
                               </mat-form-field>
 
                               <mat-form-field appearance="outline" class="filter-item">
-                                   <mat-label>Exam schedule before</mat-label>
+                                   <mat-label>Test schedule before</mat-label>
                                    <input matInput [matDatepicker]="joinBefore" [(ngModel)]="userFilters.joined_before"
-                                        placeholder="Exam schedule before" />
+                                        placeholder="Test schedule before" />
                                    <mat-datepicker-toggle matSuffix [for]="joinBefore"></mat-datepicker-toggle>
                                    <mat-datepicker #joinBefore></mat-datepicker>
                               </mat-form-field>
@@ -117,7 +117,7 @@
 
                          </div>
                          <div class="filter-actions">
-                              <button mat-flat-button (click)="loadScheduledExam(); closeFiltersOverlay();" class="filter-apply-btn">
+                              <button mat-flat-button (click)="loadScheduledTest(); closeFiltersOverlay();" class="filter-apply-btn">
                                    <mat-icon svgIcon="apply"></mat-icon> Apply
                               </button>
                               <button mat-flat-button (click)="resetFiltersAndReload()" class="filter-reset-btn">
@@ -139,7 +139,7 @@
                                         <div class="summary-copy">
                                              <div class="summary-label">Students</div>
                                              <div class="summary-value">{{ userReportTotal || 0 }}</div>
-                                             <div class="summary-meta">{{ userReportData.length || 0 }} visible for {{ selectedExam?.title || selectedExam?.name || 'selected exam' }}</div>
+                                             <div class="summary-meta">{{ userReportData.length || 0 }} visible for {{ selectedExam?.title || selectedExam?.name || 'selected test' }}</div>
                                         </div>
                                    </div>
                                    <div class="summary-card">
@@ -243,7 +243,7 @@
                                    <div class="summary-card">
                                         <div class="summary-icon summary-icon--categories"><mat-icon>grid_view</mat-icon></div>
                                         <div class="summary-copy">
-                                             <div class="summary-label">Categories</div>
+                                             <div class="summary-label">Question Banks</div>
                                              <div class="summary-value">{{ categoryAnalytics.length || 0 }}</div>
                                              <div class="summary-meta">Performance groups in analytics</div>
                                         </div>
@@ -273,10 +273,10 @@
                                         </div>
                                    </div>
                               </div>
-                              <!-- <h3>Category Report</h3>
+                              <!-- <h3>Question Bank Report</h3>
                               <table mat-table [dataSource]="categoryAnalytics" class="mat-elevation-z2 full-width">
                                    <ng-container matColumnDef="category">
-                                        <th mat-header-cell *matHeaderCellDef>Category</th>
+                                        <th mat-header-cell *matHeaderCellDef>Question Bank</th>
                                         <td mat-cell *matCellDef="let c">{{c.category_name || c.name}}</td>
                                    </ng-container>
                                    <ng-container matColumnDef="questions">
@@ -300,13 +300,13 @@
                               </table> -->
 
                               <mat-tab-group class="inner-analytics-tabs" [(selectedIndex)]="innerAnalyticsTabIndex">
-                                   <mat-tab label="Category Report">
+                                   <mat-tab label="Question Bank Report">
                                         <div class="analytics-section">
                                              <div class="table-wrap">
                                                   <table mat-table [dataSource]="categoryAnalytics"
                                                   class="mat-elevation-z1 compact premium-table" matSort>
                                                   <ng-container matColumnDef="category">
-                                                       <th mat-header-cell *matHeaderCellDef>Category</th>
+                                                       <th mat-header-cell *matHeaderCellDef>Question Bank</th>
                                                        <td mat-cell *matCellDef="let c" class="cell-primary">
                                                             <div class="category-cell" (click)="openCategoryQuestionSummary(c)">
                                                                  <div class="category-avatar">{{ (c.category_name || c.name || '?').charAt(0).toUpperCase() }}</div>

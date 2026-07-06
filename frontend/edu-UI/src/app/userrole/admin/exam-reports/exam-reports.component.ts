@@ -54,8 +54,8 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
   examCtrl = new FormControl('');
   instituteCtrl = new FormControl<any>('');
   filteredInstitutes$: Observable<any[]> = of([]);
-  filteredExams$: Observable<any[]> = of([]);
-  allExams: any[] = [];
+  filteredTests$: Observable<any[]> = of([]);
+  allTests: any[] = [];
   selectedExam: any = null;
   activeMainTabIndex = 0;
   innerAnalyticsTabIndex = 0;
@@ -282,7 +282,7 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
         }
       },
       error: (err)=>{
-        console.error('[ExamReports] review-user-exam failed', err);
+        console.error('[TestReports] review-user-exam failed', err);
         this.userReviewLoading = false;
         this.userReviewAttempts = [];
         if(err && err.status === 0){
@@ -466,15 +466,15 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
     this.wrongDistribution = [];
   }
 
-  // Reset filters to empty and reload scheduled exams, then close overlay.
+  // Reset filters to empty and reload scheduled tests, then close overlay.
   resetFiltersAndReload() {
     this.resetFilters = { department_id: '', teams_id: '', country_id: '', city_id: '', campus_id: '' };
-    try { this.loadScheduledExam(); } catch (e) {}
+    try { this.loadScheduledTest(); } catch (e) {}
     try { this.closeFiltersOverlay(); } catch (e) {}
   }
 
-  displayExam(exam: any) { return exam ? (exam.title || exam.name || '') : ''; }
-  onExamAutocompleteSelected(exam: any) { 
+  displayTest(exam: any) { return exam ? (exam.title || exam.name || '') : ''; }
+  onTestAutocompleteSelected(exam: any) {
     this.selectedExam = exam; 
     // auto-load report for the currently active main tab
     if(this.activeMainTabIndex === 0){
@@ -522,7 +522,7 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
     try{ this.loadTeamsList(this.selectedInstituteId); }catch(e){}
     try{ this.loadCampusList(this.selectedInstituteId); }catch(e){}
     try{ this.loadCountries(); }catch(e){}
-    this.loadScheduledExam();
+    this.loadScheduledTest();
   }
 
   displayInstitute(i: any){ return i ? i.name : ''; }
@@ -532,7 +532,7 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
     try{ this.loadTeamsList(this.selectedInstituteId); }catch(e){}
     try{ this.loadCampusList(this.selectedInstituteId); }catch(e){}
     try{ this.loadCountries(); }catch(e){}
-    this.loadScheduledExam();
+    this.loadScheduledTest();
   }
 
   loadCountries() {
@@ -593,39 +593,39 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
     const url = `${API_BASE}/get-campus-list?institute_id=${encodeURIComponent(instituteId)}`;
     this.http.get<any>(url).subscribe({
       next: (res) => {
-        console.debug('[ExamReports] get-campus-list response for', instituteId, res);
+        console.debug('[TestReports] get-campus-list response for', instituteId, res);
         const arr = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
         this.campusList = arr.map((c: any) => (c.name || c.campus_name || c.campus || c).toString()).filter((s: any) => !!s);
       }, error: (err) => { console.warn('Failed to load campus list', err); this.campusList = []; }
     });
   }
-  loadScheduledExam() {
-    // call API (use API_BASE) and populate filteredExams$
+  loadScheduledTest() {
+    // call API (use API_BASE) and populate filteredTests$
     const url = `${API_BASE}/get-exam-schedule-details`;
     this.loading.show();
     this.http.get<any>(url, { params: { institute_id: this.selectedInstituteId || '', country_id: this.userFilters.country_id || '', city_id: this.userFilters.city_id || '', campus_id: this.userFilters.campus_id || '' } }).subscribe({
       next: (res) => {
         try{ const items = Array.isArray(res) ? res : (res?.data || res?.schedules || []);
-          this.allExams = items || [];
+          this.allTests = items || [];
           // set up filtered observable to react to user typing
           try{
-            this.filteredExams$ = this.examCtrl.valueChanges.pipe(
+            this.filteredTests$ = this.examCtrl.valueChanges.pipe(
               startWith(''),
               map((val:any) => {
                 const q = (typeof val === 'string' ? val : (val?.title || val?.name || '')).toLowerCase();
-                return (this.allExams || []).filter((it:any) => (it.title || it.name || '').toLowerCase().includes(q));
+                return (this.allTests || []).filter((it:any) => (it.title || it.name || '').toLowerCase().includes(q));
               })
             );
-          }catch(e){ this.filteredExams$ = of(this.allExams || []); }
-        }catch(e){ this.filteredExams$ = of([]); console.warn('Failed to load schedules', e); }
+          }catch(e){ this.filteredTests$ = of(this.allTests || []); }
+        }catch(e){ this.filteredTests$ = of([]); console.warn('Failed to load schedules', e); }
         try { this.loading.hide(); } catch(e){}
       },
-      error: (err) => { this.filteredExams$ = of([]); console.warn('Failed to load schedules', err); try { this.loading.hide(); } catch(e){} }
+      error: (err) => { this.filteredTests$ = of([]); console.warn('Failed to load schedules', err); try { this.loading.hide(); } catch(e){} }
     });
   }
 
   ngOnInit(): void {
-    try { this.pageMeta.setMeta('Exam Reports', 'Reports for scheduled exams'); } catch (e) {}
+    try { this.pageMeta.setMeta('Test Reports', 'Reports for scheduled tests'); } catch (e) {}
       this.loadInstitutes();
       // load countries for filter dropdowns
       try{ this.loadCountries(); }catch(e){}
@@ -686,7 +686,7 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
     try { this.loading.show(); } catch(e){}
     this.http.get<any>(`${API_BASE}/get-exam-user-report`, { params }).subscribe({
       next: (res)=>{
-        console.debug('[ExamReports] get-exam-user-report response:', res);
+        console.debug('[TestReports] get-exam-user-report response:', res);
         try{
           const body = res || {};
           const payload = body.data || body; // support responses with { data: { items: [...] } }
@@ -710,7 +710,7 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
           try { this.loading.hide(); } catch(e){}
         }
       },
-      error: (err)=>{ console.error('[ExamReports] Failed to load user report', err); this.userReportData = []; this.userReportTotal = 0; this.loadingUserReport = false; try { this.loading.hide(); } catch(e){} },
+      error: (err)=>{ console.error('[TestReports] Failed to load user report', err); this.userReportData = []; this.userReportTotal = 0; this.loadingUserReport = false; try { this.loading.hide(); } catch(e){} },
       complete: ()=>{ try { this.loading.hide(); } catch(e){} }
     });
   }
@@ -740,7 +740,7 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
     try { this.loading.show(); } catch(e){}
     this.http.get<any>(`${API_BASE}/get-exam-analytics`, { params }).subscribe({
       next: (res)=>{
-        console.debug('[ExamReports] get-exam-analytics response:', res);
+        console.debug('[TestReports] get-exam-analytics response:', res);
         try{
           const body = res || {};
           const payload = body.data || body;
@@ -758,7 +758,7 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
             this.filteredQuestionSummary = [];
           }
         } catch(e){
-          console.error('[ExamReports] Error parsing analytics response', e);
+          console.error('[TestReports] Error parsing analytics response', e);
           this.categoryAnalytics = [];
           this.questionSummary = [];
           this.wrongDistribution = [];
@@ -766,7 +766,7 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
           try { this.loading.hide(); } catch(e){}
         }
       },
-      error: (err)=>{ console.error('[ExamReports] Failed to load analytics', err); this.categoryAnalytics = []; this.questionSummary = []; this.wrongDistribution = []; try{ this.loading.hide(); }catch(e){} },
+      error: (err)=>{ console.error('[TestReports] Failed to load analytics', err); this.categoryAnalytics = []; this.questionSummary = []; this.wrongDistribution = []; try{ this.loading.hide(); }catch(e){} },
       complete: ()=>{ try { this.loading.hide(); } catch(e){} }
     });
   }

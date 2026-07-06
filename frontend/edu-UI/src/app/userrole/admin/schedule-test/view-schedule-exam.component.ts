@@ -82,14 +82,14 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
   }
   private filtersOverlayRef: OverlayRef | null = null;
   ngOnInit(): void {
-    this.pageMeta.setMeta('Scheduled Exams', 'Browse and review scheduled exams');
+    this.pageMeta.setMeta('Scheduled Tests', 'Browse and review scheduled tests');
     this.loadInstitutes();
     this.restoreScheduleReturnState();
   }
 
   refresh() {
     if (!this.hasAppliedFilters) {
-      try { notify('Apply filters to fetch scheduled exams', 'info'); } catch (e) {}
+      try { notify('Apply filters to fetch scheduled tests', 'info'); } catch (e) {}
       return;
     }
     this.loadSchedules(this.selectedInstitute || undefined);
@@ -514,7 +514,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
   }
 
   deleteSchedule(row: any) {
-    this.confirmService.confirm({ title: 'Delete Scheduled Exam', message: 'Delete this scheduled exam?', confirmText: 'Delete', cancelText: 'Cancel' }).subscribe(ok => {
+    this.confirmService.confirm({ title: 'Delete Scheduled Test', message: 'Delete this scheduled test?', confirmText: 'Delete', cancelText: 'Cancel' }).subscribe(ok => {
       if (!ok) return;
       const id = row.id;
       // best-effort delete endpoint; adapt to your backend if different
@@ -559,7 +559,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
       } });
     });
   }
-  openScheduleExam(): void {
+  openScheduleTest(): void {
     this.saveScheduleReturnState();
     this.router.navigate(['/schedule-exam']);
   }

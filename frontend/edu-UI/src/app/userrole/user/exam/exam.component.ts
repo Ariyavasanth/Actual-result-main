@@ -17,7 +17,7 @@ import { PageMetaService } from 'src/app/shared/services/page-meta.service';
 import { LoaderService } from 'src/app/shared/services/loader.service';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 
-export interface UserExamRow {
+export interface UserTestRow {
   test_id?: string;
   schedule_id?: string;
   title?: string;
@@ -40,16 +40,16 @@ export interface UserExamRow {
   styleUrls: ['./exam.component.scss']
 })
 export class UserExamComponent{
-  exams: UserExamRow[] = [];
+  exams: UserTestRow[] = [];
   loading = false;
   instituteId = '';
   // table and filters
   displayedColumns: string[] = ['title','start','end','duration','questions','pass_mark','number_of_attempts','status','actions'];
-  dataSource = new MatTableDataSource<UserExamRow>([]);
+  dataSource = new MatTableDataSource<UserTestRow>([]);
   // Per-tab filtered tables
-  activeSource = new MatTableDataSource<UserExamRow>([]);
-  completeSource = new MatTableDataSource<UserExamRow>([]);
-  upcomingSource = new MatTableDataSource<UserExamRow>([]);
+  activeSource = new MatTableDataSource<UserTestRow>([]);
+  completeSource = new MatTableDataSource<UserTestRow>([]);
+  upcomingSource = new MatTableDataSource<UserTestRow>([]);
   search = '';
   filterPublished: string = '';
 
@@ -104,13 +104,13 @@ export class UserExamComponent{
    * Expects API: GET /review-user-exam?user_id=...&scheduler_id=...
    * Response shape assumed: { data: { attempts: [ { attempt_no, items: [ { question, answer, user_answer, status } ] } ] } }
    */
-  viewReview(row: UserExamRow){
+  viewReview(row: UserTestRow){
     try{
       this.loader.show();
       const userRaw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
       const userId = userRaw ? (JSON.parse(userRaw)?.user_id || JSON.parse(userRaw)?.id || '') : '';
       const schedulerId = row.schedule_id || row.test_id || '';
-      if(!userId || !schedulerId) { try { notify('Missing user or exam identifiers for review', 'error'); } catch(e){}; return; }
+      if(!userId || !schedulerId) { try { notify('Missing user or test identifiers for review', 'error'); } catch(e){}; return; }
       const url = `${API_BASE}/review-user-exam?user_id=${encodeURIComponent(String(userId))}&scheduler_id=${encodeURIComponent(String(schedulerId))}`;
       this.reviewLoading = true; this.reviewAttempts = []; this.reviewOpen = true; this.reviewSelectedAttempt = 0;
       this.http.get<any>(url).subscribe({ next: (res) => {
@@ -187,7 +187,7 @@ export class UserExamComponent{
 
   ngOnInit(): void{
 
-    this.pageMeta.setMeta('User Exams', 'Explore and manage your exams');
+    this.pageMeta.setMeta('User Tests', 'Explore and manage your tests');
     
   }
   loadExams(){
@@ -253,7 +253,7 @@ export class UserExamComponent{
       }catch(e){}
       this.loader.hide();
       },
-      error: (err) => { console.warn('Failed to load exams', err); this.loading = false; this.exams = []; this.loader.hide(); }
+      error: (err) => { console.warn('Failed to load tests', err); this.loading = false; this.exams = []; this.loader.hide(); }
     });
 
   }
@@ -322,7 +322,7 @@ export class UserExamComponent{
     }catch(e){ return false; }
   }
 
-  launchExam(ex: UserExamRow){
+  launchTest(ex: UserTestRow){
     if (!ex?.schedule_id) { try { notify('Schedule id missing', 'error'); } catch(e){}; return; }
     const userRaw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
     const userId = userRaw ? (JSON.parse(userRaw)?.user_id || JSON.parse(userRaw)?.id || '') : '';
@@ -336,13 +336,13 @@ export class UserExamComponent{
         // window.location.href = '/user-exam';
         this.router.navigate(['/user-exam'])
       },
-      error: (err) => { console.warn('Failed to launch exam', err); try { notify('Could not launch exam', 'error'); } catch(e){} }
+      error: (err) => { console.warn('Failed to launch exam', err); try { notify('Could not launch test', 'error'); } catch(e){} }
     });
   }
 
   applyFilter(){
     const q = (this.search || '').trim().toLowerCase();
-    const predicate = (row: UserExamRow, filter: string) => {
+    const predicate = (row: UserTestRow, filter: string) => {
       const byText = (row.title || '').toLowerCase().includes(filter) || (row.test_id || '').toLowerCase().includes(filter);
       const byPublished = this.filterPublished === '' ? true : ((this.filterPublished === 'live') ? !!row.published : !row.published);
       return byText && byPublished;

@@ -1,8 +1,8 @@
 <div class="page user-exam">
    <div class="toolbar">
       <!-- <div class="title"> -->
-         <!-- <h2>Your Exams</h2>
-         <p class="muted">Exams available for your institute</p> -->
+         <!-- <h2>Your Tests</h2>
+         <p class="muted">Tests available for your institute</p> -->
          <div class="search">
             <mat-form-field appearance="outline" class="search-field">
                <mat-icon matPrefix aria-hidden="false" aria-label="Search icon">search</mat-icon>
@@ -111,7 +111,7 @@
                         <td mat-cell *matCellDef="let row">
                            <div class="exam-actions">
                               <button *ngIf="(((row.type || '') | lowercase) === 'active')" mat-flat-button
-                                 (click)="launchExam(row)" class="launch-btn">
+                                 (click)="launchTest(row)" class="launch-btn">
                                  <mat-icon>rocket_launch</mat-icon> Launch
                               </button>
                            </div>
@@ -279,7 +279,7 @@
             </div>
             <div class="actions">
                <button *ngIf="(((exam.type || '') | lowercase) === 'active')" mat-button color="primary"
-                  (click)="launchExam(exam)">Launch</button>
+                  (click)="launchTest(exam)">Launch</button>
             </div>
          </div>
       </div>
@@ -294,7 +294,7 @@
                   {{ (selectedReviewTitle || '?').charAt(0).toUpperCase() }}
                </div>
                <div class="review-header-text">
-                  <h3>Exam Review</h3>
+                  <h3>Test Review</h3>
                   <h1 class="review-exam-title">{{ selectedReviewTitle }}</h1>
                </div>
             </div>

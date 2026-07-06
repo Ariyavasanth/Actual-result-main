@@ -748,7 +748,7 @@ export class AdminQuestionsComponent {
       complete: () => { this.loader.hide(); },
       error: (err) => {
         this.loader.hide();
-        console.warn('Failed to load exams', err);
+        console.warn('Failed to load tests', err);
         this.exams = [];
       }
     });
@@ -934,7 +934,7 @@ export class AdminQuestionsComponent {
     const selectedCategoryId = this.questions && this.questions[0] && (this.questions[0] as any).category_id;
     if (!this.isEditing && (!selectedInstituteId || !selectedCategoryId)) {
       this.loader.hide();
-      try { notify('Please select an Institution and Category before saving.', 'error'); } catch(e){}
+      try { notify('Please select an Institution and Question Bank before saving.', 'error'); } catch(e){}
       return;
     }
 

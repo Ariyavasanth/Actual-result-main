@@ -25,8 +25,8 @@
             <div class="section-header">
                <mat-icon class="section-icon">school</mat-icon>
                <div class="section-header-text">
-                  <h2 class="section-heading">Institute & Category</h2>
-                  <p class="section-desc">Select the institute and category for your questions.</p>
+                  <h2 class="section-heading">Institute & Question Bank</h2>
+                  <p class="section-desc">Select the institute and question bank for your questions.</p>
                </div>
             </div>
 
@@ -43,11 +43,11 @@
 
                <mat-form-field appearance="outline" class="field-half">
                   <mat-icon matPrefix>assignment</mat-icon>
-                  <mat-label>Category</mat-label>
+                  <mat-label>Question Bank</mat-label>
                   <mat-select [value]="questions[0].category_id" [disabled]="!questions[0].institute_id || !categories.length"
                      (openedChange)="refreshCategoriesOnCategoryOpen($event)"
                      (selectionChange)="onCategorySelected($event.value)" required>
-                     <mat-option value="">Select category</mat-option>
+                     <mat-option value="">Select question bank</mat-option>
                      <mat-option *ngFor="let cat of categories" [value]="cat.category_id">{{cat.name}}</mat-option>
                   </mat-select>
                </mat-form-field>
@@ -280,7 +280,7 @@
                            <span class="badge type-label" *ngIf="hasCategorySettings()">
                               {{ getQuestionTypeLabel(q.type) }}
                            </span>
-                           <div class="badge marks" *ngIf="hasCategorySettings()" title="Category mark">{{ getCategoryQuestionMark() ?? q.marks ?? 0 }} Marks</div>
+                           <div class="badge marks" *ngIf="hasCategorySettings()" title="Question Bank mark">{{ getCategoryQuestionMark() ?? q.marks ?? 0 }} Marks</div>
                            <div class="panel-actions">
                               <button type="button" mat-icon-button aria-label="Remove question"
                                  (click)="removeQuestion(qi)" [disabled]="!isEditing && questions.length<=1">

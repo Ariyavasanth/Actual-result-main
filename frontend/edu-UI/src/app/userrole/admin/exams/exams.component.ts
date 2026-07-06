@@ -61,7 +61,7 @@ export class AdminExamsComponent implements AfterViewInit {
   displayedColumns: string[] = ['title', 'description', 'total_questions', 'duration_mins', 'number_of_attempts', 'actions'];
   dataSource = new MatTableDataSource<any>([]);
   hasAppliedFilters = false;
-  private shouldLoadExamsAfterInstitutes = false;
+  private shouldLoadTestsAfterInstitutes = false;
   private apiUrl = `${API_BASE}/get-institute-list`;
 
   isSuperAdmin = false;
@@ -80,7 +80,7 @@ export class AdminExamsComponent implements AfterViewInit {
 
   clearEditAndCreate() {
     try { sessionStorage.removeItem('edit_exam'); } catch (e) { }
-    this.openCreateExam();
+    this.openCreateTest();
   }
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -90,7 +90,7 @@ export class AdminExamsComponent implements AfterViewInit {
 
   refresh() {
     if (!this.hasAppliedFilters) {
-      try { notify('Apply filters to fetch exams', 'info'); } catch (e) {}
+      try { notify('Apply filters to fetch tests', 'info'); } catch (e) {}
       return;
     }
     this.loadExamsForInstitute(this.selectedInstitute || undefined);
@@ -100,13 +100,13 @@ export class AdminExamsComponent implements AfterViewInit {
   }
   private filtersOverlayRef: OverlayRef | null = null;
   ngOnInit(): void {
-    this.pageMeta.setMeta('Exams', 'Browse and review exams');
-    const restoredReturnState = this.restoreExamsReturnState();
+    this.pageMeta.setMeta('Tests', 'Browse and review tests');
+    const restoredReturnState = this.restoreTestsReturnState();
     try {
       if (!restoredReturnState && sessionStorage.getItem('exams_return_state') === 'true') {
         sessionStorage.removeItem('exams_return_state');
         this.hasAppliedFilters = true;
-        this.shouldLoadExamsAfterInstitutes = true;
+        this.shouldLoadTestsAfterInstitutes = true;
       }
     } catch (e) { }
     this.loadInstitutes();
@@ -142,7 +142,7 @@ export class AdminExamsComponent implements AfterViewInit {
     if (!this.hasAppliedFilters) return [];
     const chips: Array<{ key: string; label: string; removable: boolean }> = [];
     if (this.selectedInstitute) chips.push({ key: 'institute', label: `Institute: ${this.getInstituteLabel(this.selectedInstitute)}`, removable: this.isSuperAdmin });
-    if (this.filterName) chips.push({ key: 'name', label: `Exam: ${this.filterName}`, removable: true });
+    if (this.filterName) chips.push({ key: 'name', label: `Test: ${this.filterName}`, removable: true });
     (this.selectedDepartments || []).forEach(id => chips.push({ key: `department:${id}`, label: `Department: ${this.getSelectedName(this.departments, id)}`, removable: true }));
     (this.selectedTeams || []).forEach(id => chips.push({ key: `team:${id}`, label: `Team: ${this.getSelectedName(this.teams, id)}`, removable: true }));
     if (this.filterCreationDateAfter) chips.push({ key: 'created_after', label: `Created after: ${this.formatFilterDate(this.filterCreationDateAfter)}`, removable: true });
@@ -178,7 +178,7 @@ export class AdminExamsComponent implements AfterViewInit {
       this.http.get<any>(url).subscribe({
         next: (res) => {
           const item = Array.isArray(res?.data) && res.data.length ? res.data[0] : (res?.data || res?.item || e);
-          // normalize categories to the flat shape expected by CreateExamComponent.loadEditExam()
+          // normalize categories to the flat shape expected by CreateExamComponent.loadEditTest()
           const srcCats = Array.isArray(item.categories) ? item.categories : (Array.isArray(item.category_list) ? item.category_list : []);
           const mapped = srcCats.map((c: any) => {
             // if category is nested under c.category, prefer that
@@ -201,7 +201,7 @@ export class AdminExamsComponent implements AfterViewInit {
           });
           const editPayload = { ...item, categories: mapped };
           try { sessionStorage.setItem('edit_exam', JSON.stringify(editPayload)); } catch (_) { }
-          this.saveExamsReturnState();
+          this.saveTestsReturnState();
           this.router.navigate(['/create-exam']);
         }, error: () => {
           // fallback: store the row object we already have (try to normalize if possible)
@@ -219,34 +219,34 @@ export class AdminExamsComponent implements AfterViewInit {
             const editPayloadFallback = { ...src, categories: mappedFallback };
             sessionStorage.setItem('edit_exam', JSON.stringify(editPayloadFallback));
           } catch (_) { try { sessionStorage.setItem('edit_exam', JSON.stringify(e)); } catch (_) { } }
-          this.saveExamsReturnState();
+          this.saveTestsReturnState();
           this.router.navigate(['/create-exam']);
         }
       });
       return;
     }
     try { sessionStorage.setItem('edit_exam', JSON.stringify(e)); } catch (_) { }
-    this.saveExamsReturnState();
+    this.saveTestsReturnState();
     this.router.navigate(['/create-exam']);
   }
 
   deleteSchedule(row: any) {
-    this.confirmService.confirm({ title: 'Delete Scheduled Exam', message: 'Delete this scheduled exam?', confirmText: 'Delete', cancelText: 'Cancel' }).subscribe(ok => {
+    this.confirmService.confirm({ title: 'Delete Scheduled Test', message: 'Delete this scheduled test?', confirmText: 'Delete', cancelText: 'Cancel' }).subscribe(ok => {
       if (!ok) return;
       const id = row.test_id || row.exam_id || row.id;
       if (!id) {
-        notify('Unable to delete: exam ID not found', 'error');
+        notify('Unable to delete: test ID not found', 'error');
         return;
       }
       const url = `${API_BASE}/delete-exam?exam_id=${encodeURIComponent(id)}`;
       this.http.delete<any>(url).subscribe({
         next: (res) => {
-          try { notify('Scheduled exam deleted successfully', 'success'); } catch (e) { }
+          try { notify('Scheduled test deleted successfully', 'success'); } catch (e) { }
           // reload exams
           this.loadExamsForInstitute(this.selectedInstitute || undefined);
         }, error: (err) => {
-          console.warn('Failed to delete scheduled exam', err);
-          try { notify('Failed to delete scheduled exam. Please try again later.', 'error'); } catch (e) { }
+          console.warn('Failed to delete scheduled test', err);
+          try { notify('Failed to delete scheduled test. Please try again later.', 'error'); } catch (e) { }
         }
       });
     });
@@ -395,8 +395,8 @@ export class AdminExamsComponent implements AfterViewInit {
   }
 
   private loadExamsFromReturnState() {
-    if (!this.shouldLoadExamsAfterInstitutes) return;
-    this.shouldLoadExamsAfterInstitutes = false;
+    if (!this.shouldLoadTestsAfterInstitutes) return;
+    this.shouldLoadTestsAfterInstitutes = false;
     setTimeout(() => this.loadExamsForInstitute(this.selectedInstitute || undefined));
   }
 
@@ -576,12 +576,12 @@ export class AdminExamsComponent implements AfterViewInit {
       }, error: (err) => { console.warn('Failed to load teams', err); this.teams = []; }
     });
   }
-  openCreateExam(): void {
-    this.saveExamsReturnState();
+  openCreateTest(): void {
+    this.saveTestsReturnState();
     this.router.navigate(['/create-exam']);
   }
 
-  saveExamsReturnState(): void {
+  saveTestsReturnState(): void {
     try {
       sessionStorage.setItem('exams_table_return_state', JSON.stringify({
         filter: this.filter,
@@ -600,7 +600,7 @@ export class AdminExamsComponent implements AfterViewInit {
     } catch (e) { }
   }
 
-  private restoreExamsReturnState(): boolean {
+  private restoreTestsReturnState(): boolean {
     try {
       const raw = sessionStorage.getItem('exams_table_return_state');
       if (!raw) return false;

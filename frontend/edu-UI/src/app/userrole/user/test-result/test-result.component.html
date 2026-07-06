@@ -33,7 +33,7 @@
       </div>
 
       <div class="details card">
-        <h3>Exam: {{ result.title }} <small class="muted">({{ result.test_id }})</small></h3>
+        <h3>Test: {{ result.title }} <small class="muted">({{ result.test_id }})</small></h3>
         <div class="meta">Taken by <strong>{{ result.user }}</strong> • Started: {{ result.started_at }} • Finished: {{ result.completed_at }}</div>
 
         <div class="questions">
@@ -59,8 +59,8 @@
     <ng-template #noResult>
         <div class="card">
         <h3>Welcome</h3>
-        <p class="muted">You don't have a recent test result. Launch an exam from the Exams page to get started.</p>
-        <div class="cta"><button class="btn">View available exams</button></div>
+        <p class="muted">You don't have a recent test result. Launch a test from the Tests page to get started.</p>
+        <div class="cta"><button class="btn">View available tests</button></div>
       </div>
     </ng-template>
   </section>

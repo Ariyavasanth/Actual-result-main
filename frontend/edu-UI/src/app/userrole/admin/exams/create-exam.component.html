@@ -24,7 +24,7 @@
                                     <mat-icon class="section-icon">assignment</mat-icon>
                                     <div class="section-header-text">
                                         <h2 class="section-heading">Basic Information</h2>
-                                        <p class="section-desc">Enter exam title and details.</p>
+                                        <p class="section-desc">Enter test title and details.</p>
                                     </div>
                                 </div>
 
@@ -66,7 +66,7 @@
                                     <mat-icon class="section-icon">settings</mat-icon>
                                     <div class="section-header-text">
                                         <h2 class="section-heading">Settings</h2>
-                                        <p class="section-desc">Configure exam duration and limits.</p>
+                                        <p class="section-desc">Configure test duration and limits.</p>
                                     </div>
                                 </div>
 
@@ -110,9 +110,9 @@
                 </div>
             </mat-step>
 
-            <!-- ═══ Step 2: Categories & Questions ═══ -->
+            <!-- ═══ Step 2: Question Banks & Questions ═══ -->
             <mat-step>
-                <ng-template matStepLabel>Categories & Questions</ng-template>
+                <ng-template matStepLabel>Question Banks & Questions</ng-template>
                 <div class="step-content">
                     <div class="card-body-inner two-column">
                         <div class="left">
@@ -120,8 +120,8 @@
                                 <div class="section-header">
                                     <mat-icon class="section-icon">category</mat-icon>
                                     <div class="section-header-text">
-                                        <h2 class="section-heading">Categories</h2>
-                                        <p class="section-desc">Add categories and questions to this exam.</p>
+                                        <h2 class="section-heading">Question Banks</h2>
+                                        <p class="section-desc">Add question banks and questions to this test.</p>
                                     </div>
                                     <button #filtersBtn mat-flat-button type="button"
                                         [color]="filterEnabled ? 'primary' : undefined"
@@ -214,9 +214,9 @@
                                     <div class="col category-col">
                                         <mat-form-field appearance="outline" class="full">
                                             <mat-icon matPrefix>assignment</mat-icon>
-                                            <mat-label>Category</mat-label>
+                                            <mat-label>Question Bank</mat-label>
                                             <input type="text" matInput [formControl]="categoryCtrl" [matAutocomplete]="auto"
-                                                placeholder="Pick a category" />
+                                                placeholder="Pick a question bank" />
                                             <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCategory.bind(this)"
                                                 (optionSelected)="onCategoryAutocompleteSelected($event.option.value)">
                                                 <mat-option *ngFor="let cat of (filteredCategories$ | async)" [value]="cat">{{cat.name}}</mat-option>
@@ -246,7 +246,7 @@
                                 <div *ngIf="model.categories?.length">
                                     <div class="category-list">
                                         <div class="category-list-header">
-                                            <span>Attached Categories</span>
+                                            <span>Attached Question Banks</span>
                                             <strong>{{ model.categories?.length || 0 }}</strong>
                                         </div>
                                         <mat-list>
@@ -290,7 +290,7 @@
                                     <div class="section-header-text">
                                         <h2 class="section-heading">Questions</h2>
                                         <p class="section-desc" *ngIf="activeQuestionCategoryName">Questions from {{ activeQuestionCategoryName }}.</p>
-                                        <p class="section-desc" *ngIf="!activeQuestionCategoryName">Select or view a category to load questions.</p>
+                                        <p class="section-desc" *ngIf="!activeQuestionCategoryName">Select or view a question bank to load questions.</p>
                                     </div>
                                 </div>
 
@@ -306,7 +306,7 @@
                                                 (change)="toggleQuestionSelection(q.id, $event.checked)">{{q.question}}</mat-checkbox>
                                         </mat-list-item>
                                     </mat-list>
-                                    <div *ngIf="!questionsForCategory.length" class="muted">Select a category or click View Questions from an attached category.</div>
+                                    <div *ngIf="!questionsForCategory.length" class="muted">Select a question bank or click View Questions from an attached question bank.</div>
                                 </div>
                             </div>
                         </div>
@@ -362,14 +362,14 @@
                                 </div>
                             </div>
 
-                            <!-- Questions & Categories -->
+                            <!-- Questions & Question Banks -->
                             <div class="review-section review-section--full">
                                 <h4 class="review-section-title">
-                                    <mat-icon>quiz</mat-icon> Questions & Categories
+                                    <mat-icon>quiz</mat-icon> Questions & Question Banks
                                 </h4>
                                 <div class="review-items review-items--grid">
                                     <div class="review-item"><span class="review-label">Total questions</span><span class="review-value">{{ totalQuestions || 0 }}</span></div>
-                                    <div class="review-item"><span class="review-label">Categories</span><span class="review-value">{{ model.categories?.length || 0 }}</span></div>
+                                    <div class="review-item"><span class="review-label">Question Banks</span><span class="review-value">{{ model.categories?.length || 0 }}</span></div>
                                     <div class="review-item"><span class="review-label">Randomize</span><span class="review-value">{{ anyCategoryRandomized() ? 'Yes' : 'No' }}</span></div>
                                 </div>
                             </div>

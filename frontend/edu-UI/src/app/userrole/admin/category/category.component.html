@@ -1,7 +1,7 @@
 <div class="category-page">
     <div class="toolbar">
         <!-- <div class="title">
-            <h2>Categories</h2>
+            <h2>Question Banks</h2>
             <p class="muted">Browse and review question bank</p>
         </div> -->
 
@@ -31,7 +31,7 @@
 
 
                 <button *hasAccess="'Categories'; hasAccessAction: 'add'" mat-flat-button color="primary" class="button-one" (click)="openCreateCategory()">
-                    <mat-icon svgIcon="add"></mat-icon> Add Category
+                    <mat-icon svgIcon="add"></mat-icon> Add Question Bank
                 </button>
 
             </div>
@@ -71,9 +71,9 @@
                         </mat-form-field>
 
                         <mat-form-field appearance="outline" class="filter-item">
-                            <mat-label>Category Name</mat-label>
-                            <mat-select [(ngModel)]="filterName" placeholder="Select category">
-                                <mat-option value="">All Categories</mat-option>
+                            <mat-label>Question Bank Name</mat-label>
+                            <mat-select [(ngModel)]="filterName" placeholder="Select question bank">
+                                <mat-option value="">All Question Banks</mat-option>
                                 <mat-option *ngFor="let c of categoryOptions" [value]="c.name">{{c.name}}</mat-option>
                             </mat-select>
                         </mat-form-field>
@@ -200,7 +200,7 @@
                     <tr mat-row *matRowDef="let row; columns: columns"></tr>
                     <tr class="mat-row" *matNoDataRow>
                         <td class="mat-cell empty-table-cell" [attr.colspan]="columns.length">
-                            {{ hasAppliedFilters ? 'No categories found for the selected filters.' : 'Apply filters to view categories.' }}
+                            {{ hasAppliedFilters ? 'No question banks found for the selected filters.' : 'Apply filters to view question banks.' }}
                         </td>
                     </tr>
                 </tbody>
