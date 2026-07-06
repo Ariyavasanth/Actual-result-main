@@ -122,12 +122,12 @@ export class AdminQuestionsComponent {
 
   institutes: Array<{ name: string; institute_id?: string }> = [];
   isSuperAdmin: boolean = false;
-  categories: Array<{ name: string; category_id?: string; description?: string; type?: string }> = [];
+  categories: Array<{ name: string; category_id?: string; description?: string; type?: string; mark_each_question?: any; mark_for_each_question?: any }> = [];
   // reactive control + filtered observable for autocomplete
   categoryCtrl: FormControl = new FormControl('');
-  filteredCategories$?: Observable<Array<{ name: string; category_id?: string; description?: string; type?: string }>>;
+  filteredCategories$?: Observable<Array<{ name: string; category_id?: string; description?: string; type?: string; mark_each_question?: any; mark_for_each_question?: any }>>;
   // currently selected category object (for showing description)
-  selectedCategory: { name?: string; category_id?: string; description?: string; type?: string } | null = null;
+  selectedCategory: { name?: string; category_id?: string; description?: string; type?: string; mark_each_question?: any; mark_for_each_question?: any } | null = null;
   exams: Array<{ title: string; exam_id?: string }> = [];
 
   private apiUrl = `${API_BASE}/add-question`;
@@ -205,7 +205,7 @@ export class AdminQuestionsComponent {
         const first: any = {
           type: questionType,
           text: q.question || q.text || q.title || '',
-          marks: q.marks || q.points || 1,
+          marks: q.marks || q.points || this.getCategoryQuestionMark() || 1,
           options: opts.length ? opts : ['',''],
           correct: correct,
           answerText: q.answer || q.answerText || optionAnswer || (typeof q.correct === 'string' ? q.correct : ''),
@@ -350,7 +350,7 @@ export class AdminQuestionsComponent {
     if (!this.generatedQuestions || !this.generatedQuestions.length) return;
     // Insert generated items into questions array and switch to manual mode for editing
     try{
-      this.questions = (this.generatedQuestions.map((g:any) => ({ type: g.type || 'descriptive', text: g.text || '', marks: g.marks || 1, options: g.options || [''], correct: null, answerText: '', _expanded: true }))).concat(this.questions || []);
+      this.questions = (this.generatedQuestions.map((g:any) => ({ type: g.type || 'descriptive', text: g.text || '', marks: this.getCategoryQuestionMark() || g.marks || 1, options: g.options || [''], correct: null, answerText: '', _expanded: true }))).concat(this.questions || []);
       this.mode = 'manual';
       setTimeout(()=>{ try{ this.resizeAll(); }catch(e){} }, 0);
     }catch(e){}
@@ -383,14 +383,15 @@ export class AdminQuestionsComponent {
     fd.append('language','English');
     fd.append('type', this.aiQuestionType || 'Descriptive');
     fd.append('number_of_questions', String(this.aiQuestionNumber || 1));
-    fd.append('marks_per_question', String(this.aiMarksPerQuestion || 5));
+    const categoryQuestionMark = this.getCategoryQuestionMark() || this.aiMarksPerQuestion || 5;
+    fd.append('marks_per_question', String(categoryQuestionMark));
     fd.append('industry', this.aiIndustry || '');
     fd.append('user_role', this.aiUserRole || '');
     fd.append('target_users', this.aiTargetUsers || '');
     fd.append('complexity', this.aiQuestionComplexity || 'medium');
     fd.append('source_text', this.sourceText || '');
     fd.append('additional_instructions', this.aiPrompt || '');
-    fd.append('question_mark', String(5));
+    fd.append('question_mark', String(categoryQuestionMark));
 
     const url = `${API_BASE}/create-question-using-ai`;
     this.http.post<any>(url, fd).subscribe({
@@ -400,7 +401,7 @@ export class AdminQuestionsComponent {
             // backend returns a single question object or an array — normalize
             const arr = Array.isArray(res) ? res : (res.data ? res.data : (res.question ? [res.question] : []));
             // if response includes question_text/options etc, map to our internal shape
-            const normalized = (Array.isArray(arr) ? arr : [arr]).map((r:any) => ({ type: r.type || r.question_type || 'descriptive', text: r.question_text || r.question || r.text || '', marks: r.mark || r.marks || 1, options: Array.isArray(r.options) ? r.options.slice() : (r.options && typeof r.options === 'string' ? r.options.split('|').map((s:string)=>s.trim()) : []), correct: r.correct_answer ?? r.correct ?? null, answerText: r.explanation || r.answer || '' }));
+            const normalized = (Array.isArray(arr) ? arr : [arr]).map((r:any) => ({ type: r.type || r.question_type || 'descriptive', text: r.question_text || r.question || r.text || '', marks: this.getCategoryQuestionMark() || r.mark || r.marks || 1, options: Array.isArray(r.options) ? r.options.slice() : (r.options && typeof r.options === 'string' ? r.options.split('|').map((s:string)=>s.trim()) : []), correct: r.correct_answer ?? r.correct ?? null, answerText: r.explanation || r.answer || '' }));
             this.generatedQuestions = normalized;
             // Also immediately load generated questions into the editable questions list so they appear in the questions-list
             try{
@@ -438,7 +439,7 @@ export class AdminQuestionsComponent {
                   // put answer in answerText
                 }
 
-                return { type: qtype, text: g.text || '', marks: g.marks || 1, options: opts.length ? opts : ['',''], correct: correct, answerText: (qtype==='fill' || qtype==='descriptive') ? (g.correct && typeof g.correct === 'string' ? g.correct : (g.answerText || '')) : (g.answerText || ''), _expanded: true };
+                return { type: qtype, text: g.text || '', marks: this.getCategoryQuestionMark() || g.marks || 1, options: opts.length ? opts : ['',''], correct: correct, answerText: (qtype==='fill' || qtype==='descriptive') ? (g.correct && typeof g.correct === 'string' ? g.correct : (g.answerText || '')) : (g.answerText || ''), _expanded: true };
               });
               this.mode = 'manual';
               // this.aiMode = false;
@@ -463,7 +464,7 @@ export class AdminQuestionsComponent {
   addQuestion() {
     // collapse other panels and expand newly added one
     if (this.questions && this.questions.length) this.questions.forEach(q => q._expanded = false);
-    this.questions.push({ type: '', text: '', marks: 1, options: ['',''], correct: null, answerText: '', _expanded: true, showFineTune: false });
+    this.questions.push({ type: '', text: '', marks: this.getCategoryQuestionMark() || 1, options: ['',''], correct: null, answerText: '', _expanded: true, showFineTune: false });
   }
 
   removeQuestion(index: number) {
@@ -484,7 +485,7 @@ export class AdminQuestionsComponent {
       this.questions[0].institute_id = '';
       this.questions[0].exam_id = '';
     }
-    this.questions = [{ type: '', text: '', marks: 1, options: ['',''], correct: null, answerText: '', showFineTune: false }];
+    this.questions = [{ type: '', text: '', marks: this.getCategoryQuestionMark() || 1, options: ['',''], correct: null, answerText: '', showFineTune: false }];
     setTimeout(()=>{ try{ this.resizeAll(); }catch(e){} },0);
   }
 
@@ -558,7 +559,9 @@ export class AdminQuestionsComponent {
           name: r.name || r.category_name || '',
           category_id: r.category_id || r.id,
           description: r.description || r.desc || '',
-          type: r.type || r.category_type || ''
+          type: r.type || r.category_type || '',
+          mark_each_question: (typeof r.mark_each_question !== 'undefined') ? r.mark_each_question : (r.mark_for_each_question ?? r.question_mark ?? r.marks ?? null),
+          mark_for_each_question: r.mark_for_each_question ?? r.mark_each_question ?? r.question_mark ?? r.marks ?? null
         }));
         // if a category was prefilled on the first question, set control to that object so autocomplete shows it
         try {
@@ -569,6 +572,7 @@ export class AdminQuestionsComponent {
               this.selectedCategory = found as any;
               try { this.categoryCtrl.setValue(found); } catch(e) {}
               this.enforceQuestionTypeForSelectedCategory();
+              this.syncQuestionMarksToCategory();
             }
           }
         } catch(e) {}
@@ -591,6 +595,7 @@ export class AdminQuestionsComponent {
     this.selectedCategory = cat;
     try { this.questions[0].category_id = cat.category_id; } catch(e) {}
     this.enforceQuestionTypeForSelectedCategory();
+    this.syncQuestionMarksToCategory();
   }
 
   displayCategory(cat: any){ return cat && cat.name ? cat.name : ''; }
@@ -601,6 +606,7 @@ export class AdminQuestionsComponent {
     try { this.questions[0].category_id = found?.category_id || ''; } catch(e) {}
     try { this.categoryCtrl.setValue(found || ''); } catch(e) {}
     this.enforceQuestionTypeForSelectedCategory();
+    this.syncQuestionMarksToCategory();
   }
 
   get filteredQuestionTypes() {
@@ -637,6 +643,22 @@ export class AdminQuestionsComponent {
     return normalized;
   }
 
+  getCategoryQuestionMark(): number | null {
+    const cat: any = this.selectedCategory;
+    const raw = cat?.mark_each_question ?? cat?.mark_for_each_question ?? cat?.question_mark ?? cat?.marks ?? null;
+    if (raw === null || raw === undefined || raw === '') return null;
+    const mark = Number(raw);
+    return isNaN(mark) ? null : mark;
+  }
+
+  private syncQuestionMarksToCategory() {
+    const mark = this.getCategoryQuestionMark();
+    if (mark === null) return;
+    try {
+      this.aiMarksPerQuestion = mark;
+      (this.questions || []).forEach((q: any) => q.marks = mark);
+    } catch(e) {}
+  }
   private enforceQuestionTypeForSelectedCategory() {
     const allowed = new Set(this.filteredQuestionTypes.map(t => t.value));
     try {
@@ -868,6 +890,8 @@ export class AdminQuestionsComponent {
       return;
     }
 
+    this.syncQuestionMarksToCategory();
+
     const validQuestions = (this.questions || []).filter((q: any) => this.isValidQuestion(q));
     if (!validQuestions.length) {
       this.loader.hide();
@@ -950,7 +974,7 @@ export class AdminQuestionsComponent {
             notify(msg, ok ? 'success' : 'error');
           } catch(e){}
           // reset to a single empty block
-          this.questions = [{ type: '', text: '', marks: 1, options: ['',''], correct: null, answerText: '', showFineTune: false }];
+          this.questions = [{ type: '', text: '', marks: this.getCategoryQuestionMark() || 1, options: ['',''], correct: null, answerText: '', showFineTune: false }];
           setTimeout(()=>{ try{ this.resizeAll(); }catch(e){} },0);
         },
         error: (err) => {

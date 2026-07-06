@@ -169,7 +169,7 @@
 
                   <mat-form-field appearance="outline" class="field-half">
                      <mat-label>Marks per Question</mat-label>
-                     <input matInput type="number" [(ngModel)]="aiMarksPerQuestion" min="1" />
+                     <input matInput type="number" [value]="getCategoryQuestionMark() ?? aiMarksPerQuestion" min="1" readonly />
                   </mat-form-field>
                </div>
 
@@ -280,7 +280,7 @@
                            <span class="badge type-label">
                               {{ getQuestionTypeLabel(q.type) }}
                            </span>
-                           <div class="badge marks">{{ q.marks || 0 }} Marks</div>
+                           <div class="badge marks" title="Category mark">{{ getCategoryQuestionMark() ?? q.marks ?? 0 }} Marks</div>
                            <div class="panel-actions">
                               <button type="button" mat-icon-button aria-label="Remove question"
                                  (click)="removeQuestion(qi)" [disabled]="!isEditing && questions.length<=1">
@@ -293,20 +293,13 @@
 
                   <div class="panel-body">
                      <div class="field-row" *ngIf="!aiMode">
-                        <mat-form-field appearance="outline" class="field-half">
+                        <mat-form-field appearance="outline" class="field-full">
                            <mat-icon matPrefix>category</mat-icon>
                            <mat-label>Type</mat-label>
                            <mat-select id="q-type-{{qi}}" title="Question type" [(ngModel)]="q.type">
                               <mat-option value="">Select type</mat-option>
                               <mat-option *ngFor="let t of getQuestionTypeOptions(q)" [value]="t.value">{{t.label}}</mat-option>
                            </mat-select>
-                        </mat-form-field>
-
-                        <mat-form-field appearance="outline" class="field-half">
-                           <mat-icon matPrefix>format_list_numbered</mat-icon>
-                           <mat-label>Marks</mat-label>
-                           <input matInput id="q-marks-{{qi}}" type="number" [(ngModel)]="q.marks" min="1"
-                              title="Marks" placeholder="Marks" />
                         </mat-form-field>
                      </div>
 
