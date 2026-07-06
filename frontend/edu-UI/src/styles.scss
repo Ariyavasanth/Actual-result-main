@@ -496,3 +496,8 @@ $modal-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   .premium-table td.mat-cell { padding: 0.5rem 0.625rem; }
   .premium-table thead th.mat-header-cell, .premium-table thead th.mat-mdc-header-cell { font-size: var(--font-size-sm); }
 }
+// Global Institute Filter
+// This must live in the global stylesheet because Angular CDK overlays are rendered outside app component DOM.
+body.global-institute-active .local-institute-field {
+  display: none !important;
+}

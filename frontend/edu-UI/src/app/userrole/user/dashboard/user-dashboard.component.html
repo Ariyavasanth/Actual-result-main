@@ -16,7 +16,7 @@
   <header class="dash-header">
     <div class="header-content">
       <div class="header-actions">
-        <mat-form-field appearance="outline" class="filter-field" *ngIf="!isRegularUser">
+        <mat-form-field appearance="outline" class="filter-field local-institute-field" *ngIf="!isRegularUser">
           <mat-label>Institute</mat-label>
           <mat-select [(value)]="selectedInstituteId" (selectionChange)="onInstituteChange($any($event).value)">
             <mat-option *ngFor="let i of institutes" [value]="i.id">{{i.name}}</mat-option>
