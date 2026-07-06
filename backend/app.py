@@ -1,8 +1,9 @@
 from functools import wraps
-from flask import Blueprint, Flask, request, jsonify, Response
+from flask import Blueprint, Flask, request, jsonify, Response, g
 from flask_cors import CORS
 from auth.auth import JWTValidator
 from configparser import ConfigParser
+from werkzeug.datastructures import ImmutableMultiDict
 
 from others.institute import insert_institute, get_institute_details, get_institute_list, get_campus_list, delete_institute, manage_institute, update_institute
 from others.users import insert_user, get_user_page_access, get_user_details, get_user_list, get_user_limit, user_bulk_upload, update_user_details, delete_user
@@ -40,6 +41,75 @@ else:
 # read jwt_secret
 jwt_secret = os.getenv('jwt_secret', 'your_jwt_secret')
 
+
+GLOBAL_SCOPE_EXCLUDED_PATHS = (
+    '/edu/api/login',
+    '/edu/api/refresh-token',
+    '/edu/api/logout',
+    '/edu/api/public',
+    '/edu/api/superadmin-dashboard',
+)
+
+GLOBAL_SCOPE_EXCLUDED_EXACT_PATHS = {
+    '/edu/api/get-institutes',
+    '/edu/api/get-institute-list',
+    '/edu/api/institutes/list',
+}
+
+
+def normalize_global_scope_request():
+    if request.method == 'OPTIONS':
+        return None
+    path = request.path or ''
+    if path in GLOBAL_SCOPE_EXCLUDED_EXACT_PATHS or any(path.startswith(p) for p in GLOBAL_SCOPE_EXCLUDED_PATHS):
+        return None
+
+    scoped_institute_id = request.headers.get('X-Institute-Id') or request.headers.get('X-Global-Institute-Id')
+    if not scoped_institute_id:
+        return None
+
+    current_user = get_current_user_from_request()
+    if not current_user or not is_super_admin(current_user):
+        return None
+
+    scoped_institute_id = str(scoped_institute_id).strip()
+    if not scoped_institute_id:
+        return None
+
+    g.global_institute_id = scoped_institute_id
+
+    query_values = request.args.to_dict(flat=False)
+    for key in ('institute_id', 'institute'):
+        existing_values = [str(v) for v in query_values.get(key, []) if str(v or '').strip()]
+        if existing_values and any(v != scoped_institute_id for v in existing_values):
+            return jsonify({
+                'status': False,
+                'statusMessage': 'Institute scope mismatch. Clear or change the Global Institute Filter.'
+            }), 403
+        query_values[key] = [scoped_institute_id]
+    try:
+        request.args = ImmutableMultiDict(query_values)
+    except Exception:
+        pass
+
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        if isinstance(data, dict):
+            for key in ('institute_id', 'institute'):
+                existing = str(data.get(key) or '').strip()
+                if existing and existing != scoped_institute_id:
+                    return jsonify({
+                        'status': False,
+                        'statusMessage': 'Institute scope mismatch. Clear or change the Global Institute Filter.'
+                    }), 403
+            data['institute_id'] = scoped_institute_id
+            data['institute'] = scoped_institute_id
+            try:
+                request._cached_json = (data, data)
+            except Exception:
+                pass
+
+    return None
 # Initialize JWT Validator
 def initialize_jwt_validator(request):
     jwt_validator = JWTValidator(jwt_secret)
@@ -54,6 +124,9 @@ def jwt_required(f):
         validation_result = initialize_jwt_validator(request)
         if validation_result != "Access granted":
             return jsonify({"status": False, "statusMessage": validation_result}), 401
+        scope_result = normalize_global_scope_request()
+        if scope_result is not None:
+            return scope_result
    
         return f(*args, **kwargs)
     return decorated_function
@@ -319,6 +392,9 @@ def delete_exam_route():
     validation_result = initialize_jwt_validator(request)
     if validation_result != "Access granted":
         return jsonify({"status": False, "statusMessage": validation_result}), 401
+    scope_result = normalize_global_scope_request()
+    if scope_result is not None:
+        return scope_result
     
     exam_id = request.args.get('exam_id') or request.args.get('id')
     if not exam_id:
@@ -615,7 +691,7 @@ CORS(
                 "http://192.168.1.5:4200",
             ],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
+            "allow_headers": ["Content-Type", "Authorization", "X-Institute-Id", "X-Global-Institute-Id", "X-Skip-Institute-Context"],
         }
     },
     supports_credentials=True,
@@ -627,7 +703,7 @@ def add_local_cors_headers(response):
     if origin in ("http://localhost:4200", "http://127.0.0.1:4200", "http://192.168.1.5:4200"):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Institute-Id, X-Global-Institute-Id, X-Skip-Institute-Context"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     return response
 
@@ -636,3 +712,6 @@ if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)
     # app.run(debug=False, host='0.0.0.0', port=5001) (venv) ubuntu@profluent--ar-webportal:/opt/ActualResults/backend$
  
+
+
+

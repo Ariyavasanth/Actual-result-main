@@ -258,7 +258,8 @@ export class AdminUserRegisterComponent implements OnInit {
       const cur = this.auth?.currentUserValue || null;
       const raw = (!cur) ? (sessionStorage.getItem('user_profile') || sessionStorage.getItem('user')) : null;
       const obj = cur || (raw ? JSON.parse(raw) : null) || null;
-      this.loggedInstitute = obj?.institute_id || obj?.instituteId || obj?.institute || '';
+      const globalInstituteId = sessionStorage.getItem('global_institute_id') || '';
+      this.loggedInstitute = globalInstituteId || obj?.institute_id || obj?.instituteId || obj?.institute || '';
       if (!this.isEditing && this.loggedInstitute) {
         this.bulkInstitute = this.loggedInstitute;
         try { this.form.patchValue({ institute: this.loggedInstitute }); } catch (e) { }
@@ -830,7 +831,7 @@ export class AdminUserRegisterComponent implements OnInit {
     } else {
       const url = `${API_BASE}/register-user`;
       // if user cannot change institute (non-super admin), ensure payload uses loggedInstitute
-      if (!this.isSuperAdmin && this.loggedInstitute) payload.institute_id = payload.institute_id || this.loggedInstitute;
+      if (this.loggedInstitute) payload.institute_id = this.loggedInstitute;
       this.http.post<any>(url, payload).subscribe({
         next: (res) => { this.submitting = false; this.notify.success(res?.statusMessage || 'User registered'); this.router.navigate(['/view-users']); },
         complete: () => { this.loader.hide(); },
@@ -1080,3 +1081,4 @@ export class AdminUserRegisterComponent implements OnInit {
     return [row];
   }
 }
+

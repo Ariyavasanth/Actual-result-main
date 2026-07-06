@@ -84,6 +84,7 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.pageMeta.setMeta('Scheduled Tests', 'Browse and review scheduled tests');
     this.loadInstitutes();
+    this.applyGlobalInstituteScopeIfActive();
     this.restoreScheduleReturnState();
   }
 
@@ -607,4 +608,15 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
       try { sessionStorage.removeItem('schedule_return_state'); } catch (_) { }
     }
   }
+
+  private applyGlobalInstituteScopeIfActive(): void {
+    const iid = sessionStorage.getItem('global_institute_id') || '';
+    if (!iid) return;
+    this.selectedInstitute = iid;
+    this.hasAppliedFilters = true;
+    try { this.loadDepartments(iid); } catch (e) {}
+    try { this.loadTeams(iid); } catch (e) {}
+    setTimeout(() => this.loadSchedules(iid), 0);
+  }
 }
+

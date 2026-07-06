@@ -143,6 +143,7 @@ export class ViewQuestionsComponent implements OnDestroy {
 
   // http is optional for tests; if present, load institutes
     if (this.http) this.loadInstitutes();
+    this.applyGlobalInstituteScopeIfActive();
     // also load categories list (unfiltered) for the Category filter
     if (this.http) this.loadCategories();
   }
@@ -680,4 +681,16 @@ export class ViewQuestionsComponent implements OnDestroy {
       try { sessionStorage.removeItem(this.questionsReturnStateKey); } catch (_) {}
     }
   }
+
+  private applyGlobalInstituteScopeIfActive(): void {
+    const iid = sessionStorage.getItem('global_institute_id') || '';
+    if (!iid) return;
+    this.selectedInstitute = iid;
+    this.hasAppliedFilters = true;
+    try { this.loadDepartments(iid); } catch (e) {}
+    try { this.loadTeams(iid); } catch (e) {}
+    try { this.loadCategories(iid); } catch (e) {}
+    setTimeout(() => this.loadQuestions(iid), 0);
+  }
 }
+

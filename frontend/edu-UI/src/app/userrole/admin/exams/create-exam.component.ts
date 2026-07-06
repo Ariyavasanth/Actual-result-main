@@ -170,8 +170,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
         if (raw) {
           const u = JSON.parse(raw);
-          const inst = u?.institute_id || u?.instituteId || (u?.institute && (u.institute.institute_id || u.institute.id || u.institute)) || u?.institute || '';
-          if (inst && !this.isSuperAdmin) {
+          const inst = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || (u?.institute && (u.institute.institute_id || u.institute.id || u.institute)) || u?.institute || '';
+          if (inst && (sessionStorage.getItem('global_institute_id') || !this.isSuperAdmin)) {
             this.institute = String(inst);
             try { this.onInstituteChange(this.institute); } catch (e) { /* ignore */ }
           }
@@ -294,7 +294,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
           const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
           if (raw) {
             const u = JSON.parse(raw);
-            const instId = u?.institute_id || u?.instituteId || (u?.institute && (u.institute.institute_id || u.institute.id || u.institute)) || u?.institute || '';
+            const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || (u?.institute && (u.institute.institute_id || u.institute.id || u.institute)) || u?.institute || '';
             if (instId) {
               const found = this.institutes.find(x => String(x.id) === String(instId));
               if (found) {
@@ -647,3 +647,5 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/exams']);
   }
 }
+
+

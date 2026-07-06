@@ -57,7 +57,7 @@
                 </div>
                 <div class="filter-block">
 
-                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                        <mat-form-field appearance="outline" class="filter-item local-institute-field" *ngIf="isSuperAdmin">
                             <mat-label>Institute</mat-label>
                             <input matInput placeholder="All" [(ngModel)]="instituteSearch" [matAutocomplete]="categoryInstituteAuto" />
                             <mat-autocomplete #categoryInstituteAuto="matAutocomplete"
@@ -319,3 +319,6 @@
         </div>
     </div>
 </div>
+
+
+

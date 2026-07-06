@@ -7,16 +7,27 @@ import { DynamicChartComponent } from '../dynamic-chart.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { LoaderService } from 'src/app/shared/services/loader.service';
+import { FormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { GlobalInstituteContext, GlobalInstituteContextService } from 'src/app/shared/services/global-institute-context.service';
+import { notify } from 'src/app/shared/global-notify';
+
+interface DashboardInstituteOption {
+  id: string;
+  name: string;
+  industry: string;
+  country: string;
+  city: string;
+}
 
 @Component({
   selector: 'app-super-dashboard',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, DynamicChartComponent, MatIconModule, MatButtonModule],
+  imports: [CommonModule, HttpClientModule, FormsModule, DynamicChartComponent, MatIconModule, MatButtonModule, MatFormFieldModule, MatSelectModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
-
-
 export class SuperDashboardComponent implements OnInit {
  
     summary: any = {
@@ -39,23 +50,175 @@ export class SuperDashboardComponent implements OnInit {
 
   // final charts array used by template
   charts: Array<{ type: string; title: string; data: any; key?: string }> = [];
+
+  filterModel = { industry: '', country: '', city: '', institute_id: '' };
+  instituteOptions: DashboardInstituteOption[] = [];
+  isFilterLoading = false;
+  filterLoadError = '';
   
   private apiUrl = `${API_BASE}/superadmin-dashboard`;
 
-  constructor(private http: HttpClient, private pageMeta: PageMetaService,private loader: LoaderService){ }
+  constructor(private http: HttpClient, private pageMeta: PageMetaService, private loader: LoaderService, public instituteContext: GlobalInstituteContextService){ }
 
   ngOnInit(): void {
     try { this.pageMeta.setMeta('Super Admin Dashboard', 'Platform-wide overview & reports'); } catch(e){}
+    this.restoreActiveFilter();
+    this.loadFilterOptions();
     this.loadDashboard();
   }
 
   loadDashboard(){
     this.loader.show();
-    this.http.get<any>(this.apiUrl).subscribe({
+    this.http.get<any>(this.apiUrl, { headers: { 'X-Skip-Institute-Context': 'true' } }).subscribe({
       next: (res) => this.applyDashboardData(res),
       error: (err) => console.warn('Failed to load dashboard', err),
       complete: () => this.loader.hide()
     });
+  }
+
+  get activeInstituteContext(): GlobalInstituteContext | null {
+    return this.instituteContext.activeContext;
+  }
+
+  get industryOptions(): string[] {
+    return this.uniqueSorted(this.instituteOptions.map(i => i.industry));
+  }
+
+  get countryOptions(): string[] {
+    return this.uniqueSorted(this.filteredByIndustry().map(i => i.country));
+  }
+
+  get cityOptions(): string[] {
+    return this.uniqueSorted(this.filteredByCountry().map(i => i.city));
+  }
+
+  get filteredInstituteOptions(): DashboardInstituteOption[] {
+    return this.filteredByCity().sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  get canApplyFilter(): boolean {
+    return !!this.filterModel.institute_id && !this.isFilterLoading;
+  }
+
+  loadFilterOptions(): void {
+    this.isFilterLoading = true;
+    this.filterLoadError = '';
+    const headers = { 'X-Skip-Institute-Context': 'true' };
+    this.http.get<any>(`${API_BASE}/get-institutes`, { headers }).subscribe({
+      next: (res) => {
+        const records = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        this.instituteOptions = records.map((record: any) => this.mapInstituteOption(record)).filter((item: DashboardInstituteOption) => !!item.id && !!item.name);
+        this.keepValidFilterSelection();
+      },
+      error: (err) => {
+        console.warn('Failed to load institute filter options', err);
+        this.filterLoadError = 'Unable to load institute filters';
+        this.instituteOptions = [];
+      },
+      complete: () => { this.isFilterLoading = false; }
+    });
+  }
+
+  onIndustryChange(): void {
+    this.filterModel.country = '';
+    this.filterModel.city = '';
+    this.filterModel.institute_id = '';
+  }
+
+  onCountryChange(): void {
+    this.filterModel.city = '';
+    this.filterModel.institute_id = '';
+  }
+
+  onCityChange(): void {
+    this.filterModel.institute_id = '';
+  }
+
+  applyGlobalFilter(): void {
+    const selected = this.instituteOptions.find(i => String(i.id) === String(this.filterModel.institute_id));
+    if (!selected) {
+      try { notify('Please select an institute before applying the filter.', 'info'); } catch (e) {}
+      return;
+    }
+
+    this.instituteContext.setContext({
+      institute_id: selected.id,
+      institute_name: selected.name,
+      industry: selected.industry,
+      country: selected.country,
+      city: selected.city
+    });
+    this.filterModel = {
+      industry: selected.industry,
+      country: selected.country,
+      city: selected.city,
+      institute_id: selected.id
+    };
+    this.loadDashboard();
+    try { notify(`Institute context set to ${selected.name}`, 'success'); } catch (e) {}
+  }
+
+  clearGlobalFilter(): void {
+    this.instituteContext.clearContext();
+    this.filterModel = { industry: '', country: '', city: '', institute_id: '' };
+    this.loadDashboard();
+    try { notify('Institute filter cleared', 'info'); } catch (e) {}
+  }
+
+  private restoreActiveFilter(): void {
+    const context = this.instituteContext.activeContext;
+    if (!context) return;
+    this.filterModel = {
+      industry: context.industry || '',
+      country: context.country || '',
+      city: context.city || '',
+      institute_id: context.institute_id || ''
+    };
+  }
+
+  private keepValidFilterSelection(): void {
+    if (!this.filterModel.institute_id) return;
+    const selected = this.instituteOptions.find(i => String(i.id) === String(this.filterModel.institute_id));
+    if (!selected) return;
+    this.filterModel.industry = this.filterModel.industry || selected.industry;
+    this.filterModel.country = this.filterModel.country || selected.country;
+    this.filterModel.city = this.filterModel.city || selected.city;
+  }
+
+  private filteredByIndustry(): DashboardInstituteOption[] {
+    return this.instituteOptions.filter(i => !this.filterModel.industry || i.industry === this.filterModel.industry);
+  }
+
+  private filteredByCountry(): DashboardInstituteOption[] {
+    return this.filteredByIndustry().filter(i => !this.filterModel.country || i.country === this.filterModel.country);
+  }
+
+  private filteredByCity(): DashboardInstituteOption[] {
+    return this.filteredByCountry().filter(i => !this.filterModel.city || i.city === this.filterModel.city);
+  }
+
+  private uniqueSorted(values: string[]): string[] {
+    return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }
+
+  private mapInstituteOption(record: any): DashboardInstituteOption {
+    const campus = Array.isArray(record?.campuses) && record.campuses.length ? record.campuses[0] : {};
+    return {
+      id: String(record?.institute_id || record?.id || record?._id || ''),
+      name: String(record?.name || record?.institute_name || record?.short_name || ''),
+      industry: String(record?.industry_type || record?.industry || record?.industry_sector || ''),
+      country: this.resolveLocationValue(record?.country || campus?.country || record?.country_name || campus?.country_name, ['country_name', 'name', 'country']),
+      city: this.resolveLocationValue(record?.city || campus?.city || record?.city_name || campus?.city_name, ['city_name', 'name', 'city'])
+    };
+  }
+
+  private resolveLocationValue(value: any, keys: string[]): string {
+    if (!value) return '';
+    if (typeof value === 'string' || typeof value === 'number') return String(value);
+    for (const key of keys) {
+      if (value?.[key]) return String(value[key]);
+    }
+    return '';
   }
 
   private applyDashboardData(res: any){
@@ -203,3 +366,8 @@ export class SuperDashboardComponent implements OnInit {
 
 
 }
+
+
+
+
+

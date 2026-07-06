@@ -10,14 +10,6 @@
 
     <!-- Right: Actions & User -->
     <div class="navbar-right" *ngIf="isLogin" role="toolbar" aria-label="Top navigation actions">
-      <!-- Quick search -->
-      <button mat-icon-button 
-        aria-label="Search" 
-        class="navbar-icon-btn search-btn"
-        title="Search">
-        <mat-icon fontSet="material-icons-outlined" class="navbar-icon">search</mat-icon>
-      </button>
-
       <!-- Notifications -->
       <button mat-icon-button 
         aria-label="Show notifications" 
@@ -26,38 +18,47 @@
         <mat-icon fontSet="material-icons-outlined" class="navbar-icon">notifications</mat-icon>
       </button>
 
-      <!-- Settings -->
-      <button mat-icon-button 
-        aria-label="Open settings" 
-        class="navbar-icon-btn settings-btn"
-        title="Settings">
-        <mat-icon fontSet="material-icons-outlined" class="navbar-icon">settings</mat-icon>
-      </button>
-
-      <!-- Divider -->
-      <div class="user-profile-divider" role="separator" aria-orientation="vertical"></div>
-      
-      <!-- User Profile Pill -->
-      <div class="user-inline" role="complementary" aria-label="User profile">
-        <div class="avatar-inline" [title]="displayName">{{ initials }}</div>
-        <div class="user-inline-meta">
-          <div class="user-name">{{ displayName }}</div>
-          <div class="user-institute">{{ instituteShortName }}</div>
-        </div>
+      <!-- Institute Info -->
+      <div class="institute-inline" role="complementary" aria-label="Institute">
+        <span class="institute-inline-name">{{ instituteDisplayName }}</span>
       </div>
 
-      <!-- Logout -->
-      <button mat-icon-button 
-        aria-label="Sign out" 
-        class="navbar-icon-btn logout-inline-btn"
-        (click)="confirmLogout()"
-        title="Sign out">
-        <mat-icon class="navbar-icon logout-icon">logout</mat-icon>
+      <!-- Profile Logo -->
+      <div class="profile-logo-inline" [title]="displayName" aria-label="Profile logo">{{ initials }}</div>
+
+      <!-- User Menu -->
+      <button mat-icon-button
+        aria-label="Open user menu"
+        class="navbar-icon-btn user-menu-btn"
+        (click)="openUserPanel($event)"
+        title="Menu">
+        <mat-icon fontSet="material-icons-outlined" class="navbar-icon">menu</mat-icon>
       </button>
     </div>
   </div>
 </div>
 
+<div class="user-panel-backdrop" *ngIf="isUserPanelOpen" (click)="closeUserPanel()"></div>
+<aside class="user-side-panel" [class.open]="isUserPanelOpen" role="dialog" aria-modal="true" aria-label="User menu">
+  <div class="user-panel-header">
+    <span class="user-panel-eyebrow">Welcome</span>
+    <h2>{{ displayName }}</h2>
+  </div>
+  <nav class="user-panel-menu" aria-label="User menu options">
+    <button type="button" class="user-panel-item" (click)="openSettings()">
+      <mat-icon fontSet="material-icons-outlined">settings</mat-icon>
+      <span>Settings</span>
+    </button>
+    <button type="button" class="user-panel-item" (click)="confirmLogout()">
+      <mat-icon fontSet="material-icons-outlined">logout</mat-icon>
+      <span>Logout</span>
+    </button>
+  </nav>
+  <div class="user-panel-footer">
+    <span>v1.1.3</span>
+    <span>&copy; 2026 Profluent Labs</span>
+  </div>
+</aside>
 <!-- Logout confirmation dialog template -->
 <ng-template #logoutConfirmationDialog>
   <div class="logout-modal-wrap" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">

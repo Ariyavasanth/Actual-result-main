@@ -34,7 +34,7 @@
               </div>
 
               <div class="field-row" *ngIf="bulkMode">
-                <mat-form-field appearance="outline" class="field-third">
+                <mat-form-field appearance="outline" class="field-third local-institute-field">
                   <mat-label>Institute</mat-label>
                   <mat-icon matPrefix>business</mat-icon>
                   <mat-select [(ngModel)]="bulkInstitute" [ngModelOptions]="{standalone: true}"
@@ -235,7 +235,7 @@
               </div>
 
               <div class="field-row">
-                <mat-form-field appearance="outline" class="field-half">
+                <mat-form-field appearance="outline" class="field-half local-institute-field">
                   <mat-label>Institute</mat-label>
                   <mat-icon matPrefix>business</mat-icon>
                   <mat-select id="institute" formControlName="institute" aria-label="Institute" [disabled]="!isSuperAdmin">
@@ -535,3 +535,6 @@
     </form>
   </div>
 </div>
+
+
+

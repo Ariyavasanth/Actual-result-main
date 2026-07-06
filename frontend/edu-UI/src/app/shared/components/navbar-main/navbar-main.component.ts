@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy, TemplateRef, ViewChild, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef, ViewChild } from '@angular/core';
 import { Subscription, filter } from 'rxjs';
 import { AuthService } from '../../../home/service/auth.service';
 import { Router, NavigationEnd ,RouterModule} from '@angular/router';
@@ -20,7 +20,7 @@ import { PageMetaService } from '../../services/page-meta.service';
 })
 export class NavbarMainComponent implements OnInit, OnDestroy {
   @ViewChild('logoutConfirmationDialog') logoutConfirmationDialog!: TemplateRef<any>;
-  showProfileDropdown: boolean = false; // Profile dropdown visibility
+  isUserPanelOpen = false;
   isLogin = false;
   moduleName: string = '';
   moduleData: string = '';
@@ -47,6 +47,7 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
   userRole = sessionStorage.getItem('userRole') || 'unknown user role'; // Default to 'unknown user role' if not set
   displayName = this.username;
   displayInstitute = sessionStorage.getItem('institute') || '';
+  instituteDisplayName = this.getStoredInstituteName();
   userObj: any = null;
   initials = this.username ? this.username.split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase() : 'G';
 
@@ -69,13 +70,15 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
       if (u) {
         this.userObj = u;
         this.displayName = u.name || sessionStorage.getItem('username') || 'Guest';
-        this.displayInstitute = u.institute || sessionStorage.getItem('institute') || '';
+        this.displayInstitute = u.institute_name || u.institute || sessionStorage.getItem('institute') || '';
         this.instituteShortName = u.institute_short_name || this.instituteShortName;
+        this.instituteDisplayName = u.institute_name || u.institute || this.displayInstitute || this.instituteShortName;
         this.userRole = u.role || this.userRole;
         this.initials = (this.displayName || 'G').split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
       } else {
         this.displayName = sessionStorage.getItem('username') || 'Guest';
         this.displayInstitute = sessionStorage.getItem('institute') || '';
+        this.instituteDisplayName = this.getStoredInstituteName();
         this.initials = (this.displayName || 'G').split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
       }
     });
@@ -83,33 +86,43 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
     this.routerSubscription = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
-        // keep route-change behaviour (close dropdown etc.)
-        this.showProfileDropdown = false;
+        this.closeUserPanel();
       });
   }
 
   ngOnInit(): void { }
 
-  openMenu(event: MouseEvent): void {
-    event.stopPropagation(); // Prevent closing the menu immediately
-    this.showProfileDropdown = !this.showProfileDropdown;
+  private getStoredInstituteName(): string {
+    try {
+      const raw = sessionStorage.getItem('user') || sessionStorage.getItem('user_profile');
+      if (raw) {
+        const user = JSON.parse(raw);
+        return user?.institute_name || user?.institute || user?.institute_short_name || sessionStorage.getItem('institute') || this.instituteShortName || '';
+      }
+    } catch (e) { /* ignore */ }
+    return sessionStorage.getItem('institute') || this.instituteShortName || '';
   }
 
-  // Close menu if click happens outside of it
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    // Close the menu if clicked outside
-    if (this.showProfileDropdown) {
-      this.showProfileDropdown = false;
-    }
+  openUserPanel(event?: MouseEvent): void {
+    if (event) event.stopPropagation();
+    this.isUserPanelOpen = true;
   }
 
+  closeUserPanel(): void {
+    this.isUserPanelOpen = false;
+  }
   private updateLoginStatus(): void {
     // kept for compatibility; primary source of truth is AuthService
     this.isLogin = this.authService.isLoggedIn;
   }
 
+  openSettings(): void {
+    this.closeUserPanel();
+    this._snackBar.open('Settings option selected', 'Close', { duration: 2000 });
+  }
+
   confirmLogout() {
+    this.closeUserPanel();
     this.dialog.open(this.logoutConfirmationDialog, { width: '420px', panelClass: 'logout-dialog-panel' });
   }
 

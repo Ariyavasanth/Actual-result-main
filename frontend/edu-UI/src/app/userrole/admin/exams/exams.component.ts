@@ -110,6 +110,7 @@ export class AdminExamsComponent implements AfterViewInit {
       }
     } catch (e) { }
     this.loadInstitutes();
+    this.applyGlobalInstituteScopeIfActive();
   }
 
   openFiltersOverlay() {
@@ -627,4 +628,15 @@ export class AdminExamsComponent implements AfterViewInit {
       return false;
     }
   }
+
+  private applyGlobalInstituteScopeIfActive(): void {
+    const iid = sessionStorage.getItem('global_institute_id') || '';
+    if (!iid) return;
+    this.selectedInstitute = iid;
+    this.hasAppliedFilters = true;
+    try { this.loadDepartments(iid); } catch (e) {}
+    try { this.loadTeams(iid); } catch (e) {}
+    setTimeout(() => this.loadExamsForInstitute(iid), 0);
+  }
 }
+

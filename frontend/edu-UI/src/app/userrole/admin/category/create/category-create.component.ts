@@ -59,7 +59,7 @@ export class CategoryCreateComponent {
         const u = JSON.parse(raw);
         this.isSuperAdmin = !!(u && (u.is_super_admin === true || u.isSuperAdmin || u.role === 'super_admin' || u.user_role === 'super_admin'));
         this.currentUserId = u?.user_id || u?.id || u?.userId || null;
-        const instId = u?.institute_id || u?.instituteId || u?.institute || '';
+        const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute || '';
         if (instId) this.institute = String(instId);
       }
     } catch (e) { /* ignore */ }
@@ -226,7 +226,7 @@ export class CategoryCreateComponent {
      reset(): void {
        this.name = '';
        this.description = '';
-       this.institute = '';
+       this.institute = sessionStorage.getItem('global_institute_id') || '';
        this.type = '';
        this.whoInputs = '';
        this.evaluation = '';
@@ -350,3 +350,4 @@ export class CategoryCreateComponent {
     return f ? f.name : String(id);
   }
 }
+

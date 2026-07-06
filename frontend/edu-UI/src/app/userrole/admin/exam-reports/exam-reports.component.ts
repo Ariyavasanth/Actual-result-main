@@ -503,7 +503,7 @@ export class ExamReportsComponent implements OnInit, OnDestroy {
         }catch(e){
           this.filteredInstitutes$ = of(this.institutes || []);
         }
-        const loginInst = sessionStorage.getItem('institute_id') || sessionStorage.getItem('instituteId');
+        const loginInst = sessionStorage.getItem('global_institute_id') || sessionStorage.getItem('institute_id') || sessionStorage.getItem('instituteId');
         if(loginInst) this.selectedInstituteId = String(loginInst);
         else if(this.institutes.length) this.selectedInstituteId = this.institutes[0].id;
         // set instituteCtrl display value

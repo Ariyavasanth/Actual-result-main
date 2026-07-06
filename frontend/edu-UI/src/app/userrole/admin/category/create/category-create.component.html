@@ -36,7 +36,7 @@
                                 <mat-hint class="field-error" *ngIf="(formSubmitted || categoryInfoSubmitted) && isNameInvalid()">Name is required.</mat-hint>
                             </mat-form-field>
 
-                            <mat-form-field appearance="outline" class="field-half">
+                            <mat-form-field appearance="outline" class="field-half local-institute-field">
                                 <mat-label>Institute</mat-label>
                                 <mat-icon matPrefix>school</mat-icon>
                                 <mat-select required [value]="institute" [disabled]="!isSuperAdmin || isEditing"
@@ -256,3 +256,6 @@
         </mat-horizontal-stepper>
     </div>
 </div>
+
+
+

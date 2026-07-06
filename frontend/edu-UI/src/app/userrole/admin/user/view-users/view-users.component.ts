@@ -116,6 +116,7 @@ export class ViewUsersComponent {
 
     this.pageMeta.setMeta('Users', 'Manage platform users');
     this.loadInstitutes();
+    this.applyGlobalInstituteScopeIfActive();
     this.restoreUsersReturnState();
     // this.loadCountries();
     // this.loadCities();
@@ -840,4 +841,17 @@ export class ViewUsersComponent {
       try { sessionStorage.removeItem('users_return_state'); } catch (_) { }
     }
   }
+
+  private applyGlobalInstituteScopeIfActive(): void {
+    const iid = sessionStorage.getItem('global_institute_id') || '';
+    if (!iid) return;
+    this.selectedInstitute = iid;
+    try { this.filters.institute = iid; } catch (e) {}
+    this.hasAppliedFilters = true;
+    try { this.loadDepartments(iid); } catch (e) {}
+    try { this.loadTeams(iid); } catch (e) {}
+    try { this.loadCountries(iid); } catch (e) {}
+    setTimeout(() => this.loadUsers(iid), 0);
+  }
 }
+

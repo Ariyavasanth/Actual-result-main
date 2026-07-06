@@ -61,7 +61,7 @@ export class AdminResultsComponent implements OnInit {
       next: (res)=>{
         const list = Array.isArray(res) ? res : (res?.institutes || res?.data || []);
         this.institutes = (list || []).map((i:any)=>({ id: String(i.id || i.institute_id || i._id || ''), name: i.name || i.institute || 'Institute' }));
-        const loginInst = sessionStorage.getItem('institute_id') || sessionStorage.getItem('instituteId');
+        const loginInst = sessionStorage.getItem('global_institute_id') || sessionStorage.getItem('institute_id') || sessionStorage.getItem('instituteId');
         if(loginInst) this.selectedInstituteId = String(loginInst);
         else if(this.institutes.length) this.selectedInstituteId = this.institutes[0].id;
         if(this.selectedInstituteId) this.loadDashboard();
@@ -170,3 +170,4 @@ export class AdminResultsComponent implements OnInit {
   }
 }
  
+

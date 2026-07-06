@@ -92,6 +92,7 @@ export class CategoryComponent implements OnInit, AfterViewInit {
       }
     } catch (e) { /* ignore */ }
     this.loadFilterLists();
+    this.applyGlobalInstituteScopeIfActive();
     this.restoreCategoryReturnState();
   }
 
@@ -580,4 +581,17 @@ export class CategoryComponent implements OnInit, AfterViewInit {
       try { sessionStorage.removeItem('category_return_state'); } catch (_) { }
     }
   }
+
+  private applyGlobalInstituteScopeIfActive(): void {
+    const iid = sessionStorage.getItem('global_institute_id') || '';
+    if (!iid) return;
+    this.selectedInstitute = iid;
+    this.hasAppliedFilters = true;
+    try { this.onInstituteChange(iid); } catch (e) {}
+    setTimeout(() => this.fetchCategories(), 0);
+  }
 }
+
+
+
+

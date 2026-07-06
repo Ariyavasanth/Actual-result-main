@@ -24,14 +24,17 @@ import { UserExamRunnerComponent } from '../userrole/user/user-exam/user-exam.co
 import { UnauthorizedComponent } from '../shared/components/unauthorized/unauthorized.component';
 import { PermissionGuard } from '../shared/guards/permission.guard';
 import { UserDashboardComponent } from '../userrole/user/dashboard/user-dashboard.component';
+import { GlobalInstituteScopeGuard } from '../shared/guards/global-institute-scope.guard';
+import { InstituteScopeInactiveComponent } from '../shared/components/institute-scope-inactive/institute-scope-inactive.component';
 
 const routes: Routes = [
   { path: '', component: LandingComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent }
-  , { path: 'institute-register', component: InstituteRegisterComponent, canActivate: [PermissionGuard], data: { requiredRole: ['super_admin','superadmin','super-admin'] } }
-  , { path: 'view-institutes', component: ViewInstitutesComponent, canActivate: [PermissionGuard], data: { requiredRole: ['super_admin','superadmin','super-admin'] } }
+  , { path: 'institute-register', component: InstituteRegisterComponent, canActivate: [GlobalInstituteScopeGuard, PermissionGuard], data: { requiredRole: ['super_admin','superadmin','super-admin'] } }
+  , { path: 'view-institutes', component: ViewInstitutesComponent, canActivate: [GlobalInstituteScopeGuard, PermissionGuard], data: { requiredRole: ['super_admin','superadmin','super-admin'] } }
   , { path: 'super-admin-dashboard', component: SuperDashboardComponent, canActivate: [PermissionGuard], data: { requiredRole: ['super_admin','superadmin','super-admin'] } }
+  , { path: 'institutes-inactive', component: InstituteScopeInactiveComponent, canActivate: [PermissionGuard], data: { requiredRole: ['super_admin','superadmin','super-admin'] } }
   , { path: 'user-register', component: AdminUserRegisterComponent, canActivate: [PermissionGuard], data: { pageName: 'Users', action: 'add' } }
   , { path: 'questions', component: AdminQuestionsComponent, canActivate: [PermissionGuard], data: { pageName: 'Questions', action: 'add' } }
   , { path: 'schedule-exam', component: AdminScheduleTestComponent, canActivate: [PermissionGuard], data: { pageName: 'Schedule Exam', action: 'add' } }
@@ -55,3 +58,4 @@ const routes: Routes = [
   exports: [RouterModule]
 })
 export class HomeRoutingModule { }
+

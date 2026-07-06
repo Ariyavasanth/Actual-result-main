@@ -143,7 +143,7 @@ export class AdminQuestionsComponent {
       if (raw) {
         const u = JSON.parse(raw);
         this.isSuperAdmin = !!(u && (u.is_super_admin === true || u.isSuperAdmin || u.role === 'super_admin' || u.user_role === 'super_admin'));
-        const instId = u?.institute_id || u?.instituteId || u?.institute || '';
+        const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute || '';
         if (instId) {
           // prefill the first question's institute selection so the template select shows the user's institute
           try { this.questions[0].institute_id = String(instId); } catch(e){}
@@ -371,7 +371,7 @@ export class AdminQuestionsComponent {
     const raw = sessionStorage.getItem('user')
     if (raw) {
       const u = JSON.parse(raw);
-      const instId = u?.institute_id || u?.instituteId || u?.institute || '';
+      const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute || '';
       if (instId) {
         fd.append('institute_id', String(instId));
       }
@@ -483,7 +483,7 @@ export class AdminQuestionsComponent {
   resetAll(){
     // clear institute/exam selection stored on first block and reset to single empty block
     if (this.questions && this.questions.length) {
-      this.questions[0].institute_id = '';
+      this.questions[0].institute_id = sessionStorage.getItem('global_institute_id') || '';
       this.questions[0].exam_id = '';
     }
     this.questions = [{ type: '', text: '', marks: this.getCategoryQuestionMark() || 1, options: ['',''], correct: null, answerText: '', showFineTune: false }];
@@ -1040,3 +1040,4 @@ export class AdminQuestionsComponent {
     }
   }
 }
+

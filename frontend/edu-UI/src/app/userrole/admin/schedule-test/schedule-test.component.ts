@@ -309,7 +309,7 @@ export class AdminScheduleTestComponent {
             const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
             if (raw) {
               const u = JSON.parse(raw);
-              const instId = u?.institute_id || u?.instituteId || u?.institute || '';
+              const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute || '';
               if (instId) {
                 // only set if the institute exists in the loaded list
                 const found = this.institutes.find(i => String(i.institute_id) === String(instId));
@@ -1034,3 +1034,4 @@ export class AdminScheduleTestComponent {
     } catch (e) { return String(v); }
   }
 }
+

@@ -2,7 +2,7 @@
     <!-- Skip to main content link for accessibility -->
     <a class="skip-link" href="#main-content">Skip to main content</a>
     
-    <div class="app-layout">
+    <div class="app-layout" [class.global-institute-active]="globalInstituteContext.isGlobalFilterActive()">
         <!-- Sidebar navigation -->
         <aside class="app-sidenav" role="navigation" aria-label="Main navigation">
             <app-side-nav></app-side-nav>
