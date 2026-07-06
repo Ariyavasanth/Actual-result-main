@@ -20,8 +20,6 @@ export class AppComponent {
 
   constructor(private auth: AuthService, private sessionService: SessionService, public globalInstituteContext: GlobalInstituteContextService) {
     this.isLoggedIn$ = this.auth.isLoggedIn$;
-    // start listening for session expiry events so the app can offer extend/logout
     this.sessionService.startListening();
   }
 }
-

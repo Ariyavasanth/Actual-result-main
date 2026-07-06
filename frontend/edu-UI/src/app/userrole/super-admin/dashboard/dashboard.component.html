@@ -75,14 +75,14 @@
 
         <mat-form-field appearance="outline" class="filter-field filter-field--institute">
           <mat-label>Institute Name</mat-label>
-          <mat-select [(ngModel)]="filterModel.institute_id" [disabled]="isFilterLoading || !filterModel.city">
+          <mat-select [(ngModel)]="filterModel.institute_id" (selectionChange)="onInstituteSelectionChange()" [disabled]="isFilterLoading || !filterModel.city">
             <mat-option value="">Select Institute</mat-option>
             <mat-option *ngFor="let institute of filteredInstituteOptions" [value]="institute.id">{{ institute.name }}</mat-option>
           </mat-select>
         </mat-form-field>
 
         <div class="global-filter-actions">
-          <button type="button" class="filter-action-btn filter-action-btn--primary" (click)="applyGlobalFilter()" [disabled]="isFilterLoading">
+          <button type="button" class="filter-action-btn filter-action-btn--primary" (click)="applyGlobalFilter()" [disabled]="!canApplyFilter">
             <mat-icon>filter_alt</mat-icon>
             <span>{{ isFilterLoading ? 'Loading' : 'Apply Filter' }}</span>
           </button>
@@ -404,5 +404,4 @@
   </section>
 
 </div>
-
 

@@ -586,12 +586,9 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     const iid = sessionStorage.getItem('global_institute_id') || '';
     if (!iid) return;
     this.selectedInstitute = iid;
-    this.hasAppliedFilters = true;
+    this.hasAppliedFilters = false;
     try { this.onInstituteChange(iid); } catch (e) {}
-    setTimeout(() => this.fetchCategories(), 0);
+    this.categories = []; this.dataSource.data = [];
   }
 }
-
-
-
 

@@ -105,7 +105,7 @@ export class AdminExamsComponent implements AfterViewInit {
     try {
       if (!restoredReturnState && sessionStorage.getItem('exams_return_state') === 'true') {
         sessionStorage.removeItem('exams_return_state');
-        this.hasAppliedFilters = true;
+        this.hasAppliedFilters = false;
         this.shouldLoadTestsAfterInstitutes = true;
       }
     } catch (e) { }
@@ -398,7 +398,6 @@ export class AdminExamsComponent implements AfterViewInit {
   private loadExamsFromReturnState() {
     if (!this.shouldLoadTestsAfterInstitutes) return;
     this.shouldLoadTestsAfterInstitutes = false;
-    setTimeout(() => this.loadExamsForInstitute(this.selectedInstitute || undefined));
   }
 
   displayInstitute = (value: string | null): string => {
@@ -633,10 +632,10 @@ export class AdminExamsComponent implements AfterViewInit {
     const iid = sessionStorage.getItem('global_institute_id') || '';
     if (!iid) return;
     this.selectedInstitute = iid;
-    this.hasAppliedFilters = true;
+    this.hasAppliedFilters = false;
     try { this.loadDepartments(iid); } catch (e) {}
     try { this.loadTeams(iid); } catch (e) {}
-    setTimeout(() => this.loadExamsForInstitute(iid), 0);
+    this.exams = []; this.dataSource.data = [];
   }
 }
 

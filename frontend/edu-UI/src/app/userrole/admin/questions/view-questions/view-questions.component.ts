@@ -686,11 +686,11 @@ export class ViewQuestionsComponent implements OnDestroy {
     const iid = sessionStorage.getItem('global_institute_id') || '';
     if (!iid) return;
     this.selectedInstitute = iid;
-    this.hasAppliedFilters = true;
+    this.hasAppliedFilters = false;
     try { this.loadDepartments(iid); } catch (e) {}
     try { this.loadTeams(iid); } catch (e) {}
     try { this.loadCategories(iid); } catch (e) {}
-    setTimeout(() => this.loadQuestions(iid), 0);
+    this.questions = []; this.dataSource.data = [];
   }
 }
 

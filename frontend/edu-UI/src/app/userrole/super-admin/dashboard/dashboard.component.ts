@@ -123,15 +123,29 @@ export class SuperDashboardComponent implements OnInit {
     this.filterModel.country = '';
     this.filterModel.city = '';
     this.filterModel.institute_id = '';
+    this.instituteContext.clearPendingInstitute();
   }
 
   onCountryChange(): void {
     this.filterModel.city = '';
     this.filterModel.institute_id = '';
+    this.instituteContext.clearPendingInstitute();
   }
 
   onCityChange(): void {
     this.filterModel.institute_id = '';
+    this.instituteContext.clearPendingInstitute();
+  }
+
+  onInstituteSelectionChange(): void {
+    const selected = this.instituteOptions.find(i => String(i.id) === String(this.filterModel.institute_id));
+    this.instituteContext.setPendingInstitute(selected ? {
+      institute_id: selected.id,
+      institute_name: selected.name,
+      industry: selected.industry,
+      country: selected.country,
+      city: selected.city
+    } : null);
   }
 
   applyGlobalFilter(): void {
@@ -141,27 +155,26 @@ export class SuperDashboardComponent implements OnInit {
       return;
     }
 
-    this.instituteContext.setContext({
+    this.instituteContext.setPendingInstitute({
       institute_id: selected.id,
       institute_name: selected.name,
       industry: selected.industry,
       country: selected.country,
       city: selected.city
     });
+    this.instituteContext.applyPendingInstitute();
     this.filterModel = {
       industry: selected.industry,
       country: selected.country,
       city: selected.city,
       institute_id: selected.id
     };
-    this.loadDashboard();
     try { notify(`Institute context set to ${selected.name}`, 'success'); } catch (e) {}
   }
 
   clearGlobalFilter(): void {
-    this.instituteContext.clearContext();
+    this.instituteContext.clearInstitute();
     this.filterModel = { industry: '', country: '', city: '', institute_id: '' };
-    this.loadDashboard();
     try { notify('Institute filter cleared', 'info'); } catch (e) {}
   }
 
@@ -366,8 +379,4 @@ export class SuperDashboardComponent implements OnInit {
 
 
 }
-
-
-
-
 

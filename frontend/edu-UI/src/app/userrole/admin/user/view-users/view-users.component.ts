@@ -847,11 +847,11 @@ export class ViewUsersComponent {
     if (!iid) return;
     this.selectedInstitute = iid;
     try { this.filters.institute = iid; } catch (e) {}
-    this.hasAppliedFilters = true;
+    this.hasAppliedFilters = false;
     try { this.loadDepartments(iid); } catch (e) {}
     try { this.loadTeams(iid); } catch (e) {}
     try { this.loadCountries(iid); } catch (e) {}
-    setTimeout(() => this.loadUsers(iid), 0);
+    this.users = []; this.rawRecords = []; this.dataSource.data = []; this.totalCount = 0;
   }
 }
 
