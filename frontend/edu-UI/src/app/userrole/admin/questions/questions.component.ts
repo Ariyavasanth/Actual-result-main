@@ -135,6 +135,7 @@ export class AdminQuestionsComponent {
   private institutesUrl = `${API_BASE}/get-institute-list`;
   private examsUrl = `${API_BASE}/get-exams-list`;
   private categoriesUrl = `${API_BASE}/get-categories-list`;
+  private categoryDetailsUrl = `${API_BASE}/category-details`;
   constructor(private http: HttpClient,private pageMeta: PageMetaService, private loader: LoaderService, private router: Router) {
     // infer super-admin role and default institute from session data when available
     try {
@@ -573,6 +574,7 @@ export class AdminQuestionsComponent {
               try { this.categoryCtrl.setValue(found); } catch(e) {}
               this.enforceQuestionTypeForSelectedCategory();
               this.syncQuestionMarksToCategory();
+              this.loadCategorySettings(found.category_id);
             }
           }
         } catch(e) {}
@@ -596,6 +598,7 @@ export class AdminQuestionsComponent {
     try { this.questions[0].category_id = cat.category_id; } catch(e) {}
     this.enforceQuestionTypeForSelectedCategory();
     this.syncQuestionMarksToCategory();
+    this.loadCategorySettings(cat.category_id);
   }
 
   displayCategory(cat: any){ return cat && cat.name ? cat.name : ''; }
@@ -607,8 +610,33 @@ export class AdminQuestionsComponent {
     try { this.categoryCtrl.setValue(found || ''); } catch(e) {}
     this.enforceQuestionTypeForSelectedCategory();
     this.syncQuestionMarksToCategory();
+    if (categoryId) this.loadCategorySettings(categoryId);
   }
 
+  private loadCategorySettings(categoryId: any) {
+    if (!categoryId) return;
+    const url = `${this.categoryDetailsUrl}?category_id=${encodeURIComponent(String(categoryId))}&_ts=${Date.now()}`;
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        const items = Array.isArray(res) ? res : (res?.data || []);
+        const detail = Array.isArray(items) && items.length ? items[0] : (res?.data && !Array.isArray(res.data) ? res.data : res);
+        if (!detail) return;
+        const current: any = this.selectedCategory || {};
+        this.selectedCategory = {
+          ...current,
+          name: detail.name || detail.category_name || current.name,
+          category_id: detail.category_id || detail.id || detail._id || current.category_id,
+          description: detail.description || detail.desc || current.description,
+          type: detail.type || detail.category_type || current.type,
+          mark_each_question: (typeof detail.mark_each_question !== 'undefined') ? detail.mark_each_question : (detail.mark_for_each_question ?? detail.question_mark ?? detail.marks ?? current.mark_each_question),
+          mark_for_each_question: detail.mark_for_each_question ?? detail.mark_each_question ?? detail.question_mark ?? detail.marks ?? current.mark_for_each_question
+        };
+        this.enforceQuestionTypeForSelectedCategory();
+        this.syncQuestionMarksToCategory();
+      },
+      error: (err) => { console.warn('Failed to load category settings', err); }
+    });
+  }
   get filteredQuestionTypes() {
     const type = this.normalizeCategoryType(this.selectedCategory?.type);
     if (type === 'descriptive') return this.questionTypes.filter(t => t.value === 'descriptive');
@@ -643,6 +671,9 @@ export class AdminQuestionsComponent {
     return normalized;
   }
 
+  hasCategorySettings(): boolean {
+    return this.isEditing || !!this.selectedCategory;
+  }
   getCategoryQuestionMark(): number | null {
     const cat: any = this.selectedCategory;
     const raw = cat?.mark_each_question ?? cat?.mark_for_each_question ?? cat?.question_mark ?? cat?.marks ?? null;

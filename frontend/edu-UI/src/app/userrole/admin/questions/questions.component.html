@@ -46,7 +46,7 @@
                   <mat-label>Category</mat-label>
                   <mat-select [value]="questions[0].category_id" [disabled]="!questions[0].institute_id || !categories.length"
                      (openedChange)="refreshCategoriesOnCategoryOpen($event)"
-                     (selectionChange)="onCategorySelected($event.value)">
+                     (selectionChange)="onCategorySelected($event.value)" required>
                      <mat-option value="">Select category</mat-option>
                      <mat-option *ngFor="let cat of categories" [value]="cat.category_id">{{cat.name}}</mat-option>
                   </mat-select>
@@ -152,7 +152,7 @@
                      </mat-select>
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline" class="field-half">
+                  <mat-form-field appearance="outline" class="field-half" *ngIf="hasCategorySettings()">
                      <mat-label>Quiz Type</mat-label>
                      <mat-select [(ngModel)]="aiQuestionType">
                         <mat-option value="">Select type</mat-option>
@@ -167,7 +167,7 @@
                      <input matInput type="number" [(ngModel)]="aiQuestionNumber" min="1" />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline" class="field-half">
+                  <mat-form-field appearance="outline" class="field-half" *ngIf="hasCategorySettings()">
                      <mat-label>Marks per Question</mat-label>
                      <input matInput type="number" [value]="getCategoryQuestionMark() ?? aiMarksPerQuestion" min="1" readonly />
                   </mat-form-field>
@@ -240,7 +240,7 @@
 
                <div class="editor-actions">
                   <button mat-stroked-button type="button" (click)="sourceText=''; aiPrompt='';activeMode = 'ai'; plaintextEditor = false">Clear</button>
-                  <button mat-flat-button color="primary" type="button" (click)="generateAIQuestions()" [disabled]="!aiQuestionType || aiQuestionNumber<1">Generate</button>
+                  <button mat-flat-button color="primary" type="button" (click)="generateAIQuestions()" [disabled]="!hasCategorySettings() || !aiQuestionType || aiQuestionNumber<1">Generate</button>
                </div>
             </div>
          </div>
@@ -277,10 +277,10 @@
                               (click)="openFineTuningDialog(qi)" title="AI Fine-tuning for this question" class="fine-tune-btn">
                               <mat-icon svgIcon="brain"></mat-icon>
                            </button>
-                           <span class="badge type-label">
+                           <span class="badge type-label" *ngIf="hasCategorySettings()">
                               {{ getQuestionTypeLabel(q.type) }}
                            </span>
-                           <div class="badge marks" title="Category mark">{{ getCategoryQuestionMark() ?? q.marks ?? 0 }} Marks</div>
+                           <div class="badge marks" *ngIf="hasCategorySettings()" title="Category mark">{{ getCategoryQuestionMark() ?? q.marks ?? 0 }} Marks</div>
                            <div class="panel-actions">
                               <button type="button" mat-icon-button aria-label="Remove question"
                                  (click)="removeQuestion(qi)" [disabled]="!isEditing && questions.length<=1">
@@ -292,7 +292,7 @@
                   </mat-expansion-panel-header>
 
                   <div class="panel-body">
-                     <div class="field-row" *ngIf="!aiMode">
+                     <div class="field-row" *ngIf="!aiMode && hasCategorySettings()">
                         <mat-form-field appearance="outline" class="field-full">
                            <mat-icon matPrefix>category</mat-icon>
                            <mat-label>Type</mat-label>
@@ -389,7 +389,7 @@
                <span>Cancel</span>
             </button>
             <button type="button" mat-flat-button color="primary" class="submit-btn" (click)="submit()"
-               [disabled]="(!questions || !questions.length) && !pendingDeletedQuestionId">
+               [disabled]="((!questions || !questions.length) && !pendingDeletedQuestionId) || (!isEditing && !selectedCategory)">
                <mat-icon>save</mat-icon>
                <span *ngIf="!isEditing">Save All</span>
                <span *ngIf="isEditing">Update</span>
