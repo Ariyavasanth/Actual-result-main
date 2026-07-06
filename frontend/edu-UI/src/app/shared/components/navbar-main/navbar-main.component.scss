@@ -179,12 +179,24 @@ $ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
 .user-panel-header {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.35rem;
+  align-items: center;
   min-height: 6.25rem;
   padding: 1.25rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.user-panel-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.user-panel-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
 }
 
 .user-panel-eyebrow {
@@ -204,6 +216,8 @@ $ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
   overflow-wrap: anywhere;
 }
 
@@ -341,6 +355,17 @@ $ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border-radius: 50%;
   border: 2.5px solid var(--bg-1);
   box-shadow: 0 1px 3px rgba(99, 102, 241, 0.35);
+}
+
+.profile-logo-inline--panel {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 0.875rem;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.28);
+}
+
+.profile-logo-inline--panel::after {
+  border-color: var(--theme-1);
 }
 // LOGOUT MODAL — Modern Centered Design
 // ═══════════════════════════════════════════════════

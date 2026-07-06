@@ -10,21 +10,18 @@
 
     <!-- Right: Actions & User -->
     <div class="navbar-right" *ngIf="isLogin" role="toolbar" aria-label="Top navigation actions">
-      <!-- Notifications -->
-      <button mat-icon-button 
-        aria-label="Show notifications" 
-        class="navbar-icon-btn notifications-btn"
-        title="Notifications">
-        <mat-icon fontSet="material-icons-outlined" class="navbar-icon">notifications</mat-icon>
-      </button>
-
       <!-- Institute Info -->
       <div class="institute-inline" role="complementary" aria-label="Institute">
         <span class="institute-inline-name">{{ instituteDisplayName }}</span>
       </div>
 
-      <!-- Profile Logo -->
-      <div class="profile-logo-inline" [title]="displayName" aria-label="Profile logo">{{ initials }}</div>
+      <!-- Notifications -->
+      <button mat-icon-button
+        aria-label="Show notifications"
+        class="navbar-icon-btn notifications-btn"
+        title="Notifications">
+        <mat-icon fontSet="material-icons-outlined" class="navbar-icon">notifications</mat-icon>
+      </button>
 
       <!-- User Menu -->
       <button mat-icon-button
@@ -41,8 +38,13 @@
 <div class="user-panel-backdrop" *ngIf="isUserPanelOpen" (click)="closeUserPanel()"></div>
 <aside class="user-side-panel" [class.open]="isUserPanelOpen" role="dialog" aria-modal="true" aria-label="User menu">
   <div class="user-panel-header">
-    <span class="user-panel-eyebrow">Welcome</span>
-    <h2>{{ displayName }}</h2>
+    <div class="user-panel-identity">
+      <div class="profile-logo-inline profile-logo-inline--panel" [title]="displayName" aria-label="Profile logo">{{ initials }}</div>
+      <div class="user-panel-title-block">
+        <span class="user-panel-eyebrow">Welcome</span>
+        <h2>{{ displayName }}</h2>
+      </div>
+    </div>
   </div>
   <nav class="user-panel-menu" aria-label="User menu options">
     <button type="button" class="user-panel-item" (click)="openSettings()">
