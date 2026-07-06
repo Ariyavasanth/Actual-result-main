@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { API_BASE } from 'src/app/shared/api.config';
 import { PageMetaService } from '../../services/page-meta.service';
+import { GlobalInstituteContextService } from '../../services/global-institute-context.service';
 
 @Component({
   selector: 'app-navbar-main',
@@ -42,6 +43,7 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
   private authSubscription?: Subscription;
   private userSubscription?: Subscription;
   private pageMetaSubscription?: Subscription;
+  private globalInstituteSubscription?: Subscription;
 
   username = sessionStorage.getItem('username') || 'Guest'; // Default to 'Guest' if username is not set
   userRole = sessionStorage.getItem('userRole') || 'unknown user role'; // Default to 'unknown user role' if not set
@@ -57,7 +59,8 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
     private pageMeta: PageMetaService,
     private _snackBar: MatSnackBar,
     public dialog: MatDialog,
-    private http: HttpClient
+    private http: HttpClient,
+    private globalInstituteContext: GlobalInstituteContextService
   ) {
     // subscribe to page meta service for dynamic module title/subtitle
     this.pageMetaSubscription = this.pageMeta.getMetaObservable().subscribe(m => {
@@ -72,15 +75,19 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
         this.displayName = u.name || sessionStorage.getItem('username') || 'Guest';
         this.displayInstitute = u.institute_name || u.institute || sessionStorage.getItem('institute') || '';
         this.instituteShortName = u.institute_short_name || this.instituteShortName;
-        this.instituteDisplayName = u.institute_name || u.institute || this.displayInstitute || this.instituteShortName;
+        this.instituteDisplayName = this.getNavbarInstituteName(u.institute_name || u.institute || this.displayInstitute || this.instituteShortName);
         this.userRole = u.role || this.userRole;
         this.initials = (this.displayName || 'G').split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
       } else {
         this.displayName = sessionStorage.getItem('username') || 'Guest';
         this.displayInstitute = sessionStorage.getItem('institute') || '';
-        this.instituteDisplayName = this.getStoredInstituteName();
+        this.instituteDisplayName = this.getNavbarInstituteName();
         this.initials = (this.displayName || 'G').split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
       }
+    });
+
+    this.globalInstituteSubscription = this.globalInstituteContext.selectedInstitute$.subscribe(() => {
+      this.instituteDisplayName = this.getNavbarInstituteName();
     });
 
     this.routerSubscription = this.router.events
@@ -103,6 +110,10 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
     return sessionStorage.getItem('institute') || this.instituteShortName || '';
   }
 
+  private getNavbarInstituteName(fallback?: string): string {
+    const activeInstitute = this.globalInstituteContext.activeContext;
+    return activeInstitute?.institute_name || fallback || this.getStoredInstituteName();
+  }
   openUserPanel(event?: MouseEvent): void {
     if (event) event.stopPropagation();
     this.isUserPanelOpen = true;
@@ -187,5 +198,6 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
     if (this.authSubscription) this.authSubscription.unsubscribe();
     if (this.userSubscription) this.userSubscription.unsubscribe();
     if (this.pageMetaSubscription) this.pageMetaSubscription.unsubscribe();
+    if (this.globalInstituteSubscription) this.globalInstituteSubscription.unsubscribe();
   }
 }
