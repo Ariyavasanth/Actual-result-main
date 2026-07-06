@@ -454,12 +454,21 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
     return '';
   }
 
+  private getScheduleId(row: any): any {
+    if (!row) return null;
+    return row.schedule_id || row.id || row._id || row.scheduleId || row.raw?.schedule_id || row.raw?.id || row.raw?._id || row.raw?.scheduleId || null;
+  }
+
   editSchedule(row: any) {
-    const id = row.id;
-    if (!id) return;
+    const id = this.getScheduleId(row);
+    if (!id) {
+      try { notify('Schedule id missing. Unable to edit this schedule.', 'error'); } catch (e) { }
+      return;
+    }
     // store the full row (prefer original backend object if available) so the editor can prefill
     try {
-      const payload = row && row.raw ? row.raw : row;
+      const source = row && row.raw ? row.raw : row;
+      const payload = { ...source, schedule_id: source.schedule_id || id };
       // normalize publish/review keys to common names to help the editor prefill toggles
       try {
         const normalizeBool = (v: any) => {
