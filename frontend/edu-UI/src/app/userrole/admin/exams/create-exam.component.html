@@ -253,8 +253,8 @@
                                             (ngModelChange)="onNewCategoryRandomizeChange($event)"
                                             [disabled]="readOnly">Include Questions Randomly</mat-checkbox>
                                         <button mat-flat-button color="primary" aria-label="Add category" class="add-btn" type="button"
-                                            (click)="addCategory()"
-                                            [disabled]="!canAddSelectedQuestionBank || readOnly">
+                                            (click)="addSelectedQuestionBankQuestions()"
+                                            [disabled]="!selectedCategory || activeQuestionCategoryId !== selectedCategory || !canAddSelectedQuestionBankQuestions || readOnly">
                                             <mat-icon class="add-icon">add</mat-icon>Add Selected
                                         </button>
                                     </div>
@@ -267,37 +267,44 @@
                                             <span>Attached Question Banks</span>
                                             <strong>{{ model.categories?.length || 0 }}</strong>
                                         </div>
-                                        <mat-list>
-                                            <mat-list-item *ngFor="let c of model.categories; let i = index">
-                                                <div class="cat-item" [class.cat-item--active]="c.category_id === activeQuestionCategoryId">
-                                                    <div class="cat-main">
-                                                        <div class="cat-name">{{c.name}}</div>
-                                                        <div class="cat-meta">
-                                                            <span class="cat-questions">{{c.questions}} Q</span>
-                                                            <span class="cat-questions" *ngIf="c.question_type">{{ formatQuestionBankType(c.question_type) }}</span>
-                                                            <span class="cat-questions" *ngIf="c.marks_per_question !== null && c.marks_per_question !== undefined">{{ c.marks_per_question }} Marks/Q</span>
-                                                            <span class="cat-randomize"
-                                                                *ngIf="c.randomize_questions">Include Questions Randomly</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="cat-actions">
-                                                        <button mat-icon-button type="button"
-                                                            (click)="viewCategoryQuestions(c)"
-                                                    aria-label="View questions"
-                                                    title="View questions">
-                                                            <mat-icon>visibility</mat-icon>
-                                                        </button>
-                                                        <button mat-icon-button color="warn" type="button"
-                                                            (click)="removeCategory(i)"
-                                                            aria-label="Remove category"
-                                                            title="Remove category"
-                                                            [disabled]="readOnly">
-                                                            <mat-icon>delete</mat-icon>
-                                                        </button>
-                                                    </div>
+                                        <div class="attached-bank-table" role="list">
+                                            <div class="attached-bank-row attached-bank-row--head" aria-hidden="true">
+                                                <div class="attached-bank-cell attached-bank-cell--sno">S.No</div>
+                                                <div class="attached-bank-cell attached-bank-cell--name">Question Bank Name</div>
+                                                <div class="attached-bank-cell attached-bank-cell--type">Question Type</div>
+                                                <div class="attached-bank-cell attached-bank-cell--count">No. of Questions Selected</div>
+                                                <div class="attached-bank-cell attached-bank-cell--marks">Total Marks</div>
+                                                <div class="attached-bank-cell attached-bank-cell--actions">Actions</div>
+                                            </div>
+                                            <div class="attached-bank-row attached-bank-card"
+                                                *ngFor="let c of model.categories; let i = index"
+                                                role="listitem"
+                                                [class.attached-bank-card--active]="c.category_id === activeQuestionCategoryId">
+                                                <div class="attached-bank-cell attached-bank-cell--sno" data-label="S.No">{{ i + 1 }}</div>
+                                                <div class="attached-bank-cell attached-bank-cell--name" data-label="Question Bank Name">
+                                                    <span class="attached-bank-name">{{ c.name }}</span>
+                                                    <span class="attached-bank-randomize" *ngIf="c.randomize_questions">Randomized</span>
                                                 </div>
-                                            </mat-list-item>
-                                        </mat-list>
+                                                <div class="attached-bank-cell attached-bank-cell--type" data-label="Question Type">{{ formatQuestionBankType(c.question_type) }}</div>
+                                                <div class="attached-bank-cell attached-bank-cell--count" data-label="No. of Questions Selected">{{ c.questions || 0 }}</div>
+                                                <div class="attached-bank-cell attached-bank-cell--marks" data-label="Total Marks">{{ (c.questions || 0) * (c.marks_per_question || 0) }}</div>
+                                                <div class="attached-bank-cell attached-bank-cell--actions" data-label="Actions">
+                                                    <button mat-icon-button type="button"
+                                                        (click)="viewCategoryQuestions(c)"
+                                                        aria-label="View questions"
+                                                        title="View questions">
+                                                        <mat-icon>visibility</mat-icon>
+                                                    </button>
+                                                    <button mat-icon-button color="warn" type="button"
+                                                        (click)="removeCategory(i)"
+                                                        aria-label="Remove question bank"
+                                                        title="Remove question bank"
+                                                        [disabled]="readOnly">
+                                                        <mat-icon>delete</mat-icon>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -312,6 +319,13 @@
                                         <p class="section-desc" *ngIf="activeQuestionCategoryName">Questions from {{ activeQuestionCategoryName }}.</p>
                                         <p class="section-desc" *ngIf="!activeQuestionCategoryName">Select or view a question bank to load questions.</p>
                                     </div>
+                                    <button mat-flat-button color="primary" class="questions-add-btn" type="button"
+                                        (click)="addSelectedQuestionBankQuestions()"
+                                        [disabled]="!canAddSelectedQuestionBankQuestions || readOnly"
+                                        aria-label="Add selected questions">
+                                        <mat-icon>add</mat-icon>
+                                        <span>Add</span>
+                                    </button>
                                 </div>
 
                                 <div class="question-controls">

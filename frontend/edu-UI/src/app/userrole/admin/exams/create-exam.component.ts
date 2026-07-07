@@ -229,17 +229,39 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   addCategory() {
-    const catId = this.selectedCategory || '';
-    const q = Number(this.newCategory.questions) || 0;
-    const randomize = !!this.newCategory.randomize_questions;
-    if (!catId) return;
-    if (!this.applyNewCategoryQuestionCountSelection(true)) return;
+    this.addSelectedQuestionBankQuestions();
+  }
 
-    const cat = this.categories.find(c => c.category_id === catId);
-    const name = cat ? cat.name : '';
-    const item = { category_id: catId, name, questions: q, question_ids: this.getDraftQuestionIds(), randomize_questions: randomize, question_type: this.newCategory.question_type || '', marks_per_question: this.newCategory.marks_per_question ?? null };
-    this.model.categories = [...(this.model.categories || []), item];
-    this.resetQuestionBankDraft();
+  addSelectedQuestionBankQuestions() {
+    const catId = this.activeQuestionCategoryId || this.selectedCategory || '';
+    if (!catId || !this.selectedQuestionIds.length) return;
+
+    const existingIndex = Array.isArray(this.model.categories)
+      ? this.model.categories.findIndex((c: any) => String(c.category_id) === String(catId))
+      : -1;
+    const existing = existingIndex >= 0 ? this.model.categories![existingIndex] : null;
+    const cat = this.categories.find(c => String(c.category_id) === String(catId));
+    const selectedIds = [...this.selectedQuestionIds];
+    const isDraft = String(catId) === String(this.selectedCategory);
+    const item = {
+      category_id: catId,
+      name: existing?.name || cat?.name || this.activeQuestionCategoryName || '',
+      questions: selectedIds.length,
+      question_ids: selectedIds,
+      randomize_questions: isDraft ? !!this.newCategory.randomize_questions : !!existing?.randomize_questions,
+      question_type: isDraft ? (this.newCategory.question_type || '') : (existing?.question_type || cat?.type || ''),
+      marks_per_question: isDraft ? (this.newCategory.marks_per_question ?? null) : (existing?.marks_per_question ?? this.toNumber(cat?.mark_each_question) ?? null)
+    };
+
+    if (existingIndex >= 0) {
+      this.model.categories = this.model.categories!.map((c, i) => i === existingIndex ? item : c);
+    } else {
+      this.model.categories = [...(this.model.categories || []), item];
+    }
+    this.activeQuestionCategoryId = catId;
+    this.activeQuestionCategoryName = item.name || this.activeQuestionCategoryName;
+    this.newCategory.questions = selectedIds.length;
+    if (isDraft) this.resetQuestionBankDraft();
   }
 
   removeCategory(index: number) {
@@ -378,6 +400,11 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedCategory = catId;
     this.questionCountError = '';
     this.tempQuestionsForCategory = [];
+    this.questionsForCategory = [];
+    this.selectedQuestionIds = [];
+    this.selectAllQuestions = false;
+    this.activeQuestionCategoryId = catId;
+    this.activeQuestionCategoryName = normalized.name || 'Selected category';
     this.newCategory = {
       questions: 0,
       randomize_questions: true,
@@ -412,6 +439,9 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         if (requestSeq !== this.selectionLoadSeq || String(this.selectedCategory) !== String(catId)) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
         this.tempQuestionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', type: q.type || q.question_type || '', marks: q.marks ?? q.mark ?? q.points, raw: q }));
+        this.questionsForCategory = [...this.tempQuestionsForCategory];
+        this.selectedQuestionIds = [];
+        this.selectAllQuestions = false;
         this.newCategory.questions = this.tempQuestionsForCategory.length;
         if (!this.newCategory.question_type) this.newCategory.question_type = this.deriveQuestionTypeFromQuestions(this.tempQuestionsForCategory);
         if (this.newCategory.marks_per_question === null || typeof this.newCategory.marks_per_question === 'undefined') this.newCategory.marks_per_question = this.deriveMarksFromQuestions(this.tempQuestionsForCategory);
@@ -421,6 +451,9 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         if (requestSeq !== this.selectionLoadSeq) return;
         console.warn('Failed to load questions for selected question bank', err);
         this.tempQuestionsForCategory = [];
+        this.questionsForCategory = [];
+        this.selectedQuestionIds = [];
+        this.selectAllQuestions = false;
         this.newCategory.questions = 0;
         this.questionCountError = 'Unable to load questions for the selected Question Bank.';
       },
@@ -644,6 +677,10 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     return !!this.selectedCategory && available > 0 && requested >= 1 && requested <= available;
   }
 
+  get canAddSelectedQuestionBankQuestions(): boolean {
+    return !!this.activeQuestionCategoryId && this.questionsForCategory.length > 0 && this.selectedQuestionIds.length > 0;
+  }
+
   isNewCategoryQuestionCountValid(): boolean {
     return this.canAddSelectedQuestionBank;
   }
@@ -690,6 +727,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       this.selectedQuestionIds = this.selectedQuestionIds.filter(x => x !== sid);
       this.selectAllQuestions = false;
     }
+    if (checked) this.selectAllQuestions = this.questionsForCategory.length > 0 && this.questionsForCategory.every(q => this.selectedQuestionIds.includes(String(q.id)));
     this.syncActiveCategoryQuestionSelection();
   }
 
