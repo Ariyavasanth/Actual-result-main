@@ -97,9 +97,11 @@ export class ViewQuestionsComponent implements OnDestroy {
   private institutesUrl = `${API_BASE}/get-institute-list`;
   private examsUrl = `${API_BASE}/get-exams-list`;
   private questionsUrl = `${API_BASE}/get-questions-details`;
-  private categoriesUrl = `${API_BASE}/get-categories-list`;
+  private categoryDetailsUrl = `${API_BASE}/category-details`;
   private readonly questionsReturnStateKey = 'questions_return_state';
   categories: Array<any> = [];
+  private questionBankMarksById = new Map<string, number>();
+  private questionBankMarksByName = new Map<string, number>();
   categoryCtrl = new FormControl('');
   filteredCategories$: Observable<any[]> = of([]);
   departments: Array<any> = [];
@@ -382,29 +384,90 @@ export class ViewQuestionsComponent implements OnDestroy {
     this.http!.get<any>(url).subscribe({
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
-        // map to QuestionRow shape conservatively
-        this.questions = arr.map((q: any, i: number) => ({
-          ...q,
-          id: q.id || q.question_id || q._id || i + 1,
-          question: q.question || q.text || q.title || '',
-          type: (q.type || q.question_type || q.original_type || 'Subjective') as QuestionType,
-          originalType: q.type || q.original_type || q.question_type,
-          options: q.options || q.choices || [],
-          answer: q.answer || q.answerText || q.correct || '',
-          marks: q.marks || q.points || 0,
-          category: q.category || q.category_name || '',
-          category_description: q.category_description || '',
-          category_id: q.category_id || q.categoryId || q.categoryID || q.category?.category_id || q.category?.id || q.category?._id || '',
-          institute_id: q.institute_id || q.instituteId || q.instituteID || q.institute?.institute_id || q.institute?.id || q.institute?._id || this.selectedInstitute || '',
-          exam_id: q.exam_id || q.examId || q.examID || q.exam?.exam_id || q.exam?.id || q.exam?._id || ''
-        }));
-        this.dataSource.data = this.questions;
-        this.loading.hide();
+        this.refreshQuestionBankMarkLookup(() => {
+          this.questions = arr.map((q: any, i: number) => this.mapQuestionRow(q, i));
+          this.dataSource.data = this.questions;
+          this.loading.hide();
+        });
       },
       error: (err) => { console.warn('Failed to load questions', err); this.questions = []; this.dataSource.data = []; this.loading.hide(); }
     });
   }
 
+  private mapQuestionRow(q: any, i: number): QuestionRow {
+    const row: QuestionRow = {
+      ...q,
+      id: q.id || q.question_id || q._id || i + 1,
+      question: q.question || q.text || q.title || '',
+      type: (q.type || q.question_type || q.original_type || 'Subjective') as QuestionType,
+      originalType: q.type || q.original_type || q.question_type,
+      options: q.options || q.choices || [],
+      answer: q.answer || q.answerText || q.correct || '',
+      category: q.category || q.category_name || '',
+      category_description: q.category_description || '',
+      category_id: q.category_id || q.categoryId || q.categoryID || q.category?.category_id || q.category?.id || q.category?._id || '',
+      institute_id: q.institute_id || q.instituteId || q.instituteID || q.institute?.institute_id || q.institute?.id || q.institute?._id || this.selectedInstitute || '',
+      exam_id: q.exam_id || q.examId || q.examID || q.exam?.exam_id || q.exam?.id || q.exam?._id || ''
+    };
+    const bankMark = this.resolveQuestionBankMark(row);
+    row.marks = bankMark ?? this.toNumber(q.marks ?? q.points) ?? 0;
+    return row;
+  }
+
+  private refreshQuestionBankMarkLookup(done: () => void): void {
+    const params: string[] = [];
+    if (this.selectedInstitute) params.push(`institute_id=${encodeURIComponent(this.selectedInstitute)}`);
+    if (this.categoryFilterName) params.push(`name=${encodeURIComponent(this.categoryFilterName)}`);
+    const url = params.length ? `${this.categoryDetailsUrl}?${params.join('&')}&_ts=${Date.now()}` : `${this.categoryDetailsUrl}?_ts=${Date.now()}`;
+    this.http!.get<any>(url).subscribe({
+      next: (res) => {
+        const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+        const normalized = arr.map((c: any) => ({
+          name: c.name || c.category_name || '',
+          category_id: c.category_id || c.id || c._id,
+          mark_each_question: (typeof c.mark_each_question !== 'undefined') ? c.mark_each_question : (c.mark_for_each_question ?? c.question_mark ?? c.marks ?? null),
+          mark_for_each_question: c.mark_for_each_question ?? c.mark_each_question ?? c.question_mark ?? c.marks ?? null
+        }));
+        this.rebuildQuestionBankMarkLookup(normalized);
+      },
+      error: (err) => { console.warn('Failed to load question bank marks', err); done(); },
+      complete: () => done()
+    });
+  }
+
+  private rebuildQuestionBankMarkLookup(categories: any[]): void {
+    this.questionBankMarksById.clear();
+    this.questionBankMarksByName.clear();
+    (categories || []).forEach((category: any) => {
+      const mark = this.getQuestionBankMark(category);
+      if (mark === null) return;
+      const id = category?.category_id || category?.id || category?._id;
+      const name = category?.name || category?.category_name;
+      if (id !== undefined && id !== null && id !== '') this.questionBankMarksById.set(String(id), mark);
+      if (name) this.questionBankMarksByName.set(String(name).trim().toLowerCase(), mark);
+    });
+  }
+
+  private resolveQuestionBankMark(q: any): number | null {
+    const direct = this.getQuestionBankMark(q);
+    if (direct !== null) return direct;
+    const id = q?.category_id || q?.categoryId || q?.categoryID || q?.category?.category_id || q?.category?.id || q?.category?._id;
+    if (id !== undefined && id !== null && this.questionBankMarksById.has(String(id))) return this.questionBankMarksById.get(String(id)) ?? null;
+    const name = q?.category || q?.category_name || q?.category?.name;
+    if (name) return this.questionBankMarksByName.get(String(name).trim().toLowerCase()) ?? null;
+    return null;
+  }
+
+  private getQuestionBankMark(value: any): number | null {
+    const raw = value?.mark_each_question ?? value?.mark_for_each_question ?? value?.question_mark ?? value?.category_mark ?? value?.category_marks ?? value?.marks_per_question ?? null;
+    return this.toNumber(raw);
+  }
+
+  private toNumber(value: any): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
+  }
   displayInstitute = (value: string | null): string => {
     if (!value) return '';
     const found = this.institutes.find(i => String(i.institute_id) === String(value));
@@ -428,11 +491,17 @@ export class ViewQuestionsComponent implements OnDestroy {
   }
 
   loadCategories(instId?: string) {
-    let url = this.categoriesUrl;
+    let url = this.categoryDetailsUrl;
     if (instId) url += `?institute_id=${encodeURIComponent(instId)}`;
     this.http!.get<any>(url).subscribe({ next: (res) => {
       const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
-      this.categories = arr.map((c: any) => ({ name: c.name || c.category_name || '', category_id: c.category_id || c.id || c._id }));
+      this.categories = arr.map((c: any) => ({
+        name: c.name || c.category_name || '',
+        category_id: c.category_id || c.id || c._id,
+        mark_each_question: (typeof c.mark_each_question !== 'undefined') ? c.mark_each_question : (c.mark_for_each_question ?? c.question_mark ?? c.marks ?? null),
+        mark_for_each_question: c.mark_for_each_question ?? c.mark_each_question ?? c.question_mark ?? c.marks ?? null
+      }));
+      this.rebuildQuestionBankMarkLookup(this.categories);
       try{
         this.filteredCategories$ = this.categoryCtrl.valueChanges.pipe(
           startWith(''),
