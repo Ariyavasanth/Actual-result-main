@@ -47,7 +47,7 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
 
   username = sessionStorage.getItem('username') || 'Guest'; // Default to 'Guest' if username is not set
   userRole = sessionStorage.getItem('userRole') || 'unknown user role'; // Default to 'unknown user role' if not set
-  displayName = this.username;
+  displayName = this.getStoredDisplayName();
   displayInstitute = sessionStorage.getItem('institute') || '';
   instituteDisplayName = this.getStoredInstituteName();
   userObj: any = null;
@@ -72,14 +72,14 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
     this.userSubscription = this.authService.user$.subscribe(u => {
       if (u) {
         this.userObj = u;
-        this.displayName = u.name || sessionStorage.getItem('username') || 'Guest';
+        this.displayName = this.getUserDisplayName(u);
         this.displayInstitute = u.institute_name || u.institute || sessionStorage.getItem('institute') || '';
         this.instituteShortName = u.institute_short_name || this.instituteShortName;
         this.instituteDisplayName = this.getNavbarInstituteName(u.institute_name || u.institute || this.displayInstitute || this.instituteShortName);
         this.userRole = u.role || this.userRole;
         this.initials = (this.displayName || 'G').split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
       } else {
-        this.displayName = sessionStorage.getItem('username') || 'Guest';
+        this.displayName = this.getStoredDisplayName();
         this.displayInstitute = sessionStorage.getItem('institute') || '';
         this.instituteDisplayName = this.getNavbarInstituteName();
         this.initials = (this.displayName || 'G').split(' ').map((s: string) => s[0]).slice(0,2).join('').toUpperCase();
@@ -99,6 +99,18 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void { }
 
+  private getUserDisplayName(user: any, fallback: string = 'Guest'): string {
+    const fullName = [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim();
+    return user?.full_name || user?.fullname || user?.fullName || user?.displayName || fullName || user?.user_name || user?.name || user?.email || fallback;
+  }
+
+  private getStoredDisplayName(): string {
+    try {
+      const raw = sessionStorage.getItem('user') || sessionStorage.getItem('user_profile');
+      if (raw) return this.getUserDisplayName(JSON.parse(raw), sessionStorage.getItem('username') || 'Guest');
+    } catch (e) { /* ignore */ }
+    return sessionStorage.getItem('username') || 'Guest';
+  }
   private getStoredInstituteName(): string {
     try {
       const raw = sessionStorage.getItem('user') || sessionStorage.getItem('user_profile');
@@ -201,3 +213,4 @@ export class NavbarMainComponent implements OnInit, OnDestroy {
     if (this.globalInstituteSubscription) this.globalInstituteSubscription.unsubscribe();
   }
 }
+

@@ -24,14 +24,6 @@
           <mat-icon matPrefix>business</mat-icon>
         </mat-form-field>
 
-        <div class="readonly-filter" *ngIf="isRegularUser">
-          <mat-icon>business</mat-icon>
-          <div>
-            <span>Institute</span>
-            <strong>{{ selectedInstituteName }}</strong>
-          </div>
-        </div>
-
         <mat-form-field appearance="outline" class="filter-field" *ngIf="!isRegularUser">
           <mat-label>User</mat-label>
           <mat-select [(value)]="selectedUserId" (selectionChange)="onUserChange($any($event).value)">
@@ -39,14 +31,6 @@
           </mat-select>
           <mat-icon matPrefix>person</mat-icon>
         </mat-form-field>
-
-        <div class="readonly-filter" *ngIf="isRegularUser">
-          <mat-icon>person</mat-icon>
-          <div>
-            <span>User</span>
-            <strong>{{ selectedUserName }}</strong>
-          </div>
-        </div>
 
         <button mat-icon-button class="refresh-btn" (click)="loadDashboard()" aria-label="Refresh dashboard">
           <mat-icon>refresh</mat-icon>

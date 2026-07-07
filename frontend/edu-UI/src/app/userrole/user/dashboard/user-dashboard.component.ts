@@ -44,15 +44,6 @@ export class UserDashboardComponent implements OnInit {
     }
   }
 
-  get selectedInstituteName(): string {
-    return this.institutes.find((i: any) => i.id === this.selectedInstituteId)?.name || '';
-  }
-
-  get selectedUserName(): string {
-    const user = this.users.find((u: any) => u.id === this.selectedUserId);
-    return user?.name || user?.email || '';
-  }
-
   setDefaultUser(){
     const current = this.svc.getLoggedInUserId();
     this.selectedUserId = this.users.find((x:any)=> x.id === current)?.id ?? current ?? (this.users[0]?.id ?? null);
@@ -107,3 +98,4 @@ export class UserDashboardComponent implements OnInit {
   }
 
 }
+

@@ -143,51 +143,7 @@ $grad-rose: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
   min-width: 13rem;
 }
 
-.readonly-filter {
-  min-width: 14.5rem;
-  height: 3.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0 1rem;
-  border: 1px solid $border;
-  border-radius: $radius-md;
-  background: $bg-card;
-  box-shadow: 0 0.25rem 0.875rem rgba(15, 23, 42, 0.06);
-
-  mat-icon {
-    color: #64748b;
-    font-size: 1.25rem;
-    width: 1.25rem;
-    height: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  div {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  span {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #94a3b8;
-    line-height: 1.2;
-  }
-
-  strong {
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: #111827;
-    line-height: 1.25;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-// ── Filter field ::ng-deep overrides ──
+// Filter field ::ng-deep overrides
 :host ::ng-deep .filter-field .mat-mdc-text-field-wrapper {
   background: linear-gradient(180deg, $bg-card 0%, $bg-page 100%);
   border: 1px solid $border;
@@ -597,11 +553,6 @@ $grad-rose: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
     flex: 1;
   }
 
-  .readonly-filter {
-    min-width: 0;
-    flex: 1;
-  }
-
   .kpi-section .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -624,3 +575,5 @@ $grad-rose: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
     grid-template-columns: 1fr;
   }
 }
+
+
