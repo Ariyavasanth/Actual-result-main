@@ -251,7 +251,7 @@
                                         </div>
                                         <mat-list>
                                             <mat-list-item *ngFor="let c of model.categories; let i = index">
-                                                <div class="cat-item" [class.cat-item--active]="c.category_id === activeQuestionCategoryId && questionsForCategory.length">
+                                                <div class="cat-item" [class.cat-item--active]="c.category_id === activeQuestionCategoryId">
                                                     <div class="cat-main">
                                                         <div class="cat-name">{{c.name}}</div>
                                                         <div class="cat-meta">
@@ -263,9 +263,9 @@
                                                     <div class="cat-actions">
                                                         <button mat-icon-button type="button"
                                                             (click)="viewCategoryQuestions(c)"
-                                                            [attr.aria-label]="c.category_id === activeQuestionCategoryId && questionsForCategory.length ? 'Questions visible' : 'Questions hidden'"
-                                                            [title]="c.category_id === activeQuestionCategoryId && questionsForCategory.length ? 'Questions visible' : 'Questions hidden'">
-                                                            <mat-icon>{{ c.category_id === activeQuestionCategoryId && questionsForCategory.length ? 'visibility' : 'visibility_off' }}</mat-icon>
+                                                            [attr.aria-label]="c.category_id === activeQuestionCategoryId ? 'Questions visible' : 'Questions hidden'"
+                                                            [title]="c.category_id === activeQuestionCategoryId ? 'Questions visible' : 'Questions hidden'">
+                                                            <mat-icon>{{ c.category_id === activeQuestionCategoryId ? 'visibility' : 'visibility_off' }}</mat-icon>
                                                         </button>
                                                         <button mat-icon-button color="warn" type="button"
                                                             (click)="removeCategory(i)"
