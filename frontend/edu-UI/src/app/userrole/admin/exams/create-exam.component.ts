@@ -261,7 +261,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.activeQuestionCategoryId = catId;
     this.activeQuestionCategoryName = item.name || this.activeQuestionCategoryName;
     this.newCategory.questions = selectedIds.length;
-    if (isDraft) this.resetQuestionBankDraft();
+    if (isDraft) this.resetQuestionBankDraft(true);
   }
 
   removeCategory(index: number) {
@@ -363,12 +363,19 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     return isNaN(n) ? null : n;
   }
 
-  private resetQuestionBankDraft() {
+  private resetQuestionBankDraft(clearDisplayedQuestions = false) {
     this.selectedCategory = '';
     this.categoryCtrl.setValue('');
     this.newCategory = { questions: 0, randomize_questions: false, question_type: '', marks_per_question: null };
     this.tempQuestionsForCategory = [];
     this.questionCountError = '';
+    if (clearDisplayedQuestions) {
+      this.activeQuestionCategoryId = '';
+      this.activeQuestionCategoryName = '';
+      this.questionsForCategory = [];
+      this.selectedQuestionIds = [];
+      this.selectAllQuestions = false;
+    }
   }
 
   formatQuestionBankType(type: any): string {
