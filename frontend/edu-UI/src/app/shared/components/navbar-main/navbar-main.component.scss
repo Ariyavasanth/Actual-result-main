@@ -320,10 +320,11 @@ $ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   font-size: 1rem;
   font-weight: 500;
   line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 14rem;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  max-width: min(52vw, 42rem);
+  text-align: right;
 }
 
 .profile-logo-inline {
@@ -452,7 +453,7 @@ $ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   .institute-inline-name {
-    max-width: 10rem;
+    max-width: 48vw;
   }
 
   .navbar-icon {
@@ -491,7 +492,7 @@ $ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   .institute-inline-name {
-    max-width: 8rem;
+    max-width: 54vw;
     font-size: 0.875rem;
   }
 
@@ -535,3 +536,4 @@ $ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
     flex: 1;
   }
 }
+

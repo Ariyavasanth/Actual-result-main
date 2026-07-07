@@ -10,9 +10,9 @@
 
     <!-- Right: Actions & User -->
     <div class="navbar-right" *ngIf="isLogin" role="toolbar" aria-label="Top navigation actions">
-      <!-- User Info -->
-      <div class="institute-inline" role="complementary" aria-label="User">
-        <span class="institute-inline-name">{{ displayName }}</span>
+      <!-- Institute Info -->
+      <div class="institute-inline" role="complementary" aria-label="Institute">
+        <span class="institute-inline-name" [title]="instituteDisplayName">{{ instituteDisplayName }}</span>
       </div>
 
       <!-- Notifications -->
@@ -83,3 +83,4 @@
     </div>
   </div>
 </ng-template>
+
