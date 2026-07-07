@@ -32,7 +32,12 @@
           <mat-icon matPrefix>person</mat-icon>
         </mat-form-field>
 
-        <button mat-icon-button class="refresh-btn" (click)="loadDashboard()" aria-label="Refresh dashboard">
+        <div class="refresh-status" aria-live="polite">
+          <mat-icon fontSet="material-icons-outlined">schedule</mat-icon>
+          <span>{{ lastUpdatedLabel }}</span>
+        </div>
+
+        <button mat-icon-button class="refresh-btn" (click)="loadDashboard()" aria-label="Refresh dashboard" title="Refresh dashboard">
           <mat-icon>refresh</mat-icon>
         </button>
       </div>
@@ -156,3 +161,4 @@
     </div>
   </section>
 </div>
+
