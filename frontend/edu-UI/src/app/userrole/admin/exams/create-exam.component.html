@@ -1,5 +1,5 @@
 <div class="page create-exam">
-    <!-- ── Top Toolbar ── -->
+    <!-- â”€â”€ Top Toolbar â”€â”€ -->
     <div class="toolbar">
         <div class="title"></div>
         <div class="form-actions">
@@ -10,10 +10,10 @@
         </div>
     </div>
 
-    <!-- ── Form Card ── -->
+    <!-- â”€â”€ Form Card â”€â”€ -->
     <div class="form-card">
         <mat-horizontal-stepper linear #stepper>
-            <!-- ═══ Step 1: Basic info & Settings ═══ -->
+            <!-- â•â•â• Step 1: Basic info & Settings â•â•â• -->
             <mat-step [completed]="!!(title && durationMinutes)">
                 <ng-template matStepLabel>Basic info & Settings</ng-template>
                 <div class="step-content">
@@ -110,7 +110,7 @@
                 </div>
             </mat-step>
 
-            <!-- ═══ Step 2: Question Banks & Questions ═══ -->
+            <!-- â•â•â• Step 2: Question Banks & Questions â•â•â• -->
             <mat-step>
                 <ng-template matStepLabel>Question Banks & Questions</ng-template>
                 <div class="step-content">
@@ -210,17 +210,31 @@
                                         </div>
                                     </ng-template>
 
-                                <div class="row small small-grid">
+                                <div class="row small small-grid question-bank-details-row">
                                     <div class="col category-col">
                                         <mat-form-field appearance="outline" class="full">
                                             <mat-icon matPrefix>assignment</mat-icon>
                                             <mat-label>Question Bank</mat-label>
                                             <input type="text" matInput [formControl]="categoryCtrl" [matAutocomplete]="auto"
-                                                placeholder="Pick a question bank" />
+                                                placeholder="Pick a question bank" [readonly]="!!selectedCategory" />
                                             <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCategory.bind(this)"
                                                 (optionSelected)="onCategoryAutocompleteSelected($event.option.value)">
                                                 <mat-option *ngFor="let cat of (filteredCategories$ | async)" [value]="cat">{{cat.name}}</mat-option>
                                             </mat-autocomplete>
+                                        </mat-form-field>
+                                    </div>
+
+                                    <div class="col question-type-col">
+                                        <mat-form-field appearance="outline" class="full">
+                                            <mat-label>Question Type</mat-label>
+                                            <input matInput [value]="formatQuestionBankType(newCategory.question_type)" readonly />
+                                        </mat-form-field>
+                                    </div>
+
+                                    <div class="col marks-col">
+                                        <mat-form-field appearance="outline" class="full">
+                                            <mat-label>Marks per Question</mat-label>
+                                            <input matInput [value]="newCategory.marks_per_question ?? ''" readonly />
                                         </mat-form-field>
                                     </div>
 
@@ -230,14 +244,14 @@
                                             <input matInput type="number" [(ngModel)]="newCategory.questions"
                                                 (ngModelChange)="onNewCategoryQuestionCountChange($event)"
                                                 name="newCategoryQuestions" placeholder="1" min="1"
-                                                [max]="selectedQuestionBankQuestionCount || null" [disabled]="readOnly" />
+                                                [max]="selectedQuestionBankQuestionCount || null" [readonly]="!!selectedCategory" [disabled]="readOnly" />
                                         </mat-form-field>
                                     </div>
 
                                     <div class="col actions-row">
                                         <mat-checkbox [(ngModel)]="newCategory.randomize_questions"
                                             (ngModelChange)="onNewCategoryRandomizeChange($event)"
-                                            [disabled]="readOnly">Include Questions Randomly</mat-checkbox>
+                                            [disabled]="readOnly || !!selectedCategory">Include Questions Randomly</mat-checkbox>
                                         <button mat-flat-button color="primary" aria-label="Add category" class="add-btn" type="button"
                                             (click)="addCategory()"
                                             [disabled]="!canAddSelectedQuestionBank || readOnly">
@@ -260,6 +274,8 @@
                                                         <div class="cat-name">{{c.name}}</div>
                                                         <div class="cat-meta">
                                                             <span class="cat-questions">{{c.questions}} Q</span>
+                                                            <span class="cat-questions" *ngIf="c.question_type">{{ formatQuestionBankType(c.question_type) }}</span>
+                                                            <span class="cat-questions" *ngIf="c.marks_per_question !== null && c.marks_per_question !== undefined">{{ c.marks_per_question }} Marks/Q</span>
                                                             <span class="cat-randomize"
                                                                 *ngIf="c.randomize_questions">Include Questions Randomly</span>
                                                         </div>
@@ -267,9 +283,9 @@
                                                     <div class="cat-actions">
                                                         <button mat-icon-button type="button"
                                                             (click)="viewCategoryQuestions(c)"
-                                                            [attr.aria-label]="c.category_id === activeQuestionCategoryId ? 'Questions visible' : 'Questions hidden'"
-                                                            [title]="c.category_id === activeQuestionCategoryId ? 'Questions visible' : 'Questions hidden'">
-                                                            <mat-icon>{{ c.category_id === activeQuestionCategoryId ? 'visibility' : 'visibility_off' }}</mat-icon>
+                                                    aria-label="View questions"
+                                                    title="View questions">
+                                                            <mat-icon>visibility</mat-icon>
                                                         </button>
                                                         <button mat-icon-button color="warn" type="button"
                                                             (click)="removeCategory(i)"
@@ -329,7 +345,7 @@
                 </div>
             </mat-step>
 
-            <!-- ═══ Step 3: Review ═══ -->
+            <!-- â•â•â• Step 3: Review â•â•â• -->
             <mat-step>
                 <ng-template matStepLabel>Review</ng-template>
                 <div class="step-content">
@@ -349,8 +365,8 @@
                                     <mat-icon>assignment</mat-icon> Basic Info
                                 </h4>
                                 <div class="review-items">
-                                    <div class="review-item"><span class="review-label">Title</span><span class="review-value">{{ title || '—' }}</span></div>
-                                    <div class="review-item"><span class="review-label">Description</span><span class="review-value">{{ description || '—' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Title</span><span class="review-value">{{ title || 'â€”' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Description</span><span class="review-value">{{ description || 'â€”' }}</span></div>
                                 </div>
                             </div>
 
@@ -360,8 +376,8 @@
                                     <mat-icon>settings</mat-icon> Settings
                                 </h4>
                                 <div class="review-items">
-                                    <div class="review-item"><span class="review-label">Duration</span><span class="review-value">{{ durationMinutes || '—' }} mins</span></div>
-                                    <div class="review-item"><span class="review-label">Pass mark</span><span class="review-value">{{ passMark || '—' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Duration</span><span class="review-value">{{ durationMinutes || 'â€”' }} mins</span></div>
+                                    <div class="review-item"><span class="review-label">Pass mark</span><span class="review-value">{{ passMark || 'â€”' }}</span></div>
                                     <div class="review-item"><span class="review-label">Attempts</span><span class="review-value">{{ numberOfAttempts || 0 }}</span></div>
                                 </div>
                             </div>
@@ -396,4 +412,3 @@
         </mat-horizontal-stepper>
     </div>
 </div>
-

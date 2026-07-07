@@ -44,18 +44,18 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   numberOfAttempts: number | null = 1; 
   institutes: Array<{ id: string; name: string }> = [];
   // categories UI model
-  categories: Array<{ category_id: string; name: string }> = [];
+  categories: Array<any> = [];
   selectedCategory = '';
   categoryCtrl = new FormControl('');
   filteredCategories$: Observable<any[]> = of([]);
-  newCategory: { questions: number; randomize_questions?: boolean } = { questions: 0, randomize_questions: false };
-  model: { categories?: Array<{ category_id?: string; name?: string; questions: number; question_ids?: any[]; randomize_questions?: boolean }> } = { categories: [] };
+  newCategory: { questions: number; randomize_questions?: boolean; question_type?: string; marks_per_question?: number | null } = { questions: 0, randomize_questions: false, question_type: '', marks_per_question: null };
+  model: { categories?: Array<{ category_id?: string; name?: string; questions: number; question_ids?: any[]; randomize_questions?: boolean; question_type?: string; marks_per_question?: number | null }> } = { categories: [] };
   readOnly = false;
   filterEnabled = false;
   @ViewChild('filterAnchor', { static: false }) filterAnchor?: ElementRef;
   @ViewChild('filtersBtn', { read: ElementRef }) filtersBtn!: ElementRef;
   @ViewChild('filtersPanel') filtersPanelTpl!: TemplateRef<any>;
-  
+
   private _docClickHandler: ((ev: any) => void) | null = null;
   // filter state for categories
   selectedDepartments: string[] = [];
@@ -74,6 +74,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   activeQuestionCategoryId = '';
   activeQuestionCategoryName = '';
   questionCountError = '';
+  tempQuestionsForCategory: Array<any> = [];
 
   private baseUrl = 'http://127.0.0.1:5001/edu/api';
 
@@ -84,6 +85,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   private filtersOverlayRef: OverlayRef | null = null;
   private categoryLoadSeq = 0;
   private questionLoadSeq = 0;
+  private selectionLoadSeq = 0;
 
   constructor(private router: Router, private http: HttpClient, private auth: AuthService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private loader: LoaderService) {
     try {
@@ -117,7 +119,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   closeFiltersOverlay() { if (this.filtersOverlayRef) { try { this.filtersOverlayRef.dispose(); } catch (e) { }; this.filtersOverlayRef = null; } }
-  
+
   // ensure UI flag clears when overlay is closed programmatically
   private _closeOverlayInternal() {
     try { this.filtersOverlayRef?.dispose(); } catch(e) {}
@@ -156,7 +158,6 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.pageMeta.setMeta('Create Test', 'Fill required fields and save the exam.')
     }
-
 
     // load institutes and edit payload, then ensure institute selection is reconciled
     this.loadInstitutes();
@@ -212,7 +213,9 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         name: c.category_name || c.name || c.title || '',
         questions: Number(c.questions || c.total_questions || 0) || 0,
         question_ids: Array.isArray(c.question_ids) ? c.question_ids : (Array.isArray(c.questionIds) ? c.questionIds : []),
-        randomize_questions: typeof c.randomize_questions !== 'undefined' ? !!c.randomize_questions : false
+        randomize_questions: typeof c.randomize_questions !== 'undefined' ? !!c.randomize_questions : false,
+        question_type: c.question_type || c.type || c.category_type || '',
+        marks_per_question: this.toNumber(c.marks_per_question ?? c.mark_each_question ?? c.mark_for_each_question ?? c.question_mark ?? c.marks)
       }));
     } catch (_) { /* ignore malformed edit payload */ }
     finally { this.loader.hide(); }
@@ -234,13 +237,9 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const cat = this.categories.find(c => c.category_id === catId);
     const name = cat ? cat.name : '';
-    const item = { category_id: catId, name, questions: q, question_ids: [...this.selectedQuestionIds], randomize_questions: randomize };
+    const item = { category_id: catId, name, questions: q, question_ids: this.getDraftQuestionIds(), randomize_questions: randomize, question_type: this.newCategory.question_type || '', marks_per_question: this.newCategory.marks_per_question ?? null };
     this.model.categories = [...(this.model.categories || []), item];
-    this.viewCategoryQuestions(item);
-    this.newCategory = { questions: 0, randomize_questions: false };
-    this.questionCountError = '';
-    this.selectedCategory = '';
-    this.categoryCtrl.setValue('');
+    this.resetQuestionBankDraft();
   }
 
   removeCategory(index: number) {
@@ -311,7 +310,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (res) => {
         if (requestSeq !== this.categoryLoadSeq) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
-        this.categories = arr.map((c: any) => ({ category_id: c.category_id || c.id || c._id || '', name: c.name || c.category_name || c.title || '' }));
+        this.categories = arr.map((c: any) => this.normalizeCategoryOption(c));
         // update autocomplete stream
         this.updateFilteredCategoriesStream();
       }, error: (err) => {
@@ -326,13 +325,108 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   displayCategory(c: any) { return c ? (c.name || c.category_name || '') : ''; }
 
-  onCategoryAutocompleteSelected(c: any) {
-    if (!c) return;
-    this.selectedCategory = c.category_id || c.id || '';
-    this.questionCountError = '';
-    this.loadQuestionsForCategory(this.selectedCategory, [], true);
+  private normalizeCategoryOption(c: any): any {
+    return {
+      ...c,
+      category_id: c?.category_id || c?.id || c?._id || '',
+      name: c?.name || c?.category_name || c?.title || '',
+      type: c?.type || c?.category_type || c?.question_type || '',
+      mark_each_question: c?.mark_each_question ?? c?.mark_for_each_question ?? c?.question_mark ?? c?.marks_per_question ?? c?.marks ?? null
+    };
   }
 
+  private toNumber(value: any): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return isNaN(n) ? null : n;
+  }
+
+  private resetQuestionBankDraft() {
+    this.selectedCategory = '';
+    this.categoryCtrl.setValue('');
+    this.newCategory = { questions: 0, randomize_questions: false, question_type: '', marks_per_question: null };
+    this.tempQuestionsForCategory = [];
+    this.questionCountError = '';
+  }
+
+  formatQuestionBankType(type: any): string {
+    const value = String(type || '').trim();
+    if (!value) return '--';
+    return value.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  private deriveQuestionTypeFromQuestions(questions: Array<any>): string {
+    const types = Array.from(new Set((questions || []).map(q => String(q.type || q.question_type || '').trim()).filter(Boolean)));
+    if (!types.length) return '';
+    return types.length === 1 ? types[0] : 'Mixed';
+  }
+
+  private deriveMarksFromQuestions(questions: Array<any>): number | null {
+    const marks = Array.from(new Set((questions || []).map(q => this.toNumber(q.marks ?? q.mark ?? q.points)).filter(v => v !== null))) as number[];
+    return marks.length === 1 ? marks[0] : null;
+  }
+  onCategoryAutocompleteSelected(c: any) {
+    if (!c) return;
+    this.loadQuestionBankDraft(c);
+  }
+
+  private loadQuestionBankDraft(category: any) {
+    const normalized = this.normalizeCategoryOption(category);
+    const catId = normalized.category_id || '';
+    if (!catId) return;
+    const requestSeq = ++this.selectionLoadSeq;
+    this.selectedCategory = catId;
+    this.questionCountError = '';
+    this.tempQuestionsForCategory = [];
+    this.newCategory = {
+      questions: 0,
+      randomize_questions: true,
+      question_type: normalized.type || '',
+      marks_per_question: this.toNumber(normalized.mark_each_question)
+    };
+    this.loadQuestionBankDraftDetails(catId, requestSeq);
+    this.loadQuestionBankDraftQuestions(catId, requestSeq);
+  }
+
+  private loadQuestionBankDraftDetails(catId: string, requestSeq: number) {
+    const url = `${API_BASE}/category-details?category_id=${encodeURIComponent(catId)}`;
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        if (requestSeq !== this.selectionLoadSeq || String(this.selectedCategory) !== String(catId)) return;
+        const items = Array.isArray(res) ? res : (res?.data || []);
+        const detail = Array.isArray(items) && items.length ? items[0] : (res?.data && !Array.isArray(res.data) ? res.data : res);
+        if (!detail) return;
+        const normalized = this.normalizeCategoryOption(detail);
+        this.newCategory.question_type = normalized.type || this.newCategory.question_type || '';
+        this.newCategory.marks_per_question = this.toNumber(normalized.mark_each_question) ?? this.newCategory.marks_per_question ?? null;
+      },
+      error: (err) => { console.warn('Failed to load question bank details', err); }
+    });
+  }
+
+  private loadQuestionBankDraftQuestions(catId: string, requestSeq: number) {
+    this.loader.show();
+    const url = `${API_BASE}/get-questions-details?category_id=${encodeURIComponent(catId)}`;
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        if (requestSeq !== this.selectionLoadSeq || String(this.selectedCategory) !== String(catId)) return;
+        const arr = Array.isArray(res) ? res : (res?.data || []);
+        this.tempQuestionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', type: q.type || q.question_type || '', marks: q.marks ?? q.mark ?? q.points, raw: q }));
+        this.newCategory.questions = this.tempQuestionsForCategory.length;
+        if (!this.newCategory.question_type) this.newCategory.question_type = this.deriveQuestionTypeFromQuestions(this.tempQuestionsForCategory);
+        if (this.newCategory.marks_per_question === null || typeof this.newCategory.marks_per_question === 'undefined') this.newCategory.marks_per_question = this.deriveMarksFromQuestions(this.tempQuestionsForCategory);
+        this.validateNewCategoryQuestionCount(false);
+      },
+      error: (err) => {
+        if (requestSeq !== this.selectionLoadSeq) return;
+        console.warn('Failed to load questions for selected question bank', err);
+        this.tempQuestionsForCategory = [];
+        this.newCategory.questions = 0;
+        this.questionCountError = 'Unable to load questions for the selected Question Bank.';
+      },
+      complete: () => { if (requestSeq === this.selectionLoadSeq) this.loader.hide(); }
+    });
+  }
   // load categories with filters (called by Apply)
   loadCategoriesWithFilters(filters: any = {}) {
     this.loader.show();
@@ -352,7 +446,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (res) => {
         if (requestSeq !== this.categoryLoadSeq) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
-        this.categories = arr.map((c: any) => ({ category_id: c.category_id || c.id || c._id || '', name: c.name || c.category_name || c.title || '' }));
+        this.categories = arr.map((c: any) => this.normalizeCategoryOption(c));
         // ensure autocomplete reflects latest categories
         this.updateFilteredCategoriesStream();
       }, error: (err) => {
@@ -471,9 +565,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onCategoryChange(catId: string) {
-    this.selectedCategory = catId || '';
-    this.questionCountError = '';
-    this.loadQuestionsForCategory(this.selectedCategory, [], true);
+    const found = (this.categories || []).find(c => String(c.category_id) === String(catId));
+    if (found) this.loadQuestionBankDraft(found);
   }
 
   viewCategoryQuestions(category: any) {
@@ -533,25 +626,16 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   onNewCategoryQuestionCountChange(value: any) {
     this.newCategory.questions = Number(value) || 0;
     this.validateNewCategoryQuestionCount(false);
-    if (this.newCategory.randomize_questions) {
-      this.selectedQuestionIds = [];
-      this.selectAllQuestions = false;
-    }
   }
 
   onNewCategoryRandomizeChange(checked: boolean) {
     this.newCategory.randomize_questions = !!checked;
-    if (this.newCategory.randomize_questions) {
-      this.selectedQuestionIds = [];
-      this.selectAllQuestions = false;
-      return;
-    }
-    this.applyNewCategoryQuestionCountSelection(false);
+    this.validateNewCategoryQuestionCount(false);
   }
 
   get selectedQuestionBankQuestionCount(): number {
-    if (!this.selectedCategory || String(this.selectedCategory) !== String(this.activeQuestionCategoryId)) return 0;
-    return this.questionsForCategory.length;
+    if (!this.selectedCategory) return 0;
+    return this.tempQuestionsForCategory.length;
   }
 
   get canAddSelectedQuestionBank(): boolean {
@@ -581,23 +665,14 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     return !message;
   }
 
-  private applyNewCategoryQuestionCountSelection(showNotification: boolean, updateMessage = true): boolean {
-    if (!this.validateNewCategoryQuestionCount(showNotification, updateMessage)) {
-      this.selectedQuestionIds = [];
-      this.selectAllQuestions = false;
-      return false;
-    }
-
-    if (this.newCategory.randomize_questions) {
-      this.selectedQuestionIds = [];
-      this.selectAllQuestions = false;
-      return true;
-    }
-
+  private getDraftQuestionIds(): string[] {
+    if (this.newCategory.randomize_questions) return [];
     const requested = Number(this.newCategory.questions) || 0;
-    this.selectedQuestionIds = this.questionsForCategory.slice(0, requested).map(q => String(q.id));
-    this.selectAllQuestions = this.questionsForCategory.length > 0 && requested === this.questionsForCategory.length;
-    return true;
+    return this.tempQuestionsForCategory.slice(0, requested).map(q => String(q.id));
+  }
+
+  private applyNewCategoryQuestionCountSelection(showNotification: boolean, updateMessage = true): boolean {
+    return this.validateNewCategoryQuestionCount(showNotification, updateMessage);
   }
 
   toggleSelectAllQuestions(checked: boolean) {
