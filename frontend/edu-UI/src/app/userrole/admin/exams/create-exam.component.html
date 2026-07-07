@@ -236,6 +236,7 @@
 
                                     <div class="col actions-row">
                                         <mat-checkbox [(ngModel)]="newCategory.randomize_questions"
+                                            (ngModelChange)="onNewCategoryRandomizeChange($event)"
                                             [disabled]="readOnly">Include Questions Randomly</mat-checkbox>
                                         <button mat-flat-button color="primary" aria-label="Add category" class="add-btn" type="button"
                                             (click)="addCategory()"

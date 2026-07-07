@@ -509,7 +509,10 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         this.questionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', raw: q }));
         if (populateQuestionCount) {
           this.newCategory.questions = this.questionsForCategory.length;
-          this.applyNewCategoryQuestionCountSelection(false);
+          this.newCategory.randomize_questions = true;
+          this.selectedQuestionIds = [];
+          this.selectAllQuestions = false;
+          this.validateNewCategoryQuestionCount(false);
           return;
         }
         this.selectAllQuestions = this.questionsForCategory.length > 0 && this.questionsForCategory.every(q => this.selectedQuestionIds.includes(String(q.id)));
@@ -529,6 +532,20 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onNewCategoryQuestionCountChange(value: any) {
     this.newCategory.questions = Number(value) || 0;
+    this.validateNewCategoryQuestionCount(false);
+    if (this.newCategory.randomize_questions) {
+      this.selectedQuestionIds = [];
+      this.selectAllQuestions = false;
+    }
+  }
+
+  onNewCategoryRandomizeChange(checked: boolean) {
+    this.newCategory.randomize_questions = !!checked;
+    if (this.newCategory.randomize_questions) {
+      this.selectedQuestionIds = [];
+      this.selectAllQuestions = false;
+      return;
+    }
     this.applyNewCategoryQuestionCountSelection(false);
   }
 
@@ -547,7 +564,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.canAddSelectedQuestionBank;
   }
 
-  private applyNewCategoryQuestionCountSelection(showNotification: boolean, updateMessage = true): boolean {
+  private validateNewCategoryQuestionCount(showNotification: boolean, updateMessage = true): boolean {
     const available = this.selectedQuestionBankQuestionCount;
     const requested = Number(this.newCategory.questions) || 0;
     const maxMessage = `The selected Question Bank contains only ${available} questions. Please enter a number between 1 and ${available}.`;
@@ -560,15 +577,26 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     else if (requested > available) message = maxMessage;
 
     if (updateMessage) this.questionCountError = message;
-    if (message) {
+    if (message && showNotification) notify(message, 'error');
+    return !message;
+  }
+
+  private applyNewCategoryQuestionCountSelection(showNotification: boolean, updateMessage = true): boolean {
+    if (!this.validateNewCategoryQuestionCount(showNotification, updateMessage)) {
       this.selectedQuestionIds = [];
       this.selectAllQuestions = false;
-      if (showNotification) notify(message, 'error');
       return false;
     }
 
+    if (this.newCategory.randomize_questions) {
+      this.selectedQuestionIds = [];
+      this.selectAllQuestions = false;
+      return true;
+    }
+
+    const requested = Number(this.newCategory.questions) || 0;
     this.selectedQuestionIds = this.questionsForCategory.slice(0, requested).map(q => String(q.id));
-    this.selectAllQuestions = available > 0 && requested === available;
+    this.selectAllQuestions = this.questionsForCategory.length > 0 && requested === this.questionsForCategory.length;
     return true;
   }
 
