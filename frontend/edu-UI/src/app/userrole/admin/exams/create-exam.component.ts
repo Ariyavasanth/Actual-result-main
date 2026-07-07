@@ -75,6 +75,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   activeQuestionCategoryName = '';
   questionCountError = '';
   tempQuestionsForCategory: Array<any> = [];
+  private lastAddedQuestionSelectionByCategory: { [categoryId: string]: string } = {};
 
   private baseUrl = 'http://127.0.0.1:5001/edu/api';
 
@@ -242,6 +243,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const existing = existingIndex >= 0 ? this.model.categories![existingIndex] : null;
     const cat = this.categories.find(c => String(c.category_id) === String(catId));
     const selectedIds = [...this.selectedQuestionIds];
+    const selectionKey = this.getQuestionSelectionKey(selectedIds);
     const isDraft = String(catId) === String(this.selectedCategory);
     const item = {
       category_id: catId,
@@ -261,12 +263,14 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.activeQuestionCategoryId = catId;
     this.activeQuestionCategoryName = item.name || this.activeQuestionCategoryName;
     this.newCategory.questions = selectedIds.length;
+    this.lastAddedQuestionSelectionByCategory[String(catId)] = selectionKey;
     if (isDraft) this.resetQuestionBankDraft(true);
   }
 
   removeCategory(index: number) {
     if (!Array.isArray(this.model.categories)) return;
     const removed = this.model.categories[index];
+    if (removed?.category_id) delete this.lastAddedQuestionSelectionByCategory[String(removed.category_id)];
     this.model.categories = this.model.categories.filter((_, i) => i !== index);
     if (removed && removed.category_id === this.activeQuestionCategoryId) {
       const next = this.model.categories[0];
@@ -649,6 +653,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
         this.selectAllQuestions = this.questionsForCategory.length > 0 && this.questionsForCategory.every(q => this.selectedQuestionIds.includes(String(q.id)));
+        this.lastAddedQuestionSelectionByCategory[String(catId)] = this.getQuestionSelectionKey(this.selectedQuestionIds);
       }, error: (err) => {
         if (requestSeq !== this.questionLoadSeq) return;
         console.warn('Failed to load questions for category', err);
@@ -685,7 +690,13 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get canAddSelectedQuestionBankQuestions(): boolean {
-    return !!this.activeQuestionCategoryId && this.questionsForCategory.length > 0 && this.selectedQuestionIds.length > 0;
+    if (!this.activeQuestionCategoryId || !this.questionsForCategory.length || !this.selectedQuestionIds.length) return false;
+    const categoryId = String(this.activeQuestionCategoryId);
+    return this.getQuestionSelectionKey(this.selectedQuestionIds) !== this.lastAddedQuestionSelectionByCategory[categoryId];
+  }
+
+  private getQuestionSelectionKey(ids: any[]): string {
+    return (ids || []).map(id => String(id)).sort().join('|');
   }
 
   isNewCategoryQuestionCountValid(): boolean {
