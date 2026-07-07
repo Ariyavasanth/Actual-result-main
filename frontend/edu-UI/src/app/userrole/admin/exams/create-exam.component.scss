@@ -78,6 +78,7 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 .row.small.small-grid .actions-row .add-btn { margin-left:auto; white-space:nowrap; }
 @media (max-width:45rem) { .row.small.small-grid{grid-template-columns:1fr;} .row.small.small-grid .actions-row{flex-wrap:wrap;} }
 .row.header-row { display:flex; gap:0.875rem; flex-wrap:wrap; }
+.question-count-error { margin:0.5rem 0 0.25rem; color:#dc2626; font:600 0.8125rem/1.35 inherit; }
 
 /* ── Two-column layout inside stepper ── */
 .card-body-inner.two-column { display:grid; grid-template-columns:1fr 34rem; gap:1.25rem; align-items:start; }

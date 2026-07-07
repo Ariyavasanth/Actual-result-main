@@ -228,7 +228,9 @@
                                         <mat-form-field appearance="outline" class="full">
                                             <mat-label>No. of questions</mat-label>
                                             <input matInput type="number" [(ngModel)]="newCategory.questions"
-                                                name="newCategoryQuestions" placeholder="1" [disabled]="readOnly" />
+                                                (ngModelChange)="onNewCategoryQuestionCountChange($event)"
+                                                name="newCategoryQuestions" placeholder="1" min="1"
+                                                [max]="selectedQuestionBankQuestionCount || null" [disabled]="readOnly" />
                                         </mat-form-field>
                                     </div>
 
@@ -237,11 +239,12 @@
                                             [disabled]="readOnly">Include Questions Randomly</mat-checkbox>
                                         <button mat-flat-button color="primary" aria-label="Add category" class="add-btn" type="button"
                                             (click)="addCategory()"
-                                            [disabled]="!selectedCategory || ( !(newCategory.questions>0) && !(selectedQuestionIds && selectedQuestionIds.length) ) || readOnly">
+                                            [disabled]="!canAddSelectedQuestionBank || readOnly">
                                             <mat-icon class="add-icon">add</mat-icon>Add Selected
                                         </button>
                                     </div>
                                 </div>
+                                <div class="question-count-error" *ngIf="questionCountError">{{ questionCountError }}</div>
 
                                 <div *ngIf="model.categories?.length">
                                     <div class="category-list">

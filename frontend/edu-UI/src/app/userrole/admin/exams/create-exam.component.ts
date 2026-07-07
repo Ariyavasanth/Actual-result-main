@@ -73,6 +73,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   selectAllQuestions = false;
   activeQuestionCategoryId = '';
   activeQuestionCategoryName = '';
+  questionCountError = '';
 
   private baseUrl = 'http://127.0.0.1:5001/edu/api';
 
@@ -82,6 +83,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   editExamId: string | null = null;
   private filtersOverlayRef: OverlayRef | null = null;
   private categoryLoadSeq = 0;
+  private questionLoadSeq = 0;
 
   constructor(private router: Router, private http: HttpClient, private auth: AuthService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private loader: LoaderService) {
     try {
@@ -227,25 +229,16 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const catId = this.selectedCategory || '';
     const q = Number(this.newCategory.questions) || 0;
     const randomize = !!this.newCategory.randomize_questions;
-    // Validation rules:
-    // - selectedCategory is mandatory
-    // - at least one of selectedQuestionIds or newCategory.questions must be provided
-    // - if randomize is selected, newCategory.questions is mandatory and must be > 0
     if (!catId) return;
-    const hasSelectedQuestions = Array.isArray(this.selectedQuestionIds) && this.selectedQuestionIds.length > 0;
-    if (randomize) {
-      if (q <= 0) { notify('Please provide No. of questions when Randomize is selected', 'error'); return; }
-    } else {
-      if (!hasSelectedQuestions && q <= 0) { notify('Please select questions or provide No. of questions', 'error'); return; }
-    }
+    if (!this.applyNewCategoryQuestionCountSelection(true)) return;
+
     const cat = this.categories.find(c => c.category_id === catId);
     const name = cat ? cat.name : '';
-    const computedQuestions = q > 0 ? q : (Array.isArray(this.selectedQuestionIds) ? this.selectedQuestionIds.length : 0);
-    const item = { category_id: catId, name, questions: computedQuestions, question_ids: [...this.selectedQuestionIds], randomize_questions: randomize };
+    const item = { category_id: catId, name, questions: q, question_ids: [...this.selectedQuestionIds], randomize_questions: randomize };
     this.model.categories = [...(this.model.categories || []), item];
     this.viewCategoryQuestions(item);
     this.newCategory = { questions: 0, randomize_questions: false };
-    // clear selection after add
+    this.questionCountError = '';
     this.selectedCategory = '';
     this.categoryCtrl.setValue('');
   }
@@ -336,7 +329,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   onCategoryAutocompleteSelected(c: any) {
     if (!c) return;
     this.selectedCategory = c.category_id || c.id || '';
-    this.loadQuestionsForCategory(this.selectedCategory);
+    this.questionCountError = '';
+    this.loadQuestionsForCategory(this.selectedCategory, [], true);
   }
 
   // load categories with filters (called by Apply)
@@ -478,7 +472,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onCategoryChange(catId: string) {
     this.selectedCategory = catId || '';
-    this.loadQuestionsForCategory(this.selectedCategory);
+    this.questionCountError = '';
+    this.loadQuestionsForCategory(this.selectedCategory, [], true);
   }
 
   viewCategoryQuestions(category: any) {
@@ -496,24 +491,85 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadQuestionsForCategory(category.category_id, Array.isArray(category.question_ids) ? category.question_ids : []);
   }
 
-  loadQuestionsForCategory(catId: string, preselectedQuestionIds: any[] = []) {
+  loadQuestionsForCategory(catId: string, preselectedQuestionIds: any[] = [], populateQuestionCount = false) {
     this.loader.show();
+    const requestSeq = ++this.questionLoadSeq;
     this.questionsForCategory = [];
     this.selectedQuestionIds = (preselectedQuestionIds || []).map(id => String(id));
     this.selectAllQuestions = false;
-    if (!catId) return;
+    if (!catId) { this.loader.hide(); return; }
     const found = this.categories.find(c => String(c.category_id) === String(catId));
     this.activeQuestionCategoryId = catId;
     this.activeQuestionCategoryName = found?.name || this.activeQuestionCategoryName || 'Selected category';
     const url = `${API_BASE}/get-questions-details?category_id=${encodeURIComponent(catId)}`;
     this.http.get<any>(url).subscribe({
       next: (res) => {
+        if (requestSeq !== this.questionLoadSeq) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
         this.questionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', raw: q }));
+        if (populateQuestionCount) {
+          this.newCategory.questions = this.questionsForCategory.length;
+          this.applyNewCategoryQuestionCountSelection(false);
+          return;
+        }
         this.selectAllQuestions = this.questionsForCategory.length > 0 && this.questionsForCategory.every(q => this.selectedQuestionIds.includes(String(q.id)));
-      }, error: (err) => { console.warn('Failed to load questions for category', err); this.questionsForCategory = []; },
-      complete: () => { this.loader.hide(); }
+      }, error: (err) => {
+        if (requestSeq !== this.questionLoadSeq) return;
+        console.warn('Failed to load questions for category', err);
+        this.questionsForCategory = [];
+        if (populateQuestionCount) {
+          this.newCategory.questions = 0;
+          this.selectedQuestionIds = [];
+          this.questionCountError = 'Unable to load questions for the selected Question Bank.';
+        }
+      },
+      complete: () => { if (requestSeq === this.questionLoadSeq) this.loader.hide(); }
     });
+  }
+
+  onNewCategoryQuestionCountChange(value: any) {
+    this.newCategory.questions = Number(value) || 0;
+    this.applyNewCategoryQuestionCountSelection(false);
+  }
+
+  get selectedQuestionBankQuestionCount(): number {
+    if (!this.selectedCategory || String(this.selectedCategory) !== String(this.activeQuestionCategoryId)) return 0;
+    return this.questionsForCategory.length;
+  }
+
+  get canAddSelectedQuestionBank(): boolean {
+    const available = this.selectedQuestionBankQuestionCount;
+    const requested = Number(this.newCategory.questions) || 0;
+    return !!this.selectedCategory && available > 0 && requested >= 1 && requested <= available;
+  }
+
+  isNewCategoryQuestionCountValid(): boolean {
+    return this.canAddSelectedQuestionBank;
+  }
+
+  private applyNewCategoryQuestionCountSelection(showNotification: boolean, updateMessage = true): boolean {
+    const available = this.selectedQuestionBankQuestionCount;
+    const requested = Number(this.newCategory.questions) || 0;
+    const maxMessage = `The selected Question Bank contains only ${available} questions. Please enter a number between 1 and ${available}.`;
+    const minMessage = available > 0 ? `Please enter a number between 1 and ${available}.` : 'The selected Question Bank does not contain any questions.';
+    let message = '';
+
+    if (!this.selectedCategory) message = '';
+    else if (available <= 0) message = minMessage;
+    else if (requested < 1) message = minMessage;
+    else if (requested > available) message = maxMessage;
+
+    if (updateMessage) this.questionCountError = message;
+    if (message) {
+      this.selectedQuestionIds = [];
+      this.selectAllQuestions = false;
+      if (showNotification) notify(message, 'error');
+      return false;
+    }
+
+    this.selectedQuestionIds = this.questionsForCategory.slice(0, requested).map(q => String(q.id));
+    this.selectAllQuestions = available > 0 && requested === available;
+    return true;
   }
 
   toggleSelectAllQuestions(checked: boolean) {
@@ -647,5 +703,4 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/exams']);
   }
 }
-
 
