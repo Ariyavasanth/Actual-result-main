@@ -301,7 +301,7 @@
                         <mat-checkbox [(ngModel)]="selectAll" (change)="toggleSelectAll($event.checked)">
                            Select all ({{ users.length }})
                         </mat-checkbox>
-                        <button mat-button type="button" (click)="loadUsers()">
+                        <button mat-button type="button" class="refresh-action-btn" (click)="loadUsers()">
                            <mat-icon>refresh</mat-icon>
                            Refresh
                         </button>
@@ -474,8 +474,4 @@
 
 
 </div>
-
-
-
-
 

@@ -501,3 +501,90 @@ $modal-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 body.global-institute-active .local-institute-field {
   display: none !important;
 }
+/* Global refresh control style for logged-in pages */
+.refresh-btn.mat-mdc-icon-button,
+button.refresh-btn.mat-mdc-icon-button {
+  width: 3rem !important;
+  height: 3rem !important;
+  border-radius: 1rem !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe3ee !important;
+  color: #64748b !important;
+  box-shadow: 0 0.25rem 0.75rem rgba(15, 23, 42, 0.06) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease !important;
+}
+
+.refresh-btn.mat-mdc-icon-button mat-icon,
+button.refresh-btn.mat-mdc-icon-button mat-icon {
+  width: 1.375rem !important;
+  height: 1.375rem !important;
+  font-size: 1.375rem !important;
+  color: #64748b !important;
+  transition: color 0.2s ease, transform 0.25s ease !important;
+}
+
+.refresh-btn.mat-mdc-icon-button:hover,
+button.refresh-btn.mat-mdc-icon-button:hover {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+  box-shadow: 0 0.5rem 1rem rgba(15, 23, 42, 0.09) !important;
+  transform: translateY(-1px) !important;
+}
+
+.refresh-btn.mat-mdc-icon-button:hover mat-icon,
+button.refresh-btn.mat-mdc-icon-button:hover mat-icon {
+  color: #475569 !important;
+  transform: rotate(90deg) !important;
+}
+
+button.refresh-action-btn,
+button.button-one:has(mat-icon[svgIcon="refresh"]),
+button[mat-flat-button]:has(mat-icon[svgIcon="refresh"]),
+button[mat-stroked-button]:has(mat-icon[svgIcon="refresh"]) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  height: 3rem !important;
+  min-width: 0 !important;
+  padding: 0 1rem !important;
+  border-radius: 1rem !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe3ee !important;
+  color: #64748b !important;
+  box-shadow: 0 0.25rem 0.75rem rgba(15, 23, 42, 0.06) !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease, color 0.2s ease !important;
+}
+
+button.refresh-action-btn:hover,
+button.button-one:has(mat-icon[svgIcon="refresh"]):hover,
+button[mat-flat-button]:has(mat-icon[svgIcon="refresh"]):hover,
+button[mat-stroked-button]:has(mat-icon[svgIcon="refresh"]):hover {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+  box-shadow: 0 0.5rem 1rem rgba(15, 23, 42, 0.09) !important;
+  transform: translateY(-1px) !important;
+}
+
+button.refresh-action-btn mat-icon,
+button.button-one:has(mat-icon[svgIcon="refresh"]) mat-icon,
+button[mat-flat-button]:has(mat-icon[svgIcon="refresh"]) mat-icon,
+button[mat-stroked-button]:has(mat-icon[svgIcon="refresh"]) mat-icon {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  color: #64748b !important;
+  transition: color 0.2s ease, transform 0.25s ease !important;
+}
+
+button.refresh-action-btn:hover mat-icon,
+button.button-one:has(mat-icon[svgIcon="refresh"]):hover mat-icon,
+button[mat-flat-button]:has(mat-icon[svgIcon="refresh"]):hover mat-icon,
+button[mat-stroked-button]:has(mat-icon[svgIcon="refresh"]):hover mat-icon {
+  color: #475569 !important;
+  transform: rotate(90deg) !important;
+}
+
