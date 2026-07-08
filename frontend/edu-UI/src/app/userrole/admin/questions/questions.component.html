@@ -28,36 +28,12 @@
                   <h2 class="section-heading">Institute & Question Bank</h2>
                   <p class="section-desc">Select the institute and question bank for your questions.</p>
                </div>
-               <button mat-stroked-button color="primary" type="button" class="question-bank-filter-btn"
-                  (click)="toggleQuestionBankFilters()" [disabled]="!questions[0].institute_id">
-                  <mat-icon>filter_list</mat-icon>
-                  <span>Filters</span>
-               </button>
-            </div>
-
-            <div class="field-row">
-               <mat-form-field appearance="outline" class="field-half local-institute-field">
-                  <mat-icon matPrefix>school</mat-icon>
-                  <mat-label>Institute</mat-label>
-                  <mat-select id="institute-select" title="Institute" [disabled]="!isSuperAdmin"
-                     [(ngModel)]="questions[0].institute_id" (ngModelChange)="onQuestionInstituteChange($event)">
-                     <mat-option value="">Select institute</mat-option>
-                     <mat-option *ngFor="let inst of institutes" [value]="inst.institute_id">{{inst.name}}</mat-option>
-                  </mat-select>
-               </mat-form-field>
-
-               <div class="question-bank-filter-wrap field-half">
-                  <mat-form-field appearance="outline" class="field-full">
-                     <mat-icon matPrefix>assignment</mat-icon>
-                     <mat-label>Question Bank</mat-label>
-                     <mat-select [value]="questions[0].category_id" [disabled]="!questions[0].institute_id || !categories.length"
-                        (openedChange)="refreshCategoriesOnCategoryOpen($event)"
-                        (selectionChange)="onCategorySelected($event.value)" required>
-                        <mat-option value="">Select question bank</mat-option>
-                        <mat-option *ngFor="let cat of categories" [value]="cat.category_id">{{cat.name}}</mat-option>
-                     </mat-select>
-                  </mat-form-field>
-
+               <div class="question-bank-filter-anchor" (click)="$event.stopPropagation()">
+                  <button mat-stroked-button color="primary" type="button" class="question-bank-filter-btn"
+                     (click)="toggleQuestionBankFilters()" [disabled]="!questions[0].institute_id">
+                     <mat-icon>filter_list</mat-icon>
+                     <span>Filters</span>
+                  </button>
                   <div class="question-bank-filter-panel" *ngIf="questionBankFilterOpen" (click)="$event.stopPropagation()">
                      <mat-form-field appearance="outline" class="filter-item">
                         <mat-label>Departments</mat-label>
@@ -103,6 +79,32 @@
                         </button>
                      </div>
                   </div>
+               </div>
+            </div>
+
+            <div class="field-row">
+               <mat-form-field appearance="outline" class="field-half local-institute-field">
+                  <mat-icon matPrefix>school</mat-icon>
+                  <mat-label>Institute</mat-label>
+                  <mat-select id="institute-select" title="Institute" [disabled]="!isSuperAdmin"
+                     [(ngModel)]="questions[0].institute_id" (ngModelChange)="onQuestionInstituteChange($event)">
+                     <mat-option value="">Select institute</mat-option>
+                     <mat-option *ngFor="let inst of institutes" [value]="inst.institute_id">{{inst.name}}</mat-option>
+                  </mat-select>
+               </mat-form-field>
+
+               <div class="question-bank-filter-wrap field-half">
+                  <mat-form-field appearance="outline" class="field-full">
+                     <mat-icon matPrefix>assignment</mat-icon>
+                     <mat-label>Question Bank</mat-label>
+                     <mat-select [value]="questions[0].category_id" [disabled]="!questions[0].institute_id || !categories.length"
+                        (openedChange)="refreshCategoriesOnCategoryOpen($event)"
+                        (selectionChange)="onCategorySelected($event.value)" required>
+                        <mat-option value="">Select question bank</mat-option>
+                        <mat-option *ngFor="let cat of categories" [value]="cat.category_id">{{cat.name}}</mat-option>
+                     </mat-select>
+                  </mat-form-field>
+
                </div>
             </div>
 
@@ -451,9 +453,3 @@
       </div>
    </div>
 </div>
-
-
-
-
-
-

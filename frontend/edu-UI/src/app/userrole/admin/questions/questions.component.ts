@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, OnInit, AfterViewInit } from '@angular/core';
+import { Component, ViewChild, ElementRef, OnInit, AfterViewInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatRadioModule } from '@angular/material/radio';
@@ -168,6 +168,14 @@ export class AdminQuestionsComponent {
 
   goBackToQuestions(): void {
     this.router.navigate(['/view-questions']);
+  }
+
+  @HostListener('document:click', ['$event'])
+  closeQuestionBankFiltersOnOutsideClick(event: MouseEvent) {
+    if (!this.questionBankFilterOpen) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('.question-bank-filter-anchor, .cdk-overlay-container')) return;
+    this.questionBankFilterOpen = false;
   }
 
   ngOnInit(): void {
@@ -685,6 +693,7 @@ export class AdminQuestionsComponent {
       try { this.categoryCtrl.setValue(''); } catch(e) {}
       this.loadCategories(this.questions?.[0]?.institute_id || '', true);
     }
+    this.questionBankFilterOpen = false;
   }
   refreshCategoriesOnCategoryOpen(opened: boolean) {
     if (!opened) return;
