@@ -13,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { startWith, map } from 'rxjs/operators';
@@ -24,7 +25,7 @@ import { LoaderService } from 'src/app/shared/services/loader.service';
 @Component({
   selector: 'app-admin-questions',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatRadioModule, MatCheckboxModule, MatFormFieldModule, MatInputModule, MatExpansionModule, HttpClientModule, RouterModule, MatIconModule, MatButtonModule, MatSelectModule, MatAutocompleteModule, MatButtonToggleModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatRadioModule, MatCheckboxModule, MatFormFieldModule, MatInputModule, MatExpansionModule, HttpClientModule, RouterModule, MatIconModule, MatButtonModule, MatSelectModule, MatAutocompleteModule, MatDatepickerModule, MatButtonToggleModule],
   templateUrl: './questions.component.html',
   styleUrls: ['./questions.component.scss']
 })
@@ -129,6 +130,16 @@ export class AdminQuestionsComponent {
   // currently selected category object (for showing description)
   selectedCategory: { name?: string; category_id?: string; description?: string; type?: string; mark_each_question?: any; mark_for_each_question?: any } | null = null;
   exams: Array<{ title: string; exam_id?: string }> = [];
+  questionBankFilterOpen = false;
+  questionBankFiltersApplied = false;
+  departments: Array<{ id: string; name: string }> = [];
+  teams: Array<{ id: string; name: string }> = [];
+  selectedDepartments: string[] = [];
+  selectedTeams: string[] = [];
+  filterCreationDateAfter: Date | null = null;
+  filterCreationDate: Date | null = null;
+  filterCreatedByMe = false;
+  filterPublicAccess = false;
 
   private apiUrl = `${API_BASE}/add-question`;
   // updated endpoints per request
@@ -521,7 +532,7 @@ export class AdminQuestionsComponent {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
         this.institutes = arr.map((r:any) => ({ name: r.name || r.institute_name || r.short_name || '', institute_id: r.institute_id || r.id }));
         // If an institute was prefilled (from session), ensure categories load for it
-        try{ const pre = this.questions && this.questions[0] && (this.questions[0].institute_id || ''); if(pre) this.loadCategories(pre); }catch(e){}
+        try{ const pre = this.questions && this.questions[0] && (this.questions[0].institute_id || ''); if(pre) { this.loadDepartments(pre); this.loadTeams(pre); this.loadCategories(pre); } }catch(e){}
       },
       complete: () => { this.loader.hide(); },
       error: (err) => { this.loader.hide();
@@ -536,6 +547,9 @@ export class AdminQuestionsComponent {
       this.selectedCategory = null;
       this.categoryCtrl.setValue('');
       this.categories = [];
+      this.resetQuestionBankFilters(false);
+      this.loadDepartments(instId);
+      this.loadTeams(instId);
       this.clearQuestionTypes();
     } catch(e) {}
     this.loadCategories(instId);
@@ -551,8 +565,8 @@ export class AdminQuestionsComponent {
       if (showLoader) this.loader.hide();
       return;
     }
-    let url = this.categoriesUrl;
-    if (instId) url += `?institute_id=${encodeURIComponent(instId)}&_ts=${Date.now()}`;
+    const params = this.buildCategoryFilterParams(instId);
+    const url = `${this.categoryDetailsUrl}?${params.join('&')}&_ts=${Date.now()}`;
     this.http.get<any>(url).subscribe({
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
@@ -586,6 +600,92 @@ export class AdminQuestionsComponent {
     });
   }
 
+  private formatFilterDate(value: Date | null): string {
+    if (!value) return '';
+    const date = value instanceof Date ? value : new Date(value as any);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
+  }
+
+  private getCurrentUserId(): string {
+    try {
+      const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
+      const user = raw ? JSON.parse(raw) : null;
+      return String(user?.user_id || user?.id || user?.userId || user?._id || sessionStorage.getItem('user_id') || '');
+    } catch (e) {
+      return String(sessionStorage.getItem('user_id') || '');
+    }
+  }
+
+  private buildCategoryFilterParams(instId?: string): string[] {
+    const params: string[] = [];
+    if (instId) params.push(`institute_id=${encodeURIComponent(instId)}`);
+    if (this.selectedDepartments.length) params.push(`departments=${encodeURIComponent(this.selectedDepartments.join(','))}`);
+    if (this.selectedTeams.length) params.push(`teams=${encodeURIComponent(this.selectedTeams.join(','))}`);
+    const createdAfter = this.formatFilterDate(this.filterCreationDateAfter);
+    const createdBefore = this.formatFilterDate(this.filterCreationDate);
+    if (createdAfter) params.push(`created_after=${encodeURIComponent(createdAfter)}`);
+    if (createdBefore) params.push(`created_before=${encodeURIComponent(createdBefore)}`);
+    if (this.filterPublicAccess) params.push('public_access=true');
+    if (this.filterCreatedByMe) {
+      const userId = this.getCurrentUserId();
+      if (userId) params.push(`created_by=${encodeURIComponent(userId)}`);
+    }
+    return params;
+  }
+
+  loadDepartments(instId?: string) {
+    if (!instId) { this.departments = []; return; }
+    const url = `${API_BASE}/get-department-list`;
+    this.http.get<any>(url, { params: { institute_id: instId } }).subscribe({
+      next: (res) => {
+        const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+        this.departments = arr.map((d: any) => ({ id: String(d.department_id || d.dept_id || d.id || d.deptId || ''), name: d.name || d.department_name || d.dept_name || d.title || '' })).filter((d: any) => d.id);
+      },
+      error: (err) => { console.warn('Failed to load departments', err); this.departments = []; }
+    });
+  }
+
+  loadTeams(instId?: string) {
+    if (!instId) { this.teams = []; return; }
+    const url = `${API_BASE}/get-teams-list`;
+    this.http.get<any>(url, { params: { institute_id: instId } }).subscribe({
+      next: (res) => {
+        const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+        this.teams = arr.map((t: any) => ({ id: String(t.team_id || t.teams_id || t.id || t.teamId || ''), name: t.name || t.team_name || t.title || '' })).filter((t: any) => t.id);
+      },
+      error: (err) => { console.warn('Failed to load teams', err); this.teams = []; }
+    });
+  }
+
+  toggleQuestionBankFilters() {
+    this.questionBankFilterOpen = !this.questionBankFilterOpen;
+  }
+
+  applyQuestionBankFilters() {
+    this.questionBankFiltersApplied = true;
+    this.selectedCategory = null;
+    try { if (this.questions && this.questions[0]) this.questions[0].category_id = ''; } catch(e) {}
+    try { this.categoryCtrl.setValue(''); } catch(e) {}
+    this.loadCategories(this.questions?.[0]?.institute_id || '', true);
+    this.questionBankFilterOpen = false;
+  }
+
+  resetQuestionBankFilters(reload: boolean = true) {
+    this.selectedDepartments = [];
+    this.selectedTeams = [];
+    this.filterCreationDateAfter = null;
+    this.filterCreationDate = null;
+    this.filterCreatedByMe = false;
+    this.filterPublicAccess = false;
+    this.questionBankFiltersApplied = false;
+    if (reload) {
+      this.selectedCategory = null;
+      try { if (this.questions && this.questions[0]) this.questions[0].category_id = ''; } catch(e) {}
+      try { this.categoryCtrl.setValue(''); } catch(e) {}
+      this.loadCategories(this.questions?.[0]?.institute_id || '', true);
+    }
+  }
   refreshCategoriesOnCategoryOpen(opened: boolean) {
     if (!opened) return;
     const instId = this.questions && this.questions[0] && this.questions[0].institute_id;
@@ -1040,4 +1140,3 @@ export class AdminQuestionsComponent {
     }
   }
 }
-
