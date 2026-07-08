@@ -88,6 +88,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
   private categoryLoadSeq = 0;
   private questionLoadSeq = 0;
   private selectionLoadSeq = 0;
+  private trackedInstituteForQuestionBanks = '';
+  private hasTrackedInstituteForQuestionBanks = false;
 
   @HostBinding('class.hide-random-questions')
   get hideRandomQuestionsSection(): boolean {
@@ -409,6 +411,23 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
     return isNaN(n) ? null : n;
   }
 
+
+  private resetQuestionBanksAndQuestionsSection() {
+    this.selectionLoadSeq++;
+    this.questionLoadSeq++;
+    this.selectedCategory = '';
+    this.categoryCtrl.setValue('');
+    this.newCategory = { questions: 0, randomize_questions: false, question_type: '', marks_per_question: null };
+    this.model.categories = [];
+    this.tempQuestionsForCategory = [];
+    this.questionsForCategory = [];
+    this.selectedQuestionIds = [];
+    this.selectAllQuestions = false;
+    this.activeQuestionCategoryId = '';
+    this.activeQuestionCategoryName = '';
+    this.questionCountError = '';
+    this.lastAddedQuestionSelectionByCategory = {};
+  }
   private resetQuestionBankDraft(clearDisplayedQuestions = false) {
     this.selectedCategory = '';
     this.categoryCtrl.setValue('');
@@ -602,17 +621,25 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
   }
 
   onInstituteChange(value: any) {
-    const v = value !== undefined && value !== null ? value : '';
+    const v = value !== undefined && value !== null ? String(value) : '';
+    const instituteChanged = this.hasTrackedInstituteForQuestionBanks && this.trackedInstituteForQuestionBanks !== v;
+
     this.institute = v;
     this.categoryLoadSeq++;
-    this.categories = [];
-    this.selectedCategory = '';
-    this.categoryCtrl.setValue('');
-    this.activeQuestionCategoryId = '';
-    this.activeQuestionCategoryName = '';
-    this.questionsForCategory = [];
-    this.selectedQuestionIds = [];
-    this.selectAllQuestions = false;
+
+    if (instituteChanged) {
+      this.categories = [];
+      this.selectedDepartments = [];
+      this.selectedTeams = [];
+      this.filterCreationDateAfter = null;
+      this.filterCreationDate = null;
+      this.filterCreatedByMe = false;
+      this.filterPublicAccess = null;
+      this.resetQuestionBanksAndQuestionsSection();
+    }
+    this.trackedInstituteForQuestionBanks = v;
+    this.hasTrackedInstituteForQuestionBanks = true;
+
     this.updateFilteredCategoriesStream();
     if (this.institute) {
       this.loadDepartments(this.institute);
