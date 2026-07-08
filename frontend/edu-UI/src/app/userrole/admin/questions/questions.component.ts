@@ -425,6 +425,8 @@ export class AdminQuestionsComponent {
             this.generatedQuestions = normalized;
             // Also immediately load generated questions into the editable questions list so they appear in the questions-list
             try{
+              const selectedInstituteId = this.questions?.[0]?.institute_id || '';
+              const selectedCategoryId = this.questions?.[0]?.category_id || '';
               this.questions = normalized.map((g:any) => {
                 const qtype = (g.type || 'descriptive');
                 const opts = Array.isArray(g.options) ? g.options.map((o:any)=> typeof o === 'string' ? o : (o.option_text || o.text || String(o))) : [];
@@ -459,7 +461,7 @@ export class AdminQuestionsComponent {
                   // put answer in answerText
                 }
 
-                return { type: qtype, text: g.text || '', marks: this.getCategoryQuestionMark() || g.marks || 1, options: opts.length ? opts : ['',''], correct: correct, answerText: (qtype==='fill' || qtype==='descriptive') ? (g.correct && typeof g.correct === 'string' ? g.correct : (g.answerText || '')) : (g.answerText || ''), _expanded: true };
+                return { type: qtype, text: g.text || '', marks: this.getCategoryQuestionMark() || g.marks || 1, options: opts.length ? opts : ['',''], correct: correct, answerText: (qtype==='fill' || qtype==='descriptive') ? (g.correct && typeof g.correct === 'string' ? g.correct : (g.answerText || '')) : (g.answerText || ''), institute_id: selectedInstituteId, category_id: selectedCategoryId, _expanded: true };
               });
               this.mode = 'manual';
               // this.aiMode = false;
