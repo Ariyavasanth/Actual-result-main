@@ -92,6 +92,7 @@ export class AdminQuestionsComponent {
   aiPrompt: string = '';
   // live preview / generated content
   generatedQuestions: Array<any> = [];
+  private aiAnswerGenerationPending = false;
   showPreview: boolean = true;
 
   // convenience boolean binding for a compact checkbox UI in the template
@@ -376,8 +377,68 @@ export class AdminQuestionsComponent {
     }catch(e){}
   }
 
+  private getCorrectFromGeneratedOptions(options: any): any {
+    if (!Array.isArray(options)) return null;
+    const correctIndexes: number[] = [];
+    options.forEach((option: any, index: number) => {
+      if (option && (option.is_correct === 1 || option.is_correct === true || option.is_correct === '1' || option.is_correct === 'true')) {
+        correctIndexes.push(index);
+      }
+    });
+    if (correctIndexes.length === 1) return correctIndexes[0];
+    if (correctIndexes.length > 1) return correctIndexes;
+    return null;
+  }
+
+  private resolveGeneratedCorrectValue(qtype: string, options: any[], correctValue: any): number | number[] | null {
+    if (qtype === 'choose') {
+      if (typeof correctValue === 'number') return correctValue;
+      if (typeof correctValue === 'string') {
+        const idx = options.findIndex((option: any) => String(option).trim().toLowerCase() === String(correctValue).trim().toLowerCase());
+        return idx >= 0 ? idx : null;
+      }
+    }
+    if (qtype === 'multi') {
+      if (Array.isArray(correctValue)) {
+        if (correctValue.length && typeof correctValue[0] === 'number') return correctValue;
+        return correctValue
+          .map((value: any) => options.findIndex((option: any) => String(option).trim().toLowerCase() === String(value).trim().toLowerCase()))
+          .filter((idx: number) => idx >= 0);
+      }
+      if (typeof correctValue === 'string') {
+        return correctValue
+          .split(',')
+          .map((value: string) => value.trim())
+          .filter(Boolean)
+          .map((value: string) => options.findIndex((option: any) => String(option).trim().toLowerCase() === value.toLowerCase()))
+          .filter((idx: number) => idx >= 0);
+      }
+    }
+    return null;
+  }
+
+  private applyGeneratedAnswersToQuestions(): boolean {
+    if (!this.aiAnswerGenerationPending || !this.generatedQuestions?.length || !this.questions?.length) return false;
+    this.questions.forEach((question: any, index: number) => {
+      const generated = this.generatedQuestions[index];
+      if (!generated) return;
+      const qtype = question.type || generated.type || 'descriptive';
+      const generatedAnswer = generated.answerText || generated.answer || generated.explanation || '';
+      const correctValue = generated.correct ?? generated.correct_answer ?? generatedAnswer;
+      if (qtype === 'fill' || qtype === 'descriptive') {
+        question.answerText = generatedAnswer || (typeof correctValue === 'string' ? correctValue : '');
+      } else {
+        question.correct = this.resolveGeneratedCorrectValue(qtype, question.options || [], correctValue);
+      }
+    });
+    this.aiAnswerGenerationPending = false;
+    try { notify('Answers generated for the current questions', 'success'); } catch(e) {}
+    return true;
+  }
+
   // Generate simple placeholder questions from AI inputs (stub implementation)
   generateAIQuestions(){
+    if (this.applyGeneratedAnswersToQuestions()) return;
     this.loader.show();
     if (!this.aiQuestionType || !this.aiQuestionNumber || this.aiQuestionNumber < 1){
       try { notify('Select a question type and set number of questions', 'error'); } catch(e){}
@@ -421,7 +482,7 @@ export class AdminQuestionsComponent {
             // backend returns a single question object or an array — normalize
             const arr = Array.isArray(res) ? res : (res.data ? res.data : (res.question ? [res.question] : []));
             // if response includes question_text/options etc, map to our internal shape
-            const normalized = (Array.isArray(arr) ? arr : [arr]).map((r:any) => ({ type: r.type || r.question_type || 'descriptive', text: r.question_text || r.question || r.text || '', marks: this.getCategoryQuestionMark() || r.mark || r.marks || 1, options: Array.isArray(r.options) ? r.options.slice() : (r.options && typeof r.options === 'string' ? r.options.split('|').map((s:string)=>s.trim()) : []), correct: r.correct_answer ?? r.correct ?? null, answerText: r.explanation || r.answer || '' }));
+            const normalized = (Array.isArray(arr) ? arr : [arr]).map((r:any) => ({ type: r.type || r.question_type || 'descriptive', text: r.question_text || r.question || r.text || '', marks: this.getCategoryQuestionMark() || r.mark || r.marks || 1, options: Array.isArray(r.options) ? r.options.slice() : (r.options && typeof r.options === 'string' ? r.options.split('|').map((s:string)=>s.trim()) : []), correct: r.correct_answer ?? r.correct ?? this.getCorrectFromGeneratedOptions(r.options), answerText: r.explanation || r.answer || '' }));
             this.generatedQuestions = normalized;
             // Also immediately load generated questions into the editable questions list so they appear in the questions-list
             try{
@@ -432,37 +493,9 @@ export class AdminQuestionsComponent {
                 const opts = Array.isArray(g.options) ? g.options.map((o:any)=> typeof o === 'string' ? o : (o.option_text || o.text || String(o))) : [];
                 // ensure at least two option placeholders for choice types
                 if ((qtype === 'choose' || qtype === 'multi') && opts.length < 2) { while(opts.length < 2) opts.push(''); }
-                // determine correct indices/value mapping
-                let correct: number | number[] | null = null;
-                const ca = g.correct;
-                if (qtype === 'choose'){
-                  if (typeof ca === 'number') correct = ca;
-                  else if (typeof ca === 'string') {
-                    const idx = opts.findIndex((o:any) => String(o).trim().toLowerCase() === String(ca).trim().toLowerCase());
-                    if (idx >= 0) correct = idx; else correct = null;
-                  }
-                } else if (qtype === 'multi'){
-                  if (Array.isArray(ca)){
-                    // may be indices or values
-                    if (ca.length && typeof ca[0] === 'number') correct = ca;
-                    else {
-                      const idxs:number[] = [];
-                      ca.forEach((val:any)=>{ const idx = opts.findIndex((o:any)=>String(o).trim().toLowerCase() === String(val).trim().toLowerCase()); if(idx>=0) idxs.push(idx); });
-                      correct = idxs;
-                    }
-                  } else if (typeof ca === 'string'){
-                    // comma separated values
-                    const parts = ca.split(',').map((s:string)=>s.trim()).filter(Boolean);
-                    const idxs:number[] = [];
-                    parts.forEach(p=>{ const idx = opts.findIndex((o:any)=>String(o).trim().toLowerCase()===String(p).trim().toLowerCase()); if(idx>=0) idxs.push(idx); });
-                    correct = idxs;
-                  }
-                } else if (qtype === 'fill' || qtype === 'descriptive'){
-                  // put answer in answerText
-                }
-
-                return { type: qtype, text: g.text || '', marks: this.getCategoryQuestionMark() || g.marks || 1, options: opts.length ? opts : ['',''], correct: correct, answerText: (qtype==='fill' || qtype==='descriptive') ? (g.correct && typeof g.correct === 'string' ? g.correct : (g.answerText || '')) : (g.answerText || ''), institute_id: selectedInstituteId, category_id: selectedCategoryId, _expanded: true };
+                return { type: qtype, text: g.text || '', marks: this.getCategoryQuestionMark() || g.marks || 1, options: opts.length ? opts : ['',''], correct: null, answerText: '', institute_id: selectedInstituteId, category_id: selectedCategoryId, _expanded: true };
               });
+              this.aiAnswerGenerationPending = true;
               this.mode = 'manual';
               // this.aiMode = false;
               this.activeMode = 'manual';
