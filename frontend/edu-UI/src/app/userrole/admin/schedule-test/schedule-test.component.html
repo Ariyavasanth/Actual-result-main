@@ -26,7 +26,7 @@
                            <mat-icon class="section-icon">assignment</mat-icon>
                            <div class="section-header-text">
                               <h2 class="section-heading">Basic Information</h2>
-                              <p class="section-desc">Select institute and test to schedule.</p>
+                              <p class="section-desc">{{ isSuperAdmin ? 'Select institute and test to schedule.' : 'Select test to schedule.' }}</p>
                            </div>
                            <button #filtersBtn mat-stroked-button color="primary" type="button"
                               (click)="openFiltersOverlay(); $event.stopPropagation()" [disabled]="readOnly"
@@ -38,7 +38,7 @@
 
                         <!-- Institute + Filters toggle -->
                         <div class="field-row">
-                           <mat-form-field appearance="outline" class="field-half local-institute-field">
+                           <mat-form-field *ngIf="isSuperAdmin" appearance="outline" class="field-half local-institute-field">
                               <mat-icon matPrefix>apartment</mat-icon>
                               <mat-label>Institute*</mat-label>
                               <input matInput [formControl]="instituteCtrl" [matAutocomplete]="instAuto" placeholder="Pick an institute" [readonly]="instituteDisabled" [matAutocompleteDisabled]="instituteDisabled" />
@@ -49,7 +49,7 @@
                               <mat-error *ngIf="!model.institute">Institute is required.</mat-error>
                            </mat-form-field>
 
-                           <mat-form-field appearance="outline" class="field-half">
+                           <mat-form-field appearance="outline" [ngClass]="isSuperAdmin ? 'field-half' : 'field-full'">
                               <mat-icon matPrefix>assignment</mat-icon>
                               <mat-label>Test*</mat-label>
                               <input matInput [formControl]="examCtrl" [matAutocomplete]="examAuto" placeholder="Pick a test" required />
@@ -474,4 +474,3 @@
 
 
 </div>
-
