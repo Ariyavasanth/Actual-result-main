@@ -93,7 +93,6 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
 
   @HostBinding('class.hide-random-questions')
   get hideRandomQuestionsSection(): boolean {
-    if (this.selectedCategory && this.newCategory.randomize_questions) return true;
     return !this.activeQuestionCategoryId || !this.questionsForCategory.length;
   }
 
@@ -500,7 +499,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
         if (requestSeq !== this.selectionLoadSeq || String(this.selectedCategory) !== String(catId)) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
         this.tempQuestionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', type: q.type || q.question_type || '', marks: q.marks ?? q.mark ?? q.points, raw: q }));
-        this.questionsForCategory = randomizeQuestions ? [] : [...this.tempQuestionsForCategory];
+        this.questionsForCategory = [...this.tempQuestionsForCategory];
         this.selectedQuestionIds = randomizeQuestions ? [] : selectedIds.map(id => String(id));
         this.selectAllQuestions = !randomizeQuestions && this.questionsForCategory.length > 0 && this.questionsForCategory.every(q => this.selectedQuestionIds.includes(String(q.id)));
         if (!this.newCategory.question_type) this.newCategory.question_type = this.deriveQuestionTypeFromQuestions(this.tempQuestionsForCategory);
@@ -739,14 +738,6 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
 
   viewCategoryQuestions(category: any) {
     if (!category || !category.category_id) return;
-    if (category.randomize_questions) {
-      this.activeQuestionCategoryId = category.category_id;
-      this.activeQuestionCategoryName = category.name || 'Selected category';
-      this.questionsForCategory = [];
-      this.selectedQuestionIds = [];
-      this.selectAllQuestions = false;
-      return;
-    }
     if (String(category.category_id) === String(this.activeQuestionCategoryId) && this.questionsForCategory.length) {
       this.activeQuestionCategoryId = '';
       this.activeQuestionCategoryName = '';
@@ -764,8 +755,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
   isCategoryQuestionsExpanded(category: any): boolean {
     return !!category &&
       String(category.category_id) === String(this.activeQuestionCategoryId) &&
-      this.questionsForCategory.length > 0 &&
-      !category.randomize_questions;
+      this.questionsForCategory.length > 0;
   }
   loadQuestionsForCategory(catId: string, preselectedQuestionIds: any[] = [], populateQuestionCount = false) {
     this.loader.show();
@@ -890,6 +880,12 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
     return this.validateNewCategoryQuestionCount(showNotification, updateMessage);
   }
 
+
+  isActiveQuestionBankRandomized(): boolean {
+    if (String(this.activeQuestionCategoryId || '') === String(this.selectedCategory || '')) return !!this.newCategory.randomize_questions;
+    const activeCategory = (this.model.categories || []).find((c: any) => String(c.category_id) === String(this.activeQuestionCategoryId));
+    return !!activeCategory?.randomize_questions;
+  }
   toggleSelectAllQuestions(checked: boolean) {
     this.selectAllQuestions = !!checked;
     if (this.selectAllQuestions) this.selectedQuestionIds = this.questionsForCategory.map(q => String(q.id));

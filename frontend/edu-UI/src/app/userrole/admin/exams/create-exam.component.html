@@ -336,16 +336,14 @@
                                         <span>Add</span>
                                     </button> -->
                                 </div>
-
                                 <div class="question-controls">
-                                    <mat-checkbox [(ngModel)]="selectAllQuestions"
-                                        (change)="toggleSelectAllQuestions($event.checked)">Select all
-                                        ({{questionsForCategory.length}})</mat-checkbox>
+                                    <span class="question-count">({{questionsForCategory.length}})</span>
                                 </div>
                                 <div class="question-list">
                                     <mat-list *ngIf="questionsForCategory.length">
                                         <mat-list-item *ngFor="let q of questionsForCategory" class="question-row">
                                             <mat-checkbox [checked]="selectedQuestionIds.indexOf(q.id+'')>=0"
+                                                [disabled]="readOnly || isActiveQuestionBankRandomized()"
                                                 (change)="toggleQuestionSelection(q.id, $event.checked)">{{q.question}}</mat-checkbox>
                                         </mat-list-item>
                                     </mat-list>
