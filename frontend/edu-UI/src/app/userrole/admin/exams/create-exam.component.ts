@@ -16,7 +16,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Subscription } from 'rxjs';
-import { OnInit, OnDestroy, AfterViewInit, AfterViewChecked, ElementRef, ViewChild } from '@angular/core';
+import { OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { AuthService } from 'src/app/home/service/auth.service';
 import { API_BASE } from 'src/app/shared/api.config';
 import { notify } from 'src/app/shared/global-notify';
@@ -34,7 +34,7 @@ import { LoaderService } from 'src/app/shared/services/loader.service';
   templateUrl: './create-exam.component.html',
   styleUrls: ['./create-exam.component.scss']
 })
-export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
+export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   title = '';
   description = '';
   institute = '';
@@ -161,9 +161,6 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
     } catch (e) { /* ignore */ }
   }
 
-  ngAfterViewChecked(): void {
-    this.syncRandomQuestionCountInputEditability();
-  }
 
   ngOnDestroy(): void {
     try { this._subs?.unsubscribe(); } catch (e) { }
@@ -804,8 +801,13 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
 
   onNewCategoryRandomizeChange(checked: boolean) {
     this.newCategory.randomize_questions = !!checked;
-    this.validateNewCategoryQuestionCount(false);
-    this.syncRandomQuestionCountInputEditability();
+    if (!this.newCategory.randomize_questions) {
+      const available = this.selectedQuestionBankQuestionCount || this.questionsForCategory.length;
+      if (available > 0) this.newCategory.questions = available;
+      this.questionCountError = '';
+    } else {
+      this.validateNewCategoryQuestionCount(false);
+    }
   }
 
   get selectedQuestionBankQuestionCount(): number {
@@ -862,13 +864,6 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
     return !!this.selectedCategory && !!this.newCategory.randomize_questions && available > 0 && requested === available;
   }
 
-  private syncRandomQuestionCountInputEditability(): void {
-    if (!this.selectedCategory || !this.newCategory.randomize_questions) return;
-    const input = document.querySelector<HTMLInputElement>('input[name="newCategoryQuestions"]');
-    if (!input) return;
-    input.readOnly = false;
-    input.removeAttribute('readonly');
-  }
 
   private getDraftQuestionIds(): string[] {
     if (this.newCategory.randomize_questions) return [];

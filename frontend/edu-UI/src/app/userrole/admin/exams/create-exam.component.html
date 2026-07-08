@@ -250,7 +250,7 @@
                                             <input matInput type="number" [(ngModel)]="newCategory.questions"
                                                 (ngModelChange)="onNewCategoryQuestionCountChange($event)"
                                                 name="newCategoryQuestions" placeholder="1" min="1"
-                                                [max]="selectedQuestionBankQuestionCount || null" [readonly]="!!selectedCategory" [disabled]="readOnly" />
+                                                [max]="selectedQuestionBankQuestionCount || null" [readonly]="!newCategory.randomize_questions" [disabled]="readOnly" />
                                         </mat-form-field>
                                     </div>
 
