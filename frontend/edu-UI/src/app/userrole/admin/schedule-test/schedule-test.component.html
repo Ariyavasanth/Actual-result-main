@@ -80,7 +80,7 @@
                            <mat-form-field appearance="outline" class="field-full">
                               <mat-icon matPrefix>person</mat-icon>
                               <mat-label>Scheduler name*</mat-label>
-                              <input matInput id="schedulerName" [(ngModel)]="model.schedulerName" name="schedulerName"
+                              <input matInput id="schedulerName" [(ngModel)]="model.schedulerName" (ngModelChange)="onSchedulerNameInput()" name="schedulerName"
                                  placeholder="E.g. Weekly Math Test Batch A" [disabled]="readOnly" required />
                               <mat-hint align="start">Name used to identify this schedule.</mat-hint>
                               <mat-error *ngIf="!model.schedulerName">Scheduler name is required.</mat-error>
