@@ -10,7 +10,7 @@ import random
 
 def add_exam(request):
     # get exam details from the request
-    data = request.json
+    data = request.get_json(silent=True) or {}
     title = data.get("title")
     description = data.get("description", None)
     institute_id = data.get("institute_id")
@@ -23,14 +23,22 @@ def add_exam(request):
     end_time_str = data.get("end_time", None)
     created_by = data.get("created_by")
 
+    if not title or not str(title).strip():
+        return {"statusMessage": "Title is required", "status": False}, 400
+    if not institute_id:
+        return {"statusMessage": "Institute is required", "status": False}, 400
+
     # Convert ISO 8601 string to datetime object
-    start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00")) if start_time_str else None
-    end_time = datetime.fromisoformat(end_time_str.replace("Z", "+00:00")) if end_time_str else None
+    try:
+        start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00")) if start_time_str else None
+        end_time = datetime.fromisoformat(end_time_str.replace("Z", "+00:00")) if end_time_str else None
+    except ValueError:
+        return {"statusMessage": "Invalid exam date/time", "status": False}, 400
 
     db = SQLiteDB()
     session = db.connect()
     if not session:
-        return None
+        return {"statusMessage": "Error connecting to database", "status": False}, 500
 
     try:
         add_exam = Exam(
@@ -82,6 +90,7 @@ def add_exam(request):
         }
         return json_data, 200
     except Exception as e:
+        session.rollback()
         print(f"{e} occurred while inserting exam at line {sys.exc_info()[-1].tb_lineno}")
         json_data = {
             "statusMessage": "Error inserting exam",

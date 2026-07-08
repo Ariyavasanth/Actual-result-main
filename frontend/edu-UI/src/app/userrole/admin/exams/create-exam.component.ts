@@ -967,6 +967,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   save() {
     // basic validation
     if (!this.title || !this.title.trim()) { notify('Title is required', 'error'); return; }
+    if (!this.institute) { notify('Institute is required', 'error'); return; }
     if (this.durationMinutes === null || isNaN(Number(this.durationMinutes))) { notify('Duration is required', 'error'); return; }
 
     const currentUser = this.getCurrentUserId();
