@@ -337,7 +337,7 @@
                                     </button> -->
                                 </div>
                                 <div class="question-controls">
-                                    <span class="question-count">({{questionsForCategory.length}})</span>
+                                    <span class="question-count"><span>Total Questions</span><strong>{{questionsForCategory.length}}</strong></span><span class="question-count question-count--selected"><span>Selected</span><strong>{{selectedQuestionIds.length}}</strong></span>
                                 </div>
                                 <div class="question-list">
                                     <mat-list *ngIf="questionsForCategory.length">
