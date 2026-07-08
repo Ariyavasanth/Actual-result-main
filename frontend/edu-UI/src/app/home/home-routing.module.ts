@@ -46,6 +46,7 @@ const routes: Routes = [
   , { path: 'view-questions', component: ViewQuestionsComponent, canActivate: [PermissionGuard], data: { pageName: 'Questions', action: 'view' } }
   , { path: 'category', component: CategoryComponent, canActivate: [PermissionGuard], data: { pageName: 'Categories', action: 'view' } }
   , { path: 'category/create', component: CategoryCreateComponent, canActivate: [PermissionGuard], data: { pageName: 'Categories', action: 'add' } }
+  , { path: 'admin/exam-reports', loadChildren: () => import('../userrole/admin/exam-reports/exam-reports.module').then(m => m.ExamReportsModule), canActivate: [PermissionGuard], data: { requiredRole: ['admin','super_admin','superadmin','super-admin'] } }
   , { path: 'admin-dashboard', component: AdminResultsComponent, canActivate: [PermissionGuard], data: { requiredRole: ['admin','super_admin','superadmin','super-admin'] } }
   , { path: 'user/exam', component: UserExamComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin','superadmin','super-admin'] } }
   , { path: 'user-dashboard', component: UserDashboardComponent, canActivate: [PermissionGuard], data: { requiredRole: ['user','super_admin','superadmin','super-admin'] } }
