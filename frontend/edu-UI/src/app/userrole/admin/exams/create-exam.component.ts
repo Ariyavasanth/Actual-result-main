@@ -461,9 +461,64 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
   }
   onCategoryAutocompleteSelected(c: any) {
     if (!c) return;
+    const normalized = this.normalizeCategoryOption(c);
+    const existing = (this.model.categories || []).find((item: any) => String(item.category_id) === String(normalized.category_id));
+    if (existing) {
+      this.loadAttachedQuestionBankDraft(normalized, existing);
+      return;
+    }
     this.loadQuestionBankDraft(c);
   }
+  private loadAttachedQuestionBankDraft(category: any, attached: any) {
+    const catId = String(attached?.category_id || category?.category_id || '');
+    if (!catId) return;
+    const requestSeq = ++this.selectionLoadSeq;
+    this.questionLoadSeq++;
+    this.selectedCategory = catId;
+    this.categoryCtrl.setValue(category);
+    this.questionCountError = '';
+    this.tempQuestionsForCategory = [];
+    this.questionsForCategory = [];
+    this.selectedQuestionIds = Array.isArray(attached.question_ids) ? attached.question_ids.map((id: any) => String(id)) : [];
+    this.selectAllQuestions = false;
+    this.activeQuestionCategoryId = catId;
+    this.activeQuestionCategoryName = attached.name || category.name || 'Selected category';
+    this.newCategory = {
+      questions: Number(attached.questions) || 0,
+      randomize_questions: !!attached.randomize_questions,
+      question_type: attached.question_type || category.type || '',
+      marks_per_question: this.toNumber(attached.marks_per_question ?? category.mark_each_question)
+    };
+    this.loadAttachedQuestionBankDraftQuestions(catId, requestSeq, this.selectedQuestionIds, !!attached.randomize_questions);
+  }
 
+  private loadAttachedQuestionBankDraftQuestions(catId: string, requestSeq: number, selectedIds: string[], randomizeQuestions: boolean) {
+    this.loader.show();
+    const url = `${API_BASE}/get-questions-details?category_id=${encodeURIComponent(catId)}`;
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        if (requestSeq !== this.selectionLoadSeq || String(this.selectedCategory) !== String(catId)) return;
+        const arr = Array.isArray(res) ? res : (res?.data || []);
+        this.tempQuestionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', type: q.type || q.question_type || '', marks: q.marks ?? q.mark ?? q.points, raw: q }));
+        this.questionsForCategory = randomizeQuestions ? [] : [...this.tempQuestionsForCategory];
+        this.selectedQuestionIds = randomizeQuestions ? [] : selectedIds.map(id => String(id));
+        this.selectAllQuestions = !randomizeQuestions && this.questionsForCategory.length > 0 && this.questionsForCategory.every(q => this.selectedQuestionIds.includes(String(q.id)));
+        if (!this.newCategory.question_type) this.newCategory.question_type = this.deriveQuestionTypeFromQuestions(this.tempQuestionsForCategory);
+        if (this.newCategory.marks_per_question === null || typeof this.newCategory.marks_per_question === 'undefined') this.newCategory.marks_per_question = this.deriveMarksFromQuestions(this.tempQuestionsForCategory);
+        this.validateNewCategoryQuestionCount(false);
+      },
+      error: (err) => {
+        if (requestSeq !== this.selectionLoadSeq) return;
+        console.warn('Failed to load questions for attached question bank', err);
+        this.tempQuestionsForCategory = [];
+        this.questionsForCategory = [];
+        this.selectedQuestionIds = [];
+        this.selectAllQuestions = false;
+        this.questionCountError = 'Unable to load questions for the selected Question Bank.';
+      },
+      complete: () => { if (requestSeq === this.selectionLoadSeq) this.loader.hide(); }
+    });
+  }
   private loadQuestionBankDraft(category: any) {
     const normalized = this.normalizeCategoryOption(category);
     const catId = normalized.category_id || '';
