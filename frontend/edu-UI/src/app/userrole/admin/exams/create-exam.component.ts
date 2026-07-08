@@ -807,7 +807,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
     else if (this.newCategory.randomize_questions && requested === available) message = allRandomMessage;
 
     if (updateMessage) this.questionCountError = message;
-    if (message && showNotification) notify(message, 'error');
+    if (message && showNotification && message !== allRandomMessage) notify(message, 'error');
     return !message;
   }
 
