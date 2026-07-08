@@ -216,7 +216,8 @@
                                             <mat-icon matPrefix>assignment</mat-icon>
                                             <mat-label>Question Bank</mat-label>
                                             <input type="text" matInput [formControl]="categoryCtrl" [matAutocomplete]="auto"
-                                                placeholder="Pick a question bank" [readonly]="!!selectedCategory" />
+                                                placeholder="Pick a question bank" [readonly]="readOnly"
+                                                (input)="onQuestionBankNameInput($event)" />
                                             <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCategory.bind(this)"
                                                 (optionSelected)="onCategoryAutocompleteSelected($event.option.value)">
                                                 <mat-option *ngFor="let cat of (filteredCategories$ | async)" [value]="cat">{{cat.name}}</mat-option>
@@ -426,3 +427,4 @@
         </mat-horizontal-stepper>
     </div>
 </div>
+

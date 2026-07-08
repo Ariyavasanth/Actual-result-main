@@ -245,9 +245,10 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const selectedIds = [...this.selectedQuestionIds];
     const selectionKey = this.getQuestionSelectionKey(selectedIds);
     const isDraft = String(catId) === String(this.selectedCategory);
+    const draftName = this.getQuestionBankDraftName();
     const item = {
       category_id: catId,
-      name: existing?.name || cat?.name || this.activeQuestionCategoryName || '',
+      name: isDraft ? draftName : (existing?.name || cat?.name || this.activeQuestionCategoryName || ''),
       questions: selectedIds.length,
       question_ids: selectedIds,
       randomize_questions: isDraft ? !!this.newCategory.randomize_questions : !!existing?.randomize_questions,
@@ -350,6 +351,20 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   displayCategory(c: any) { return c ? (c.name || c.category_name || '') : ''; }
+
+  onQuestionBankNameInput(event: Event) {
+    if (!this.selectedCategory) return;
+    const name = ((event.target as HTMLInputElement)?.value || '').trim();
+    if (name) this.activeQuestionCategoryName = name;
+  }
+
+  private getQuestionBankDraftName(): string {
+    const value: any = this.categoryCtrl.value;
+    const typedName = typeof value === 'string'
+      ? value.trim()
+      : String(value?.name || value?.category_name || '').trim();
+    return typedName || this.activeQuestionCategoryName || '';
+  }
 
   private normalizeCategoryOption(c: any): any {
     return {
