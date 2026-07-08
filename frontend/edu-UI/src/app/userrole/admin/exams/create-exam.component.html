@@ -301,7 +301,7 @@
                                                         (click)="viewCategoryQuestions(c)"
                                                         [attr.aria-label]="isCategoryQuestionsExpanded(c) ? 'Hide questions' : 'View questions'"
                                                         [title]="isCategoryQuestionsExpanded(c) ? 'Hide questions' : 'View questions'">
-                                                        <mat-icon>{{ isCategoryQuestionsExpanded(c) ? 'visibility_off' : 'visibility' }}</mat-icon>
+                                                        <mat-icon>{{ isCategoryQuestionsExpanded(c) ? 'visibility' : 'visibility_off' }}</mat-icon>
                                                     </button>
                                                     <button mat-icon-button color="warn" type="button" class="attached-bank-action-btn attached-bank-action-btn--delete"
                                                         (click)="removeCategory(i)"
