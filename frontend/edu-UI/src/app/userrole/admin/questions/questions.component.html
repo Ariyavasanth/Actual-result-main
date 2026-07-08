@@ -228,27 +228,25 @@
                   </mat-form-field>
                </div>
 
-               <div class="field-row">
-                  <mat-form-field appearance="outline" class="field-half">
+               <div class="field-row ai-context-row">
+                  <mat-form-field appearance="outline" class="ai-context-field">
                      <mat-label>Industry</mat-label>
                      <input matInput type="text" [(ngModel)]="aiIndustry"
                         placeholder="Enter industry (e.g. Education, IT, Healthcare)" />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline" class="field-half">
+                  <mat-form-field appearance="outline" class="ai-context-field">
                      <mat-label>Target Users</mat-label>
                      <input matInput type="text" [(ngModel)]="aiTargetUsers"
                         placeholder="e.g. Students, Employees, Customers" />
                   </mat-form-field>
-               </div>
 
-               <div class="field-row">
-                  <mat-form-field appearance="outline" class="field-half">
+                  <mat-form-field appearance="outline" class="ai-context-field">
                      <mat-label>User Role</mat-label>
                      <input matInput type="text" [(ngModel)]="aiUserRole" placeholder="e.g. Restaurant Waiter, Nurse" />
                   </mat-form-field>
 
-                  <mat-form-field appearance="outline" class="field-half">
+                  <mat-form-field appearance="outline" class="ai-context-field">
                      <mat-label>Complexity</mat-label>
                      <mat-select [(ngModel)]="aiQuestionComplexity">
                         <mat-option value="">Select complexity</mat-option>
