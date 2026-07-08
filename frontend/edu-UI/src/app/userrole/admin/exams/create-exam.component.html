@@ -220,7 +220,12 @@
                                                 (input)="onQuestionBankNameInput($event)" />
                                             <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCategory.bind(this)"
                                                 (optionSelected)="onCategoryAutocompleteSelected($event.option.value)">
-                                                <mat-option *ngFor="let cat of (filteredCategories$ | async)" [value]="cat">{{cat.name}}</mat-option>
+                                                <mat-option *ngFor="let cat of (filteredCategories$ | async)" [value]="cat" class="question-bank-option-row">
+                                                    <span class="question-bank-option">
+                                                        <span class="question-bank-option-name">{{cat.name}}</span>
+                                                        <mat-icon *ngIf="isQuestionBankOptionChecked(cat)" class="question-bank-option-check">check</mat-icon>
+                                                    </span>
+                                                </mat-option>
                                             </mat-autocomplete>
                                         </mat-form-field>
                                     </div>

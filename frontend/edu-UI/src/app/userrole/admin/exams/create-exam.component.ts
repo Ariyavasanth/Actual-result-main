@@ -864,6 +864,12 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
   }
 
   // Returns true if any category in the model has randomize_questions truthy
+
+  isQuestionBankOptionChecked(cat: any): boolean {
+    const catId = String(cat?.category_id || '');
+    if (!catId) return false;
+    return Array.isArray(this.model.categories) && this.model.categories.some((c: any) => String(c?.category_id || '') === catId);
+  }
   anyCategoryRandomized(): boolean {
     try {
       if (!Array.isArray(this.model.categories)) return false;
