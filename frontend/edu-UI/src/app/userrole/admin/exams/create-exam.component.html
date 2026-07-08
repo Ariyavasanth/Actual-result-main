@@ -274,13 +274,14 @@
                                                 <div class="attached-bank-cell attached-bank-cell--name">Question Bank Name</div>
                                                 <div class="attached-bank-cell attached-bank-cell--type">Question Type</div>
                                                 <div class="attached-bank-cell attached-bank-cell--count">No. of Questions Selected</div>
+                                                <div class="attached-bank-cell attached-bank-cell--per-mark">Marks per Question</div>
                                                 <div class="attached-bank-cell attached-bank-cell--marks">Total Marks</div>
                                                 <div class="attached-bank-cell attached-bank-cell--actions">Actions</div>
                                             </div>
                                             <div class="attached-bank-row attached-bank-card"
                                                 *ngFor="let c of model.categories; let i = index"
                                                 role="listitem"
-                                                [class.attached-bank-card--active]="c.category_id === activeQuestionCategoryId">
+                                                [class.attached-bank-card--active]="isCategoryQuestionsExpanded(c)">
                                                 <div class="attached-bank-cell attached-bank-cell--sno" data-label="S.No">{{ i + 1 }}</div>
                                                 <div class="attached-bank-cell attached-bank-cell--name" data-label="Question Bank Name">
                                                     <span class="attached-bank-name">{{ c.name }}</span>
@@ -288,15 +289,16 @@
                                                 </div>
                                                 <div class="attached-bank-cell attached-bank-cell--type" data-label="Question Type">{{ formatQuestionBankType(c.question_type) }}</div>
                                                 <div class="attached-bank-cell attached-bank-cell--count" data-label="No. of Questions Selected">{{ c.questions || 0 }}</div>
+                                                <div class="attached-bank-cell attached-bank-cell--per-mark" data-label="Marks per Question">{{ c.marks_per_question || 0 }}</div>
                                                 <div class="attached-bank-cell attached-bank-cell--marks" data-label="Total Marks">{{ (c.questions || 0) * (c.marks_per_question || 0) }}</div>
                                                 <div class="attached-bank-cell attached-bank-cell--actions" data-label="Actions">
-                                                    <button mat-icon-button type="button"
+                                                    <button mat-icon-button type="button" class="attached-bank-action-btn attached-bank-action-btn--view"
                                                         (click)="viewCategoryQuestions(c)"
-                                                        aria-label="View questions"
-                                                        title="View questions">
-                                                        <mat-icon>visibility</mat-icon>
+                                                        [attr.aria-label]="isCategoryQuestionsExpanded(c) ? 'Hide questions' : 'View questions'"
+                                                        [title]="isCategoryQuestionsExpanded(c) ? 'Hide questions' : 'View questions'">
+                                                        <mat-icon>{{ isCategoryQuestionsExpanded(c) ? 'visibility_off' : 'visibility' }}</mat-icon>
                                                     </button>
-                                                    <button mat-icon-button color="warn" type="button"
+                                                    <button mat-icon-button color="warn" type="button" class="attached-bank-action-btn attached-bank-action-btn--delete"
                                                         (click)="removeCategory(i)"
                                                         aria-label="Remove question bank"
                                                         title="Remove question bank"
@@ -306,6 +308,7 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    <div class="attached-bank-summary">Total Questions: {{ totalQuestions || 0 }}</div>
                                     </div>
                                 </div>
                             </div>

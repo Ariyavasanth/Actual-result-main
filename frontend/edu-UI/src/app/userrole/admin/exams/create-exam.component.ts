@@ -92,8 +92,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
   @HostBinding('class.hide-random-questions')
   get hideRandomQuestionsSection(): boolean {
     if (this.selectedCategory && this.newCategory.randomize_questions) return true;
-    const activeCategory = (this.model.categories || []).find((c: any) => String(c.category_id) === String(this.activeQuestionCategoryId));
-    return !!activeCategory?.randomize_questions;
+    return !this.activeQuestionCategoryId || !this.questionsForCategory.length;
   }
 
   constructor(private router: Router, private http: HttpClient, private auth: AuthService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private loader: LoaderService) {
@@ -679,6 +678,13 @@ export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChec
     this.loadQuestionsForCategory(category.category_id, Array.isArray(category.question_ids) ? category.question_ids : []);
   }
 
+
+  isCategoryQuestionsExpanded(category: any): boolean {
+    return !!category &&
+      String(category.category_id) === String(this.activeQuestionCategoryId) &&
+      this.questionsForCategory.length > 0 &&
+      !category.randomize_questions;
+  }
   loadQuestionsForCategory(catId: string, preselectedQuestionIds: any[] = [], populateQuestionCount = false) {
     this.loader.show();
     const requestSeq = ++this.questionLoadSeq;
