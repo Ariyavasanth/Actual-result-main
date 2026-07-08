@@ -320,6 +320,12 @@
 
                   <div class="label"><mat-icon>people</mat-icon> Max Users</div>
                   <div class="value">{{selectedInstitute.max_users || '—'}}</div>
+
+                  <div class="label"><mat-icon>admin_panel_settings</mat-icon> Admins</div>
+                  <div class="value">{{getAdminCount(selectedInstitute)}}</div>
+
+                  <div class="label"><mat-icon>person</mat-icon> Users</div>
+                  <div class="value">{{getUserCount(selectedInstitute)}}</div>
                 </div>
               </mat-tab>
 

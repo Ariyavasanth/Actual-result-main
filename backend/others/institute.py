@@ -456,6 +456,16 @@ def get_institute_details(request):
         if inst.updated_by:
             updated_by = session.query(User).filter_by(user_id=inst.updated_by).first()
             updated_by = updated_by.full_name if updated_by else None
+        admins_count = session.query(User).filter(
+            User.institute_id == inst.institute_id,
+            User.user_role == 'admin',
+            User.is_deleted == 0
+        ).count()
+        users_count = session.query(User).filter(
+            User.institute_id == inst.institute_id,
+            User.user_role == 'user',
+            User.is_deleted == 0
+        ).count()
         result.append({
             "institute_id": inst.institute_id,
             "name": inst.name,
@@ -467,6 +477,8 @@ def get_institute_details(request):
             "industry_type": inst.industry_type,
             "industry_sector": inst.industry_sector,
             "max_users": inst.max_users,
+            "admins_count": admins_count,
+            "users_count": users_count,
             "subscription_start": inst.subscription_start,
             "subscription_end": inst.subscription_end,
             "active_status": True if inst.active_status else False,

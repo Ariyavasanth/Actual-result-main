@@ -41,6 +41,8 @@ export interface Institute {
   primary_contact_phone?: string;
   website?: string;
   max_users?: number;
+  admins_count?: number;
+  users_count?: number;
   industry_type?: string;
   industry_sector?: string;
   subscription_start?: string;
@@ -258,6 +260,8 @@ export class ViewInstitutesComponent {
             primary_contact_phone: r.primary_contact_phone || r.primary_contact_phone || r.primary_contact_phone || r.primary_contact_phone || '',
             website: r.website || '',
             max_users: r.max_users || null,
+            admins_count: this.getAdminCount(r),
+            users_count: this.getUserCount(r),
             subscription_start: r.subscription_start || r.subscriptionStart || '',
             subscription_end: r.subscription_end || r.subscriptionEnd || '',
             industry_type: r.industry_type || '',
@@ -494,6 +498,41 @@ export class ViewInstitutesComponent {
     try { sessionStorage.setItem('view_institute', JSON.stringify(payload)); } catch(e){}
     // open detail modal
     this.selectedInstitute = i.raw || i;
+  }
+
+  getAdminCount(institute: any): number {
+    return this.resolveCount(
+      institute,
+      ['admins_count', 'admin_count', 'total_admins', 'totalAdmins', 'adminCount', 'adminsCount', 'number_of_admins', 'no_of_admins'],
+      ['admins', 'admin_users', 'adminUsers', 'institute_admins', 'instituteAdmins']
+    );
+  }
+
+  getUserCount(institute: any): number {
+    return this.resolveCount(
+      institute,
+      ['users_count', 'user_count', 'total_users', 'totalUsers', 'userCount', 'usersCount', 'number_of_users', 'no_of_users'],
+      ['users', 'institute_users', 'instituteUsers']
+    );
+  }
+
+  private resolveCount(institute: any, countKeys: string[], collectionKeys: string[]): number {
+    if (!institute) return 0;
+
+    for (const key of countKeys) {
+      const value = institute[key];
+      if (value !== undefined && value !== null && value !== '') {
+        const count = Number(value);
+        return Number.isFinite(count) ? count : 0;
+      }
+    }
+
+    for (const key of collectionKeys) {
+      const value = institute[key];
+      if (Array.isArray(value)) return value.length;
+    }
+
+    return 0;
   }
 
   startEdit(i: Institute){
