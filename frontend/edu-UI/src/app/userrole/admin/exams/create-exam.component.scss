@@ -155,3 +155,5 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 /* ── Responsive ── */
 @media (max-width:48rem) { .page{padding:0.5rem 0.5rem 2rem;} .step-content{padding:1rem;} .field-row{flex-direction:column;gap:0;} .review-grid{grid-template-columns:1fr;} .review-summary .detail-grid{grid-template-columns:1fr;} }
 
+
+:host(.hide-random-questions) .card-body-inner.question-bank-layout .right { display:none; }

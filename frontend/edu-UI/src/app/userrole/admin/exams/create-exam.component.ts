@@ -1,4 +1,4 @@
-import { Component, TemplateRef, ViewContainerRef } from '@angular/core';
+import { Component, HostBinding, TemplateRef, ViewContainerRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, FormControl } from '@angular/forms';
 import { Observable, of } from 'rxjs';
@@ -16,7 +16,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Subscription } from 'rxjs';
-import { OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
+import { OnInit, OnDestroy, AfterViewInit, AfterViewChecked, ElementRef, ViewChild } from '@angular/core';
 import { AuthService } from 'src/app/home/service/auth.service';
 import { API_BASE } from 'src/app/shared/api.config';
 import { notify } from 'src/app/shared/global-notify';
@@ -34,7 +34,7 @@ import { LoaderService } from 'src/app/shared/services/loader.service';
   templateUrl: './create-exam.component.html',
   styleUrls: ['./create-exam.component.scss']
 })
-export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
+export class CreateExamComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
   title = '';
   description = '';
   institute = '';
@@ -57,6 +57,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('filtersPanel') filtersPanelTpl!: TemplateRef<any>;
 
   private _docClickHandler: ((ev: any) => void) | null = null;
+  private _randomBlockClickHandler: ((ev: any) => void) | null = null;
   // filter state for categories
   selectedDepartments: string[] = [];
   selectedTeams: string[] = [];
@@ -87,6 +88,13 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   private categoryLoadSeq = 0;
   private questionLoadSeq = 0;
   private selectionLoadSeq = 0;
+
+  @HostBinding('class.hide-random-questions')
+  get hideRandomQuestionsSection(): boolean {
+    if (this.selectedCategory && this.newCategory.randomize_questions) return true;
+    const activeCategory = (this.model.categories || []).find((c: any) => String(c.category_id) === String(this.activeQuestionCategoryId));
+    return !!activeCategory?.randomize_questions;
+  }
 
   constructor(private router: Router, private http: HttpClient, private auth: AuthService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private loader: LoaderService) {
     try {
@@ -141,12 +149,26 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         } catch (e) { /* ignore */ }
       };
       document.addEventListener('click', this._docClickHandler);
+      this._randomBlockClickHandler = (ev: any) => {
+        const target = ev.target as HTMLElement | null;
+        const button = target?.closest ? target.closest('button.next-btn') : null;
+        if (!button || !this.shouldBlockRandomAllQuestionSelection()) return;
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        this.validateNewCategoryQuestionCount(true);
+      };
+      document.addEventListener('click', this._randomBlockClickHandler, true);
     } catch (e) { /* ignore */ }
+  }
+
+  ngAfterViewChecked(): void {
+    this.syncRandomQuestionCountInputEditability();
   }
 
   ngOnDestroy(): void {
     try { this._subs?.unsubscribe(); } catch (e) { }
     try { if (this._docClickHandler) document.removeEventListener('click', this._docClickHandler); } catch (e) { }
+    try { if (this._randomBlockClickHandler) document.removeEventListener('click', this._randomBlockClickHandler, true); } catch (e) { }
   }
 
   // Called when the Enable Filters checkbox toggles
@@ -235,23 +257,29 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   addSelectedQuestionBankQuestions() {
     const catId = this.activeQuestionCategoryId || this.selectedCategory || '';
-    if (!catId || !this.selectedQuestionIds.length) return;
+    if (!catId) return;
 
     const existingIndex = Array.isArray(this.model.categories)
       ? this.model.categories.findIndex((c: any) => String(c.category_id) === String(catId))
       : -1;
     const existing = existingIndex >= 0 ? this.model.categories![existingIndex] : null;
     const cat = this.categories.find(c => String(c.category_id) === String(catId));
-    const selectedIds = [...this.selectedQuestionIds];
-    const selectionKey = this.getQuestionSelectionKey(selectedIds);
     const isDraft = String(catId) === String(this.selectedCategory);
+    const randomizeQuestions = isDraft ? !!this.newCategory.randomize_questions : !!existing?.randomize_questions;
+
+    if (isDraft && !this.validateNewCategoryQuestionCount(true)) return;
+    if (!randomizeQuestions && !this.selectedQuestionIds.length) return;
+
+    const selectedIds = randomizeQuestions ? [] : [...this.selectedQuestionIds];
+    const requestedQuestions = randomizeQuestions ? (Number(this.newCategory.questions) || 0) : selectedIds.length;
+    const selectionKey = this.getQuestionSelectionKey(selectedIds);
     const draftName = this.getQuestionBankDraftName();
     const item = {
       category_id: catId,
       name: isDraft ? draftName : (existing?.name || cat?.name || this.activeQuestionCategoryName || ''),
-      questions: selectedIds.length,
+      questions: requestedQuestions,
       question_ids: selectedIds,
-      randomize_questions: isDraft ? !!this.newCategory.randomize_questions : !!existing?.randomize_questions,
+      randomize_questions: randomizeQuestions,
       question_type: isDraft ? (this.newCategory.question_type || '') : (existing?.question_type || cat?.type || ''),
       marks_per_question: isDraft ? (this.newCategory.marks_per_question ?? null) : (existing?.marks_per_question ?? this.toNumber(cat?.mark_each_question) ?? null)
     };
@@ -263,7 +291,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.activeQuestionCategoryId = catId;
     this.activeQuestionCategoryName = item.name || this.activeQuestionCategoryName;
-    this.newCategory.questions = selectedIds.length;
+    this.newCategory.questions = requestedQuestions;
     this.lastAddedQuestionSelectionByCategory[String(catId)] = selectionKey;
     if (isDraft) this.resetQuestionBankDraft(true);
   }
@@ -630,6 +658,14 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   viewCategoryQuestions(category: any) {
     if (!category || !category.category_id) return;
+    if (category.randomize_questions) {
+      this.activeQuestionCategoryId = category.category_id;
+      this.activeQuestionCategoryName = category.name || 'Selected category';
+      this.questionsForCategory = [];
+      this.selectedQuestionIds = [];
+      this.selectAllQuestions = false;
+      return;
+    }
     if (String(category.category_id) === String(this.activeQuestionCategoryId) && this.questionsForCategory.length) {
       this.activeQuestionCategoryId = '';
       this.activeQuestionCategoryName = '';
@@ -691,6 +727,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   onNewCategoryRandomizeChange(checked: boolean) {
     this.newCategory.randomize_questions = !!checked;
     this.validateNewCategoryQuestionCount(false);
+    this.syncRandomQuestionCountInputEditability();
   }
 
   get selectedQuestionBankQuestionCount(): number {
@@ -705,7 +742,11 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   get canAddSelectedQuestionBankQuestions(): boolean {
-    if (!this.activeQuestionCategoryId || !this.questionsForCategory.length || !this.selectedQuestionIds.length) return false;
+    if (!this.activeQuestionCategoryId) return false;
+    if (String(this.activeQuestionCategoryId) === String(this.selectedCategory) && this.newCategory.randomize_questions) {
+      return this.canAddSelectedQuestionBank && !this.shouldBlockRandomAllQuestionSelection();
+    }
+    if (!this.questionsForCategory.length || !this.selectedQuestionIds.length) return false;
     const categoryId = String(this.activeQuestionCategoryId);
     return this.getQuestionSelectionKey(this.selectedQuestionIds) !== this.lastAddedQuestionSelectionByCategory[categoryId];
   }
@@ -723,16 +764,32 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const requested = Number(this.newCategory.questions) || 0;
     const maxMessage = `The selected Question Bank contains only ${available} questions. Please enter a number between 1 and ${available}.`;
     const minMessage = available > 0 ? `Please enter a number between 1 and ${available}.` : 'The selected Question Bank does not contain any questions.';
+    const allRandomMessage = `⚠️ You've selected all available questions (${requested}/${available}). Random selection has no effect because every student will receive the same questions.`;
     let message = '';
 
     if (!this.selectedCategory) message = '';
     else if (available <= 0) message = minMessage;
     else if (requested < 1) message = minMessage;
     else if (requested > available) message = maxMessage;
+    else if (this.newCategory.randomize_questions && requested === available) message = allRandomMessage;
 
     if (updateMessage) this.questionCountError = message;
     if (message && showNotification) notify(message, 'error');
     return !message;
+  }
+
+  private shouldBlockRandomAllQuestionSelection(): boolean {
+    const available = this.selectedQuestionBankQuestionCount;
+    const requested = Number(this.newCategory.questions) || 0;
+    return !!this.selectedCategory && !!this.newCategory.randomize_questions && available > 0 && requested === available;
+  }
+
+  private syncRandomQuestionCountInputEditability(): void {
+    if (!this.selectedCategory || !this.newCategory.randomize_questions) return;
+    const input = document.querySelector<HTMLInputElement>('input[name="newCategoryQuestions"]');
+    if (!input) return;
+    input.readOnly = false;
+    input.removeAttribute('readonly');
   }
 
   private getDraftQuestionIds(): string[] {
@@ -877,4 +934,3 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/exams']);
   }
 }
-
