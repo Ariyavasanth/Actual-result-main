@@ -123,12 +123,14 @@
                                         <h2 class="section-heading">Question Banks</h2>
                                         <p class="section-desc">Add question banks and questions to this test.</p>
                                     </div>
-                                    <button #filtersBtn mat-flat-button type="button"
-                                        [color]="filterEnabled ? 'primary' : undefined"
+                                    <button #filtersBtn mat-flat-button type="button" class="filter-toggle-btn"
+                                        [class.filter-toggle-btn--active]="filterEnabled || appliedQuestionBankFilters.length"
                                         (click)="openFiltersOverlay(); $event.stopPropagation()"
                                         [disabled]="readOnly" [attr.aria-pressed]="filterEnabled"
                                         matTooltip="Toggle filters" matTooltipPosition="left">
-                                        <mat-icon>filter_list</mat-icon> Filter (Question Banks)
+                                        <mat-icon>filter_list</mat-icon>
+                                        <span>Filters</span>
+                                        <span class="filter-count" *ngIf="appliedQuestionBankFilters.length">{{ appliedQuestionBankFilters.length }}</span>
                                     </button>
                                     <!-- <div class="spacer">
                                         <div class="field-label" title="Total questions">Total questions</div>
@@ -140,6 +142,11 @@
                                             <div class="filter-block">
                                             <mat-form-field appearance="outline" class="filter-item"> -->
                                     <!-- <div *ngIf="filterEnabled"> -->
+
+                                <div class="applied-filters" *ngIf="appliedQuestionBankFilters.length">
+                                    <span class="applied-filters-label"><mat-icon>filter_alt</mat-icon> Active filters</span>
+                                    <span class="applied-filter-chip" *ngFor="let filter of appliedQuestionBankFilters">{{ filter }}</span>
+                                </div>
                                     <ng-template #filtersPanel>
                                         <!-- <div class="filters-panel card" (click)="filterEnabled = false"> -->
                                         <div class="filters-panel card" (click)="$event.stopPropagation()">
@@ -433,4 +440,3 @@
         </mat-horizontal-stepper>
     </div>
 </div>
-

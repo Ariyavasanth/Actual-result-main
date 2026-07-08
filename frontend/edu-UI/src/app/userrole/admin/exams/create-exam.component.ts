@@ -65,6 +65,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   filterCreationDate: Date | null = null;
   filterCreatedByMe: boolean = false;
   filterPublicAccess: boolean | null = null;
+  appliedQuestionBankFilters: string[] = [];
   departments: Array<{ id: string; name: string }> = [];
   teams: Array<{ id: string; name: string }> = [];
 
@@ -645,6 +646,23 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
+  private getQuestionBankFilterLabels(): string[] {
+    const labels: string[] = [];
+    const departmentNames = (this.selectedDepartments || [])
+      .map(id => this.departments.find(d => String(d.id) === String(id))?.name || String(id))
+      .filter(Boolean);
+    const teamNames = (this.selectedTeams || [])
+      .map(id => this.teams.find(t => String(t.id) === String(id))?.name || String(id))
+      .filter(Boolean);
+
+    if (departmentNames.length) labels.push(`Departments: ${departmentNames.join(', ')}`);
+    if (teamNames.length) labels.push(`Teams: ${teamNames.join(', ')}`);
+    if (this.filterCreationDateAfter) labels.push(`Created after: ${(this.filterCreationDateAfter as Date).toISOString().slice(0, 10)}`);
+    if (this.filterCreationDate) labels.push(`Created before: ${(this.filterCreationDate as Date).toISOString().slice(0, 10)}`);
+    if (this.filterCreatedByMe) labels.push('Created by me');
+    if (this.filterPublicAccess !== null && typeof this.filterPublicAccess !== 'undefined') labels.push(`Public access: ${this.filterPublicAccess ? 'Yes' : 'No'}`);
+    return labels;
+  }
   onApply() {
     if (!this.hasCategoryFilterValues()) {
       try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
@@ -657,6 +675,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.filterCreationDate) filters.created_before = (this.filterCreationDate as Date).toISOString().slice(0, 10);
     if (this.filterCreatedByMe) filters.created_by = true;
     if (this.filterPublicAccess !== null && typeof this.filterPublicAccess !== 'undefined') filters.public_access = this.filterPublicAccess;
+    this.appliedQuestionBankFilters = this.getQuestionBankFilterLabels();
     this.loadCategoriesWithFilters(filters);
   }
 
@@ -667,6 +686,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.filterCreationDate = null;
     this.filterCreatedByMe = false;
     this.filterPublicAccess = null;
+    this.appliedQuestionBankFilters = [];
     // reload categories for current institute if any
     this.loadCategoriesWithFilters({ institute_id: this.institute });
   }
