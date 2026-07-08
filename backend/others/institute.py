@@ -1,7 +1,7 @@
 from db.models import Institute, InstituteCampus, InstituteDepartment, InstituteTeam, User, Country, State, City
 from db.db import SQLiteDB
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import func, or_
 # from sqlalchemy import text
 
 def get_pagination(request):
@@ -355,7 +355,8 @@ def get_institute_details(request):
     args = getattr(request, "args", {})
     filters.append(Institute.is_deleted == 0)
     if args.get("name"):
-        filters.append(Institute.name.ilike(f"%{args.get('name')}%"))
+        name_filter = f"%{args.get('name')}%"
+        filters.append(or_(Institute.name.ilike(name_filter), Institute.short_name.ilike(name_filter)))
     if args.get("industry"):
         filters.append(Institute.industry_type.ilike(f"%{args.get('industry')}%"))
     if args.get("sector"):
