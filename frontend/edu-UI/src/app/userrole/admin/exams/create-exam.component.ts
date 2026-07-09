@@ -1111,6 +1111,16 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private getExamSaveErrorMessage(err: any, fallback: string): string {
+    const serverMessage = err?.error?.statusMessage || err?.error?.message || err?.message || '';
+    const raw = typeof err?.error === 'string' ? err.error : JSON.stringify(err?.error || {});
+    const combined = `${serverMessage} ${raw}`.toLowerCase();
+    if (combined.includes('string or binary data would be truncated') || combined.includes('error inserting exam')) {
+      return 'Could not save test. One of the fields is longer than the database allows. Please shorten the description and try again.';
+    }
+    return serverMessage || fallback;
+  }
+
   save() {
     // basic validation
     if (!this.title || !this.title.trim()) { notify('Title is required', 'error'); return; }
@@ -1148,7 +1158,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
           this.router.navigate(['/exams']);
         }, error: (err) => {
           console.error('Failed to update exam', err);
-          try { notify(err?.error?.statusMessage || err?.error?.message || 'Failed to update exam', 'error'); } catch(e){}
+          try { notify(this.getExamSaveErrorMessage(err, 'Failed to update exam'), 'error'); } catch(e){}
+          this.loader.hide();
         }, complete: () => { this.loader.hide(); }
       });
       return;
@@ -1163,7 +1174,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         this.router.navigate(['/exams']);
       }, error: (err) => {
         console.error('Failed to create exam', err);
-        try { notify(err?.error?.statusMessage || err?.error?.message || 'Failed to create exam', 'error'); } catch(e){}
+        try { notify(this.getExamSaveErrorMessage(err, 'Failed to create exam'), 'error'); } catch(e){}
+        this.loader.hide();
       }, complete: () => { this.loader.hide(); }
     });
   }
@@ -1187,3 +1199,4 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/exams']);
   }
 }
+
