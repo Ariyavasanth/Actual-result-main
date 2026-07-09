@@ -407,8 +407,8 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
     const params: string[] = [];
   const scopedInstitute = this.getScopedInstituteId();
   if (scopedInstitute) params.push(`institute_id=${encodeURIComponent(scopedInstitute)}`);
-  if (this.categoryFilterName) params.push(`category_name=${encodeURIComponent(this.categoryFilterName)}`);
   if (this.selectedCategories && this.selectedCategories.length) params.push(`category_id=${encodeURIComponent(this.selectedCategories.join(','))}`);
+  else if (this.categoryFilterName) params.push(`category_name=${encodeURIComponent(this.categoryFilterName)}`);
   if (this.selectedDepartments && this.selectedDepartments.length) params.push(`departments=${encodeURIComponent(this.selectedDepartments.join(','))}`);
   if (this.selectedTeams && this.selectedTeams.length) params.push(`teams=${encodeURIComponent(this.selectedTeams.join(','))}`);
   if (this.filterCreationDateAfter) params.push(`created_after=${encodeURIComponent((this.filterCreationDateAfter as Date).toISOString().slice(0,10))}`);
@@ -434,7 +434,10 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
         const scopedInstitute = this.getScopedInstituteId();
-        const filteredArr = arr.filter((q: any) => this.isAllowedForInstitute(q, scopedInstitute));
+        const filteredArr = arr.filter((q: any) => {
+          const itemInstituteId = this.getItemInstituteId(q);
+          return !itemInstituteId || this.isAllowedForInstitute(q, scopedInstitute);
+        });
         this.refreshQuestionBankMarkLookup(() => {
           this.questions = filteredArr.map((q: any, i: number) => this.mapQuestionRow(q, i));
           this.dataSource.data = this.questions;
@@ -618,7 +621,17 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
 
   displayCategory(c: any){ return c ? (c.name || c.category_name || '') : ''; }
 
-  onCategorySelected(c: any){ if(!c) return; this.categoryFilterName = c.name || c.category_name || ''; }
+  onCategorySelected(c: any){
+    if(!c) return;
+    const categoryId = c.category_id || c.id || c._id || '';
+    if (categoryId) {
+      this.selectedCategories = [String(categoryId)];
+      this.categoryFilterName = '';
+      return;
+    }
+    this.selectedCategories = [];
+    this.categoryFilterName = c.name || c.category_name || '';
+  }
 
   editQuestion(q: QuestionRow) {
     // store the question into session storage and navigate to the editor
@@ -818,4 +831,5 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
     this.questions = []; this.dataSource.data = [];
   }
 }
+
 

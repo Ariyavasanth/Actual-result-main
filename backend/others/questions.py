@@ -210,7 +210,8 @@ def get_questions_details(request):
     try:
         filter = []
         args = getattr(request, "args", {})
-        public_access = (1 if args.get("public_access", 'false') == 'true' else 0)
+        public_access_arg = args.get("public_access")
+        public_access = (1 if str(public_access_arg).lower() == "true" else 0)
 
         if args.get("institute_id"):
             Category_data = session.query(Categories).filter_by(institute_id=args.get("institute_id")).all()
@@ -220,7 +221,10 @@ def get_questions_details(request):
             filter.append(Question.question_id.in_(question_list))
         if args.get("category_name"):
             # category_data = session.query(Categories).filter(Categories.name.ilike(f"%{args.get('category_name')}%"), Categories.public_access==public_access).all()
-            category_data = session.query(Categories).filter(Categories.name == f"{args.get('category_name')}", Categories.public_access==public_access).all()
+            category_query = session.query(Categories).filter(Categories.name == f"{args.get('category_name')}")
+            if public_access_arg is not None:
+                category_query = category_query.filter(Categories.public_access==public_access)
+            category_data = category_query.all()
             category_list = [c.category_id for c in category_data]
             mappingdata  = session.query(QuestionMapping).filter(QuestionMapping.category_id.in_(category_list)).all()
             question_list = [q.question_id for q in mappingdata]
@@ -296,6 +300,7 @@ def get_questions_details(request):
             "marks": q.marks,
             "options": option_list,
             "category_id": mapping.category_id if mapping else None,
+            "institute_id": category.institute_id if category else None,
             "category": category.name if category else None,
             "category_description": category.description if category else None,
             "created_by": created_by_user.full_name if created_by_user else None,
