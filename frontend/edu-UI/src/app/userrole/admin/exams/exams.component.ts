@@ -1,4 +1,4 @@
-import { Component, ViewChild, AfterViewInit, OnInit, ElementRef, TemplateRef, ViewContainerRef } from '@angular/core';
+import { Component, ViewChild, AfterViewInit, OnInit, OnDestroy ,ElementRef, TemplateRef, ViewContainerRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -38,7 +38,7 @@ import { DirectivesModule } from 'src/app/shared/directives/directives.module';
   templateUrl: './exams.component.html',
   styleUrls: ['./exams.component.scss']
 })
-export class AdminExamsComponent implements AfterViewInit {
+export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
   institutes: Array<{ short_name: string; institute_id?: string }> = [];
   selectedInstitute = '';
   instituteSearch = '';
@@ -139,6 +139,11 @@ export class AdminExamsComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     this.dataSource.sort = this.sort;
   }
+
+  ngOnDestroy(): void {
+  this.saveTestsReturnState();
+}
+
   get appliedFilterChips(): Array<{ key: string; label: string; removable: boolean }> {
     if (!this.hasAppliedFilters) return [];
     const chips: Array<{ key: string; label: string; removable: boolean }> = [];

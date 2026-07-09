@@ -1,4 +1,4 @@
-import { Component, ViewChild, AfterViewInit, ElementRef, TemplateRef, ViewContainerRef } from '@angular/core';
+import { Component, ViewChild, AfterViewInit,OnDestroy,OnInit, ElementRef, TemplateRef, ViewContainerRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
@@ -60,7 +60,7 @@ export interface Institute {
   templateUrl: './view-institutes.component.html',
   styleUrls: ['./view-institutes.component.scss']
 })
-export class ViewInstitutesComponent {
+export class ViewInstitutesComponent implements OnInit, AfterViewInit, OnDestroy {
   // Show only requested columns in list-card table (include subscription dates and active)
   columns = ['name','industry_type','industry_sector', 'primary_contact_person','subscription_start','subscription_end','active','actions'];
 
@@ -200,6 +200,10 @@ export class ViewInstitutesComponent {
   ngAfterViewInit(): void {
     try{ this.dataSource.paginator = this.paginator; this.dataSource.sort = this.sort; }catch(e){}
   }
+
+  ngOnDestroy(): void {
+  this.saveInstituteReturnState();
+}
 
   applyFilter(value: string){
     const q = (value || '').trim().toLowerCase();

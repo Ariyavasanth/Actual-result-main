@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild,ElementRef, TemplateRef, ViewContainerRef} from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild,ElementRef, OnDestroy, TemplateRef, ViewContainerRef} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router , RouterModule} from '@angular/router';
 import { MatSortModule, MatSort } from '@angular/material/sort';
@@ -35,7 +35,7 @@ import { Overlay, OverlayRef } from '@angular/cdk/overlay';
   templateUrl: './category.component.html',
   styleUrls: ['./category.component.scss']
 })
-export class CategoryComponent implements OnInit, AfterViewInit {
+export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   filter = '';
   name = '';
   description = '';
@@ -105,6 +105,10 @@ export class CategoryComponent implements OnInit, AfterViewInit {
     this.dataSource.sort = this.sort;
     this.dataSource.paginator = this.paginator;
   }
+
+  ngOnDestroy(): void {
+  this.saveCategoryReturnState();
+}
 
   refresh(){
     if (!this.hasAppliedFilters) {

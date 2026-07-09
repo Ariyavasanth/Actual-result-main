@@ -1,4 +1,4 @@
-import { Component, ViewChild, AfterViewInit, OnDestroy, ElementRef, TemplateRef,ViewContainerRef  } from '@angular/core';
+import { Component, ViewChild, AfterViewInit, OnDestroy, OnInit,ElementRef, TemplateRef,ViewContainerRef  } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { startWith, map } from 'rxjs/operators';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -61,7 +61,7 @@ export interface QuestionRow {
   templateUrl: './view-questions.component.html',
   styleUrls: ['./view-questions.component.scss']
 })
-export class ViewQuestionsComponent implements OnDestroy {
+export class ViewQuestionsComponent implements OnDestroy,OnInit{
   // currently selected question for the details modal
   viewedQuestion: any = null;
   filter = '';
@@ -133,6 +133,7 @@ export class ViewQuestionsComponent implements OnDestroy {
     // this.dataSource.paginator = this.paginator;
     try { this.dataSource.paginator = this.paginator; } catch (e) { /* ignore during tests */ }
   }
+ 
   isSuperAdmin = false;
   constructor(private http: HttpClient, private router: Router, private loading: LoaderService, private auth: AuthService, private overlay: Overlay, private vcr: ViewContainerRef,private pageMeta: PageMetaService, private confirmService: ConfirmService) {
     
@@ -152,6 +153,7 @@ export class ViewQuestionsComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     try { this._subs?.unsubscribe(); } catch (e) { /* ignore */ }
+     this.saveQuestionsReturnState();
   }
   get appliedFilterChips(): Array<{ key: string; label: string; removable: boolean }> {
     if (!this.hasAppliedFilters) return [];

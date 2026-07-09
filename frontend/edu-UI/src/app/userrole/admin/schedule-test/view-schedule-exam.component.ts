@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, TemplateRef, ViewContainerRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, TemplateRef, ViewContainerRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
@@ -36,7 +36,7 @@ import { notify } from 'src/app/shared/global-notify';
   templateUrl: './view-schedule-exam.component.html',
   styleUrls: ['./view-schedule-exam.component.scss']
 })
-export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
+export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewInit {
   search = '';
   institutes: Array<{ name: string; institute_id?: string }> = [];
   selectedInstitute = '';
@@ -308,6 +308,10 @@ export class ViewScheduleExamComponent implements OnInit, AfterViewInit {
   ngAfterViewInit(): void {
     this.dataSource.sort = this.sort;
   }
+
+  ngOnDestroy(): void {
+  this.saveScheduleReturnState();
+}
 
   applyFilter(value: string) {
     const q = (value || '').trim().toLowerCase();

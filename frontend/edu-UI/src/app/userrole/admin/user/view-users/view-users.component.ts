@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit,ElementRef, TemplateRef,ViewContainerRef } from '@angular/core';
+import { Component, OnInit, ViewChild,OnDestroy, AfterViewInit,ElementRef, TemplateRef,ViewContainerRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
@@ -50,7 +50,7 @@ export interface UserRow {
   templateUrl: './view-users.component.html',
   styleUrls: ['./view-users.component.scss']
 })
-export class ViewUsersComponent {
+export class ViewUsersComponent implements OnDestroy, OnInit {
   // loading = false;
   // show full name, institute, role, department, team, active
   columns = ['name','institute','role','department','team','active','actions'];
@@ -110,6 +110,7 @@ export class ViewUsersComponent {
 
   ngOnDestroy(): void {
     try { this._subs?.unsubscribe(); } catch (e) { /* ignore */ }
+    this.saveUsersReturnState();
   }
   private filtersOverlayRef: OverlayRef | null = null;
   ngOnInit(): void{
@@ -166,6 +167,7 @@ export class ViewUsersComponent {
     // this.loadUsers();
   }
 
+ 
   applyFilter(value: string){
     const q = (value || '').trim().toLowerCase();
     this.dataSource.filter = q;
