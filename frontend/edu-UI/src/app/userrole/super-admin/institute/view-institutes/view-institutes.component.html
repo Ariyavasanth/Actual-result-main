@@ -134,7 +134,7 @@
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Institute</th>
           <td mat-cell *matCellDef="let i">
             <div class="inst-cell">
-              <div class="inst-avatar">{{ (i.name || '?').charAt(0).toUpperCase() }}</div>
+              <!-- <div class="inst-avatar">{{ (i.name || '?').charAt(0).toUpperCase() }}</div> -->
               <div class="inst-info">
                 <span class="inst-name">{{i.name}}</span>
                 <span class="inst-short" *ngIf="i.short">{{i.short}}</span>

@@ -158,7 +158,7 @@
                     <th mat-header-cell *matHeaderCellDef mat-sort-header>Title</th>
                     <td mat-cell *matCellDef="let e" class="cell-primary">
                         <div class="item-cell">
-                            <div class="item-avatar item-avatar--exam">{{ (e.title || '?').charAt(0).toUpperCase() }}</div>
+                            <!-- <div class="item-avatar item-avatar--exam">{{ (e.title || '?').charAt(0).toUpperCase() }}</div> -->
                             <div class="item-info">
                                 <span class="item-name">{{ e.title }}</span>
                                 <!-- <span class="item-sub" *ngIf="e.total_questions">{{ e.total_questions }} questions • {{ e.duration_mins }}min</span> -->
@@ -244,9 +244,9 @@
             <!-- Modal Header -->
             <div class="modal-header">
                 <div class="modal-header-left">
-                    <div class="modal-avatar modal-avatar--exam">
+                    <!-- <div class="modal-avatar modal-avatar--exam">
                         {{ (selectedExam?.title || '?').charAt(0).toUpperCase() }}
-                    </div>
+                    </div> -->
                     <div class="modal-header-text">
                         <h1 id="examDetailsTitle" class="modal-item-name">{{ selectedExam?.title || '—' }}</h1>
                         <div class="modal-item-meta">

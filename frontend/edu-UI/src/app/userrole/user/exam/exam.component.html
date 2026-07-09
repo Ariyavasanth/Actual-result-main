@@ -56,7 +56,7 @@
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Title</th>
                         <td mat-cell *matCellDef="let row" class="cell-primary">
                            <div class="exam-cell">
-                              <div class="exam-avatar exam-avatar--active">{{ (row.title || '?').charAt(0).toUpperCase() }}</div>
+                              <!-- <div class="exam-avatar exam-avatar--active">{{ (row.title || '?').charAt(0).toUpperCase() }}</div> -->
                               <div class="exam-info">
                                  <span class="exam-name">{{ row.title }}</span>
                                  <!-- <span class="exam-sub">{{ row.total_questions || 0 }} questions • {{ row.duration_mins || '—' }} min</span> -->
@@ -132,7 +132,7 @@
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Title</th>
                         <td mat-cell *matCellDef="let row" class="cell-primary">
                            <div class="exam-cell">
-                              <div class="exam-avatar exam-avatar--completed">{{ (row.title || '?').charAt(0).toUpperCase() }}</div>
+                              <!-- <div class="exam-avatar exam-avatar--completed">{{ (row.title || '?').charAt(0).toUpperCase() }}</div> -->
                               <div class="exam-info">
                                  <span class="exam-name">{{ row.title }}</span>
                                  <!-- <span class="exam-sub">{{ row.total_questions || 0 }} questions • {{ row.duration_mins || '—' }} min</span> -->
@@ -199,7 +199,7 @@
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Title</th>
                         <td mat-cell *matCellDef="let row" class="cell-primary">
                            <div class="exam-cell">
-                              <div class="exam-avatar exam-avatar--upcoming">{{ (row.title || '?').charAt(0).toUpperCase() }}</div>
+                              <!-- <div class="exam-avatar exam-avatar--upcoming">{{ (row.title || '?').charAt(0).toUpperCase() }}</div> -->
                               <div class="exam-info">
                                  <span class="exam-name">{{ row.title }}</span>
                                  <!-- <span class="exam-sub">{{ row.total_questions || 0 }} questions • {{ row.duration_mins || '—' }} min</span> -->
@@ -265,7 +265,7 @@
          <div *ngFor="let exam of exams" class="exam-card">
             <div class="meta">
                <div class="exam-card-left">
-                  <div class="exam-card-avatar">{{ (exam.title || '?').charAt(0).toUpperCase() }}</div>
+                  <!-- <div class="exam-card-avatar">{{ (exam.title || '?').charAt(0).toUpperCase() }}</div> -->
                   <div>
                      <div class="title">{{exam.title}}</div>
                      <div class="muted small">{{ exam.start_time || '—' }} • {{ exam.end_time || '—' }}</div>
@@ -290,9 +290,9 @@
       <div class="review-panel">
          <div class="review-header">
             <div class="review-header-left">
-               <div class="review-avatar">
+               <!-- <div class="review-avatar">
                   {{ (selectedReviewTitle || '?').charAt(0).toUpperCase() }}
-               </div>
+               </div> -->
                <div class="review-header-text">
                   <h3>Test Review</h3>
                   <h1 class="review-exam-title">{{ selectedReviewTitle }}</h1>
