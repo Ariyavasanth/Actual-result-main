@@ -49,7 +49,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   categoryCtrl = new FormControl('');
   filteredCategories$: Observable<any[]> = of([]);
   newCategory: { questions: number; randomize_questions?: boolean; question_type?: string; marks_per_question?: number | null } = { questions: 0, randomize_questions: false, question_type: '', marks_per_question: null };
-  model: { categories?: Array<{ category_id?: string; name?: string; questions: number; question_ids?: any[]; randomize_questions?: boolean; question_type?: string; marks_per_question?: number | null }> } = { categories: [] };
+  model: { categories?: Array<{ category_id?: string; name?: string; questions: number; question_ids?: any[]; randomize_questions?: boolean; question_type?: string; marks_per_question?: number | null; total_marks?: number | null }> } = { categories: [] };
   readOnly = false;
   filterEnabled = false;
   @ViewChild('filterAnchor', { static: false }) filterAnchor?: ElementRef;
@@ -229,15 +229,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // normalize categories if present in the payload
       const srcCats = Array.isArray(e.categories) ? e.categories : (Array.isArray(e.category_list) ? e.category_list : []);
-      this.model.categories = srcCats.map((c: any) => ({
-        category_id: c.category_id || c.id || c._id || c.categoryId || '',
-        name: c.category_name || c.name || c.title || '',
-        questions: Number(c.questions || c.total_questions || 0) || 0,
-        question_ids: Array.isArray(c.question_ids) ? c.question_ids : (Array.isArray(c.questionIds) ? c.questionIds : []),
-        randomize_questions: typeof c.randomize_questions !== 'undefined' ? !!c.randomize_questions : false,
-        question_type: c.question_type || c.type || c.category_type || '',
-        marks_per_question: this.toNumber(c.marks_per_question ?? c.mark_each_question ?? c.mark_for_each_question ?? c.question_mark ?? c.marks)
-      }));
+      this.model.categories = srcCats.map((c: any) => this.normalizeEditCategory(c));
+      this.hydrateMissingEditCategoryMarks();
     } catch (_) { /* ignore malformed edit payload */ }
     finally { this.loader.hide(); }
   }
@@ -279,7 +272,8 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       question_ids: selectedIds,
       randomize_questions: randomizeQuestions,
       question_type: isDraft ? (this.newCategory.question_type || '') : (existing?.question_type || cat?.type || ''),
-      marks_per_question: isDraft ? (this.newCategory.marks_per_question ?? null) : (existing?.marks_per_question ?? this.toNumber(cat?.mark_each_question) ?? null)
+      marks_per_question: isDraft ? (this.newCategory.marks_per_question ?? null) : (this.getMarksPerQuestion(existing) ?? this.getMarksPerQuestion(cat) ?? null),
+      total_marks: this.calculateTotalMarks(requestedQuestions, isDraft ? this.newCategory.marks_per_question : (this.getMarksPerQuestion(existing) ?? this.getMarksPerQuestion(cat)))
     };
 
     if (existingIndex >= 0) {
@@ -364,6 +358,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         if (requestSeq !== this.categoryLoadSeq) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
         this.categories = arr.map((c: any) => this.normalizeCategoryOption(c));
+        this.reconcileAttachedQuestionBankMarks();
         // update autocomplete stream
         this.updateFilteredCategoriesStream();
       }, error: (err) => {
@@ -398,7 +393,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       category_id: c?.category_id || c?.id || c?._id || '',
       name: c?.name || c?.category_name || c?.title || '',
       type: c?.type || c?.category_type || c?.question_type || '',
-      mark_each_question: c?.mark_each_question ?? c?.mark_for_each_question ?? c?.question_mark ?? c?.marks_per_question ?? c?.marks ?? null
+      mark_each_question: this.getMarksPerQuestion(c)
     };
   }
 
@@ -408,6 +403,152 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     return isNaN(n) ? null : n;
   }
 
+  private getMarksPerQuestion(value: any): number | null {
+    return this.toNumber(
+      value?.marks_per_question ??
+      value?.marksPerQuestion ??
+      value?.mark_each_question ??
+      value?.markEachQuestion ??
+      value?.mark_for_each_question ??
+      value?.marks_for_each_question ??
+      value?.marksForEachQuestion ??
+      value?.question_mark ??
+      value?.question_marks ??
+      value?.category_mark ??
+      value?.category_marks ??
+      value?.marks ??
+      value?.mark ??
+      value?.points ??
+      value?.category?.marks_per_question ??
+      value?.category?.mark_each_question ??
+      value?.category?.mark_for_each_question ??
+      value?.category?.marks ??
+      value?.category?.mark
+    );
+  }
+
+  private getTotalMarks(value: any): number | null {
+    return this.toNumber(
+      value?.total_marks ??
+      value?.totalMarks ??
+      value?.total_mark ??
+      value?.marks_total ??
+      value?.total_score ??
+      value?.category?.total_marks
+    );
+  }
+
+  private getQuestionCount(value: any): number {
+    const count = this.toNumber(
+      (Array.isArray(value?.questions) ? null : value?.questions) ??
+      value?.number_of_questions ??
+      value?.total_questions ??
+      value?.questions_count ??
+      value?.question_count ??
+      value?.count
+    );
+    if (count !== null) return count;
+    if (Array.isArray(value?.question_ids)) return value.question_ids.length;
+    if (Array.isArray(value?.questionIds)) return value.questionIds.length;
+    if (Array.isArray(value?.questions)) return value.questions.length;
+    if (Array.isArray(value?.question_list)) return value.question_list.length;
+    return 0;
+  }
+
+  private getQuestionIds(value: any): any[] {
+    if (Array.isArray(value?.question_ids)) return value.question_ids;
+    if (Array.isArray(value?.questionIds)) return value.questionIds;
+    const questionArray = Array.isArray(value?.questions) ? value.questions : (Array.isArray(value?.question_list) ? value.question_list : []);
+    return questionArray.map((q: any) => q?.question_id || q?.id || q?._id || null).filter(Boolean);
+  }
+
+  private calculateTotalMarks(questions: any, marksPerQuestion: any): number | null {
+    const questionCount = this.toNumber(questions);
+    const marks = this.toNumber(marksPerQuestion);
+    return questionCount !== null && marks !== null ? questionCount * marks : null;
+  }
+
+  private deriveMarksFromQuestionList(value: any): number | null {
+    const questionArray = Array.isArray(value?.questions) ? value.questions : (Array.isArray(value?.question_list) ? value.question_list : []);
+    const marks = Array.from(new Set(questionArray.map((q: any) => this.getMarksPerQuestion(q)).filter((v: number | null) => v !== null))) as number[];
+    return marks.length === 1 ? marks[0] : null;
+  }
+
+  getCategoryMarksPerQuestion(category: any): number {
+    const categoryId = String(category?.category_id || category?.category?.category_id || '');
+    const option = (this.categories || []).find((c: any) => String(c?.category_id || '') === categoryId);
+    return this.getMarksPerQuestion(category) ?? this.deriveMarksFromQuestionList(category) ?? this.getMarksPerQuestion(option) ?? 0;
+  }
+
+  getCategoryTotalMarks(category: any): number {
+    const savedTotal = this.getTotalMarks(category);
+    const calculatedTotal = this.calculateTotalMarks(this.getQuestionCount(category), this.getCategoryMarksPerQuestion(category));
+    if (savedTotal !== null && savedTotal > 0) return savedTotal;
+    return calculatedTotal ?? savedTotal ?? 0;
+  }
+
+  private normalizeEditCategory(c: any) {
+    const catObj = c?.category || {};
+    const questions = this.getQuestionCount(c);
+    const marksPerQuestion = this.getMarksPerQuestion(c) ?? this.deriveMarksFromQuestionList(c);
+    return {
+      category_id: c?.category_id || catObj?.category_id || c?.id || c?._id || c?.categoryId || '',
+      name: c?.category_name || catObj?.category_name || c?.name || catObj?.name || c?.title || '',
+      questions,
+      question_ids: this.getQuestionIds(c),
+      randomize_questions: typeof c?.randomize_questions !== 'undefined' ? !!c.randomize_questions : !!c?.randomize,
+      question_type: c?.question_type || catObj?.question_type || c?.type || catObj?.type || c?.category_type || catObj?.category_type || '',
+      marks_per_question: marksPerQuestion,
+      total_marks: this.getTotalMarks(c) ?? this.calculateTotalMarks(questions, marksPerQuestion)
+    };
+  }
+
+  private hydrateMissingEditCategoryMarks() {
+    if (!this.editMode || !Array.isArray(this.model.categories) || !this.model.categories.length) return;
+    this.model.categories
+      .filter((category: any) => category?.category_id && this.getCategoryMarksPerQuestion(category) <= 0)
+      .forEach((category: any) => {
+        const categoryId = String(category.category_id);
+        const url = `${API_BASE}/category-details?category_id=${encodeURIComponent(categoryId)}`;
+        this.http.get<any>(url).subscribe({
+          next: (res) => {
+            const items = Array.isArray(res) ? res : (res?.data || []);
+            const detail = Array.isArray(items) && items.length ? items[0] : (res?.data && !Array.isArray(res.data) ? res.data : res);
+            const normalized = this.normalizeCategoryOption(detail || {});
+            const marksPerQuestion = this.getMarksPerQuestion(normalized);
+            if (marksPerQuestion === null) return;
+            this.model.categories = (this.model.categories || []).map((item: any) => {
+              if (String(item?.category_id || '') !== categoryId) return item;
+              const questions = this.getQuestionCount(item);
+              return {
+                ...item,
+                question_type: item.question_type || normalized.type || '',
+                marks_per_question: marksPerQuestion,
+                total_marks: this.calculateTotalMarks(questions, marksPerQuestion)
+              };
+            });
+          },
+          error: (err) => { console.warn('Failed to load marks for attached question bank', err); }
+        });
+      });
+  }
+
+  private reconcileAttachedQuestionBankMarks() {
+    if (!this.editMode || !Array.isArray(this.model.categories) || !this.model.categories.length || !this.categories.length) return;
+    this.model.categories = this.model.categories.map((category: any) => {
+      const categoryId = String(category?.category_id || '');
+      const option = this.categories.find((c: any) => String(c?.category_id || '') === categoryId);
+      const marksPerQuestion = this.getMarksPerQuestion(category) ?? this.getMarksPerQuestion(option);
+      if (marksPerQuestion === null) return category;
+      const questions = this.getQuestionCount(category);
+      return {
+        ...category,
+        question_type: category.question_type || option?.type || '',
+        marks_per_question: marksPerQuestion,
+        total_marks: this.getTotalMarks(category) && this.getTotalMarks(category)! > 0 ? this.getTotalMarks(category) : this.calculateTotalMarks(questions, marksPerQuestion)
+      };
+    });
+  }
 
   private resetQuestionBanksAndQuestionsSection() {
     this.selectionLoadSeq++;
@@ -453,7 +594,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private deriveMarksFromQuestions(questions: Array<any>): number | null {
-    const marks = Array.from(new Set((questions || []).map(q => this.toNumber(q.marks ?? q.mark ?? q.points)).filter(v => v !== null))) as number[];
+    const marks = Array.from(new Set((questions || []).map((q: any) => this.getMarksPerQuestion(q)).filter((v: number | null) => v !== null))) as number[];
     return marks.length === 1 ? marks[0] : null;
   }
   onCategoryAutocompleteSelected(c: any) {
@@ -484,7 +625,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       questions: Number(attached.questions) || 0,
       randomize_questions: !!attached.randomize_questions,
       question_type: attached.question_type || category.type || '',
-      marks_per_question: this.toNumber(attached.marks_per_question ?? category.mark_each_question)
+      marks_per_question: this.getMarksPerQuestion(attached) ?? this.getMarksPerQuestion(category)
     };
     this.loadAttachedQuestionBankDraftQuestions(catId, requestSeq, this.selectedQuestionIds, !!attached.randomize_questions);
   }
@@ -496,7 +637,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (res) => {
         if (requestSeq !== this.selectionLoadSeq || String(this.selectedCategory) !== String(catId)) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
-        this.tempQuestionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', type: q.type || q.question_type || '', marks: q.marks ?? q.mark ?? q.points, raw: q }));
+        this.tempQuestionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', type: q.type || q.question_type || '', marks: this.getMarksPerQuestion(q), raw: q }));
         this.questionsForCategory = [...this.tempQuestionsForCategory];
         this.selectedQuestionIds = randomizeQuestions ? [] : selectedIds.map(id => String(id));
         this.selectAllQuestions = !randomizeQuestions && this.questionsForCategory.length > 0 && this.questionsForCategory.every(q => this.selectedQuestionIds.includes(String(q.id)));
@@ -533,7 +674,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       questions: 0,
       randomize_questions: true,
       question_type: normalized.type || '',
-      marks_per_question: this.toNumber(normalized.mark_each_question)
+      marks_per_question: this.getMarksPerQuestion(normalized)
     };
     this.loadQuestionBankDraftDetails(catId, requestSeq);
     this.loadQuestionBankDraftQuestions(catId, requestSeq);
@@ -549,7 +690,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         if (!detail) return;
         const normalized = this.normalizeCategoryOption(detail);
         this.newCategory.question_type = normalized.type || this.newCategory.question_type || '';
-        this.newCategory.marks_per_question = this.toNumber(normalized.mark_each_question) ?? this.newCategory.marks_per_question ?? null;
+        this.newCategory.marks_per_question = this.getMarksPerQuestion(normalized) ?? this.newCategory.marks_per_question ?? null;
       },
       error: (err) => { console.warn('Failed to load question bank details', err); }
     });
@@ -562,7 +703,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (res) => {
         if (requestSeq !== this.selectionLoadSeq || String(this.selectedCategory) !== String(catId)) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
-        this.tempQuestionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', type: q.type || q.question_type || '', marks: q.marks ?? q.mark ?? q.points, raw: q }));
+        this.tempQuestionsForCategory = arr.map((q: any, i: number) => ({ id: q.id || q.question_id || q._id || String(i), question: q.question || q.text || q.title || '', type: q.type || q.question_type || '', marks: this.getMarksPerQuestion(q), raw: q }));
         this.questionsForCategory = [...this.tempQuestionsForCategory];
         this.selectedQuestionIds = [];
         this.selectAllQuestions = false;
@@ -604,6 +745,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
         if (requestSeq !== this.categoryLoadSeq) return;
         const arr = Array.isArray(res) ? res : (res?.data || []);
         this.categories = arr.map((c: any) => this.normalizeCategoryOption(c));
+        this.reconcileAttachedQuestionBankMarks();
         // ensure autocomplete reflects latest categories
         this.updateFilteredCategoriesStream();
       }, error: (err) => {
@@ -925,7 +1067,12 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const idx = this.model.categories.findIndex((c: any) => String(c.category_id) === String(this.activeQuestionCategoryId));
     if (idx < 0) return;
     if ((this.model.categories[idx] as any).randomize_questions) return;
-    const updated = { ...this.model.categories[idx], question_ids: [...this.selectedQuestionIds], questions: this.selectedQuestionIds.length };
+    const updated = {
+      ...this.model.categories[idx],
+      question_ids: [...this.selectedQuestionIds],
+      questions: this.selectedQuestionIds.length,
+      total_marks: this.calculateTotalMarks(this.selectedQuestionIds.length, this.getMarksPerQuestion(this.model.categories[idx]))
+    };
     this.model.categories = this.model.categories.map((c, i) => i === idx ? updated : c);
   }
 

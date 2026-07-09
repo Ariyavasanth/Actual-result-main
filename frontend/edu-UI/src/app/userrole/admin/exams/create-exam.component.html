@@ -301,8 +301,8 @@
                                                 </div>
                                                 <div class="attached-bank-cell attached-bank-cell--type" data-label="Question Type">{{ formatQuestionBankType(c.question_type) }}</div>
                                                 <div class="attached-bank-cell attached-bank-cell--count" data-label="No. of Questions Selected">{{ c.questions || 0 }}</div>
-                                                <div class="attached-bank-cell attached-bank-cell--per-mark" data-label="Marks per Question">{{ c.marks_per_question || 0 }}</div>
-                                                <div class="attached-bank-cell attached-bank-cell--marks" data-label="Total Marks">{{ (c.questions || 0) * (c.marks_per_question || 0) }}</div>
+                                                <div class="attached-bank-cell attached-bank-cell--per-mark" data-label="Marks per Question">{{ getCategoryMarksPerQuestion(c) }}</div>
+                                                <div class="attached-bank-cell attached-bank-cell--marks" data-label="Total Marks">{{ getCategoryTotalMarks(c) }}</div>
                                                 <div class="attached-bank-cell attached-bank-cell--actions" data-label="Actions">
                                                     <button mat-icon-button type="button" class="attached-bank-action-btn attached-bank-action-btn--view"
                                                         (click)="viewCategoryQuestions(c)"

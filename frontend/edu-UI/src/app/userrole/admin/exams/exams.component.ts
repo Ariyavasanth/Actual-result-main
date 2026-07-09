@@ -171,6 +171,72 @@ export class AdminExamsComponent implements AfterViewInit {
   private getInstituteLabel(id: any): string { const found = this.institutes.find(i => String(i.institute_id) === String(id)); return found?.short_name || String(id || ''); }
   private getSelectedName(list: any[], selectedId: any): string { const found = (list || []).find(item => String(item?.id) === String(selectedId)); return found?.name || String(selectedId || ''); }
   private formatFilterDate(value: Date): string { try { return value.toISOString().slice(0, 10); } catch (e) { return String(value || ''); } }
+  private toNumber(value: any): number | null {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return isNaN(n) ? null : n;
+  }
+
+  private getMarksPerQuestion(value: any): number | null {
+    return this.toNumber(
+      value?.marks_per_question ??
+      value?.marksPerQuestion ??
+      value?.mark_each_question ??
+      value?.markEachQuestion ??
+      value?.mark_for_each_question ??
+      value?.marks_for_each_question ??
+      value?.marksForEachQuestion ??
+      value?.question_mark ??
+      value?.question_marks ??
+      value?.category_mark ??
+      value?.category_marks ??
+      value?.marks ??
+      value?.mark ??
+      value?.points ??
+      value?.category?.marks_per_question ??
+      value?.category?.mark_each_question ??
+      value?.category?.mark_for_each_question ??
+      value?.category?.marks ??
+      value?.category?.mark
+    );
+  }
+
+  private getTotalMarks(value: any): number | null {
+    return this.toNumber(
+      value?.total_marks ??
+      value?.totalMarks ??
+      value?.total_mark ??
+      value?.marks_total ??
+      value?.total_score ??
+      value?.category?.total_marks
+    );
+  }
+
+  private getQuestionCount(value: any, questionArray: any[] = []): number {
+    const count = this.toNumber(
+      (Array.isArray(value?.questions) ? null : value?.questions) ??
+      value?.number_of_questions ??
+      value?.total_questions ??
+      value?.questions_count ??
+      value?.question_count ??
+      value?.count
+    );
+    if (count !== null) return count;
+    if (Array.isArray(value?.question_ids)) return value.question_ids.length;
+    if (Array.isArray(value?.questionIds)) return value.questionIds.length;
+    return questionArray.length;
+  }
+
+  private calculateTotalMarks(questions: any, marksPerQuestion: any): number | null {
+    const questionCount = this.toNumber(questions);
+    const marks = this.toNumber(marksPerQuestion);
+    return questionCount !== null && marks !== null ? questionCount * marks : null;
+  }
+
+  private deriveMarksFromQuestions(questions: any[]): number | null {
+    const marks = Array.from(new Set((questions || []).map((q: any) => this.getMarksPerQuestion(q)).filter((v: number | null) => v !== null))) as number[];
+    return marks.length === 1 ? marks[0] : null;
+  }
   onEdit(e: any) {
     // If we have an id for the exam, fetch the full exam details from the API
     const examId = e?.test_id || e?.exam_id || e?.id;
@@ -189,7 +255,8 @@ export class AdminExamsComponent implements AfterViewInit {
             const description = catObj.description || c.description || c.desc || '';
             const questionArray = Array.isArray(c.questions) ? c.questions : (Array.isArray(c.question_list) ? c.question_list : []);
             const question_ids = questionArray.map((q: any) => q.question_id || q.id || q._id || null).filter(Boolean);
-            const questionsCount = c.number_of_questions ?? c.total_questions ?? (questionArray.length || 0) ?? (c.questions_count || 0);
+            const questionsCount = this.getQuestionCount(c, questionArray);
+            const marksPerQuestion = this.getMarksPerQuestion(c) ?? this.deriveMarksFromQuestions(questionArray);
             const randomize = typeof c.randomize_questions === 'boolean' ? c.randomize_questions : (typeof c.randomize === 'boolean' ? c.randomize : false);
             return {
               category_id,
@@ -197,7 +264,10 @@ export class AdminExamsComponent implements AfterViewInit {
               description,
               questions: Number(questionsCount) || 0,
               question_ids,
-              randomize_questions: !!randomize
+              randomize_questions: !!randomize,
+              question_type: c.question_type || catObj.question_type || c.type || catObj.type || c.category_type || catObj.category_type || '',
+              marks_per_question: marksPerQuestion,
+              total_marks: this.getTotalMarks(c) ?? this.calculateTotalMarks(questionsCount, marksPerQuestion)
             };
           });
           const editPayload = { ...item, categories: mapped };
@@ -213,9 +283,12 @@ export class AdminExamsComponent implements AfterViewInit {
               category_id: c.category_id || c.id || c._id || '',
               category_name: c.category_name || c.name || '',
               description: c.description || c.desc || '',
-              questions: Number(c.number_of_questions ?? c.total_questions ?? (Array.isArray(c.questions) ? c.questions.length : 0)) || 0,
+              questions: this.getQuestionCount(c, Array.isArray(c.questions) ? c.questions : (Array.isArray(c.question_list) ? c.question_list : [])),
               question_ids: Array.isArray(c.question_ids) ? c.question_ids : (Array.isArray(c.questionIds) ? c.questionIds : []),
-              randomize_questions: !!c.randomize_questions
+              randomize_questions: !!c.randomize_questions,
+              question_type: c.question_type || c.type || c.category_type || '',
+              marks_per_question: this.getMarksPerQuestion(c) ?? this.deriveMarksFromQuestions(Array.isArray(c.questions) ? c.questions : (Array.isArray(c.question_list) ? c.question_list : [])),
+              total_marks: this.getTotalMarks(c) ?? this.calculateTotalMarks(this.getQuestionCount(c, Array.isArray(c.questions) ? c.questions : (Array.isArray(c.question_list) ? c.question_list : [])), this.getMarksPerQuestion(c) ?? this.deriveMarksFromQuestions(Array.isArray(c.questions) ? c.questions : (Array.isArray(c.question_list) ? c.question_list : [])))
             }));
             const editPayloadFallback = { ...src, categories: mappedFallback };
             sessionStorage.setItem('edit_exam', JSON.stringify(editPayloadFallback));
