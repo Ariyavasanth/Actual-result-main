@@ -84,7 +84,7 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
         const normalizedRole = String(role || '').toLowerCase();
         this.isSuperAdmin = ['super_admin', 'superadmin', 'super-admin'].includes(normalizedRole);
         // if user belongs to an institute, pre-select it
-        const iid = obj?.institute_id || obj?.instituteId || obj?.institute || null;
+        const iid = sessionStorage.getItem('global_institute_id') || obj?.institute_id || obj?.instituteId || obj?.institute?.institute_id || obj?.institute?.id || (typeof obj?.institute === 'string' ? obj.institute : null);
         if (iid) {
           this.loginInstituteId = String(iid);
           this.selectedInstitute = this.isSuperAdmin ? this.selectedInstitute : this.loginInstituteId;
@@ -160,7 +160,7 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   get appliedFilterChips(): Array<{ key: string; label: string; removable: boolean }> {
     if (!this.hasAppliedFilters) return [];
     const chips: Array<{ key: string; label: string; removable: boolean }> = [];
-    const scopedInstitute = this.isSuperAdmin ? this.selectedInstitute : (this.loginInstituteId || this.selectedInstitute);
+    const scopedInstitute = this.getScopedInstituteId();
     const instituteName = this.getInstituteLabel(scopedInstitute);
     if (instituteName) chips.push({ key: 'institute', label: `Institute: ${instituteName}`, removable: this.isSuperAdmin });
     if (this.filterName) chips.push({ key: 'category', label: `Question Bank: ${this.filterName}`, removable: true });
@@ -206,6 +206,28 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
     this.onReset();
   }
 
+  private getScopedInstituteId(): string | null {
+    if (this.isSuperAdmin) return this.selectedInstitute ? String(this.selectedInstitute) : null;
+    return this.loginInstituteId || this.selectedInstitute || null;
+  }
+
+  private getCategoryInstituteId(item: any): string {
+    return String(
+      item?.institute_id ??
+      item?.instituteId ??
+      item?.institute?.institute_id ??
+      item?.institute?.id ??
+      item?.institutes?.institute_id ??
+      item?.institutes?.id ??
+      ''
+    );
+  }
+
+  private isAllowedCategoryForInstitute(item: any, scopedInstitute: string | null): boolean {
+    if (this.isSuperAdmin || !scopedInstitute) return true;
+    const itemInstituteId = this.getCategoryInstituteId(item);
+    return itemInstituteId === String(scopedInstitute);
+  }
   private getInstituteLabel(id: any): string {
     if (!id) return '';
     const found = this.institutes.find(i => String(i.institute_id) === String(id));
@@ -262,13 +284,14 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
     this.http.get<any>(`${API_BASE}/get-teams-list`).subscribe({ next: (res) => { const data = Array.isArray(res) ? res : (res?.data || []); this.teams = (data || []).map((t:any)=> ({ id: t.team_id || t.id || t.teamId, name: t.team_name || t.name })); }, error: () => { this.teams = []; } });
   }
   loadCategoryOptions() {
-    const scopedInstitute = this.isSuperAdmin ? this.selectedInstitute : (this.loginInstituteId || this.selectedInstitute);
+    const scopedInstitute = this.getScopedInstituteId();
     let params = new HttpParams();
-    if (scopedInstitute) params = params.set('institute', scopedInstitute);
+    if (scopedInstitute) params = params.set('institute_id', scopedInstitute);
     this.http.get<any>(`${API_BASE}/category-details`, { params }).subscribe({
       next: (res) => {
         const items = Array.isArray(res) ? res : (res?.data || []);
-        this.categoryOptions = (items || []).map((it: any, idx: number) => ({
+        const scopedInstitute = this.getScopedInstituteId();
+        this.categoryOptions = (items || []).filter((it: any) => this.isAllowedCategoryForInstitute(it, scopedInstitute)).map((it: any, idx: number) => ({
           id: it.category_id || it.id || it._id || String(idx),
           name: it.name || it.category_name || ''
         })).filter((c: any) => !!c.name);
@@ -343,9 +366,9 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   fetchCategories(){
     this.loader.show();
     let params = new HttpParams();
-    const scopedInstitute = this.isSuperAdmin ? this.selectedInstitute : (this.loginInstituteId || this.selectedInstitute);
+    const scopedInstitute = this.getScopedInstituteId();
     if (this.filterName) params = params.set('name', this.filterName);
-    if (scopedInstitute) params = params.set('institute', scopedInstitute);
+    if (scopedInstitute) params = params.set('institute_id', scopedInstitute);
     if (this.selectedDepartments && this.selectedDepartments.length) params = params.set('departments', this.selectedDepartments.join(','));
     if (this.selectedTeams && this.selectedTeams.length) params = params.set('teams', this.selectedTeams.join(','));
     // optional date filters
@@ -381,8 +404,9 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
       next: (res) => {
         // response may be array or {data: array}
         const items = Array.isArray(res) ? res : (res?.data || []);
+        const scopedInstitute = this.getScopedInstituteId();
         // normalize items
-        this.categories = items.map((it: any, idx: number) => ({
+        this.categories = items.filter((it: any) => this.isAllowedCategoryForInstitute(it, scopedInstitute)).map((it: any, idx: number) => ({
           category_id: it.category_id || it.id || it._id || String(idx),
           id: it.category_id || it.id || it._id || String(idx),
           name: it.name || it.category_name || '',

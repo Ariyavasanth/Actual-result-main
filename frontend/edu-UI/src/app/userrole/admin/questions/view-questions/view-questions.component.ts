@@ -135,20 +135,31 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
   }
  
   isSuperAdmin = false;
+  private loginInstituteId: string | null = null;
   constructor(private http: HttpClient, private router: Router, private loading: LoaderService, private auth: AuthService, private overlay: Overlay, private vcr: ViewContainerRef,private pageMeta: PageMetaService, private confirmService: ConfirmService) {
     
+  this.initializeInstituteScopeFromSession();
+
   // subscribe to isSuperAdmin observable so UI stays reactive to role changes
   try {
     this._subs = this.auth.user$.subscribe((user: any) => {
       this.isSuperAdmin = !!user && ['super_admin', 'superadmin', 'super-admin'].includes((user.role || '').toLowerCase());
+      if (!this.isSuperAdmin && user) {
+        const instId = sessionStorage.getItem('global_institute_id') || user?.institute_id || user?.instituteId || user?.institute?.institute_id || user?.institute?.id || (typeof user?.institute === 'string' ? user.institute : '');
+        if (instId) {
+          this.loginInstituteId = String(instId);
+          this.selectedInstitute = this.loginInstituteId;
+          this.syncInstituteSearch();
+        }
+      }
     });
   } catch (e) { /* ignore in tests */ }
 
   // http is optional for tests; if present, load institutes
     if (this.http) this.loadInstitutes();
     this.applyGlobalInstituteScopeIfActive();
-    // also load categories list (unfiltered) for the Category filter
-    if (this.http) this.loadCategories();
+    // also load categories list for the Category filter, scoped for admins
+    if (this.http) this.loadCategories(this.getScopedInstituteId());
   }
 
   ngOnDestroy(): void {
@@ -193,6 +204,41 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
     else { this.hasAppliedFilters = false; this.questions = []; this.dataSource.data = []; this.selectedQuestionIds.clear(); }
   }
 
+  private initializeInstituteScopeFromSession(): void {
+    try {
+      const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
+      const user = raw ? JSON.parse(raw) : null;
+      const role = String(user?.role || user?.user_role || user?.role_name || '').toLowerCase();
+      this.isSuperAdmin = ['super_admin', 'superadmin', 'super-admin'].includes(role) || user?.is_super_admin === true || !!user?.isSuperAdmin;
+      const instId = sessionStorage.getItem('global_institute_id') || user?.institute_id || user?.instituteId || user?.institute?.institute_id || user?.institute?.id || (typeof user?.institute === 'string' ? user.institute : '');
+      if (instId) {
+        this.loginInstituteId = String(instId);
+        if (!this.isSuperAdmin) this.selectedInstitute = this.loginInstituteId;
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  private getScopedInstituteId(instId?: string): string {
+    if (!this.isSuperAdmin && this.loginInstituteId) return String(this.loginInstituteId);
+    return String(instId || this.selectedInstitute || '');
+  }
+
+  private getItemInstituteId(item: any): string {
+    return String(
+      item?.institute_id ??
+      item?.instituteId ??
+      item?.institute?.institute_id ??
+      item?.institute?.id ??
+      item?.institutes?.institute_id ??
+      item?.institutes?.id ??
+      ''
+    );
+  }
+
+  private isAllowedForInstitute(item: any, scopedInstitute: string): boolean {
+    if (this.isSuperAdmin || !scopedInstitute) return true;
+    return this.getItemInstituteId(item) === String(scopedInstitute);
+  }
   private getInstituteLabel(id: any): string { const found = this.institutes.find(i => String(i.institute_id) === String(id)); return found?.name || String(id || ''); }
   private getCategoryLabel(id: any): string { const found = (this.categories || []).find((c: any) => String(c.category_id || c.id || c._id) === String(id)); return found?.name || found?.category_name || String(id || ''); }
   private getSelectedName(list: any[], selectedId: any): string { const found = (list || []).find(item => String(item?.id) === String(selectedId)); return found?.name || String(selectedId || ''); }
@@ -253,7 +299,7 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
             const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
             if (raw) {
               const u = JSON.parse(raw);
-              const instId = u?.institute_id || u?.instituteId || u?.institute || '';
+              const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute?.institute_id || u?.institute?.id || (typeof u?.institute === 'string' ? u.institute : '');
               if (instId) {
                 const found = this.institutes.find(i => String(i.institute_id) === String(instId));
                 if (found) {
@@ -359,7 +405,8 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
     }
     // build query params from selected filters; call API only when Apply/Reset triggers
     const params: string[] = [];
-  if (this.selectedInstitute) params.push(`institute_id=${encodeURIComponent(this.selectedInstitute)}`);
+  const scopedInstitute = this.getScopedInstituteId();
+  if (scopedInstitute) params.push(`institute_id=${encodeURIComponent(scopedInstitute)}`);
   if (this.categoryFilterName) params.push(`category_name=${encodeURIComponent(this.categoryFilterName)}`);
   if (this.selectedCategories && this.selectedCategories.length) params.push(`category_id=${encodeURIComponent(this.selectedCategories.join(','))}`);
   if (this.selectedDepartments && this.selectedDepartments.length) params.push(`departments=${encodeURIComponent(this.selectedDepartments.join(','))}`);
@@ -386,8 +433,10 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
     this.http!.get<any>(url).subscribe({
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
+        const scopedInstitute = this.getScopedInstituteId();
+        const filteredArr = arr.filter((q: any) => this.isAllowedForInstitute(q, scopedInstitute));
         this.refreshQuestionBankMarkLookup(() => {
-          this.questions = arr.map((q: any, i: number) => this.mapQuestionRow(q, i));
+          this.questions = filteredArr.map((q: any, i: number) => this.mapQuestionRow(q, i));
           this.dataSource.data = this.questions;
           this.loading.hide();
         });
@@ -418,17 +467,20 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
 
   private refreshQuestionBankMarkLookup(done: () => void): void {
     const params: string[] = [];
-    if (this.selectedInstitute) params.push(`institute_id=${encodeURIComponent(this.selectedInstitute)}`);
+    const scopedInstitute = this.getScopedInstituteId();
+  if (scopedInstitute) params.push(`institute_id=${encodeURIComponent(scopedInstitute)}`);
     if (this.categoryFilterName) params.push(`name=${encodeURIComponent(this.categoryFilterName)}`);
     const url = params.length ? `${this.categoryDetailsUrl}?${params.join('&')}&_ts=${Date.now()}` : `${this.categoryDetailsUrl}?_ts=${Date.now()}`;
     this.http!.get<any>(url).subscribe({
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
-        const normalized = arr.map((c: any) => ({
+        const scopedInstitute = this.getScopedInstituteId();
+        const normalized = arr.filter((c: any) => this.isAllowedForInstitute(c, scopedInstitute)).map((c: any) => ({
           name: c.name || c.category_name || '',
           category_id: c.category_id || c.id || c._id,
           mark_each_question: (typeof c.mark_each_question !== 'undefined') ? c.mark_each_question : (c.mark_for_each_question ?? c.question_mark ?? c.marks ?? null),
-          mark_for_each_question: c.mark_for_each_question ?? c.mark_each_question ?? c.question_mark ?? c.marks ?? null
+          mark_for_each_question: c.mark_for_each_question ?? c.mark_each_question ?? c.question_mark ?? c.marks ?? null,
+          institute: c.institute || { institute_id: c.institute_id || c.instituteId || null }
         }));
         this.rebuildQuestionBankMarkLookup(normalized);
       },
@@ -493,11 +545,13 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
   }
 
   loadCategories(instId?: string) {
+    instId = this.getScopedInstituteId(instId);
     let url = this.categoryDetailsUrl;
     if (instId) url += `?institute_id=${encodeURIComponent(instId)}`;
     this.http!.get<any>(url).subscribe({ next: (res) => {
       const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
-      this.categories = arr.map((c: any) => ({
+      const scopedInstitute = this.getScopedInstituteId(instId);
+      this.categories = arr.filter((c: any) => this.isAllowedForInstitute(c, scopedInstitute)).map((c: any) => ({
         name: c.name || c.category_name || '',
         category_id: c.category_id || c.id || c._id,
         mark_each_question: (typeof c.mark_each_question !== 'undefined') ? c.mark_each_question : (c.mark_for_each_question ?? c.question_mark ?? c.marks ?? null),

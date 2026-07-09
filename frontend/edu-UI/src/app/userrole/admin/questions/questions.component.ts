@@ -124,6 +124,7 @@ export class AdminQuestionsComponent {
 
   institutes: Array<{ name: string; institute_id?: string }> = [];
   isSuperAdmin: boolean = false;
+  private loginInstituteId: string | null = null;
   categories: Array<{ name: string; category_id?: string; description?: string; type?: string; mark_each_question?: any; mark_for_each_question?: any }> = [];
   // reactive control + filtered observable for autocomplete
   categoryCtrl: FormControl = new FormControl('');
@@ -155,8 +156,9 @@ export class AdminQuestionsComponent {
       if (raw) {
         const u = JSON.parse(raw);
         this.isSuperAdmin = !!(u && (u.is_super_admin === true || u.isSuperAdmin || u.role === 'super_admin' || u.user_role === 'super_admin'));
-        const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute || '';
+        const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute?.institute_id || u?.institute?.id || (typeof u?.institute === 'string' ? u.institute : '');
         if (instId) {
+          this.loginInstituteId = String(instId);
           // prefill the first question's institute selection so the template select shows the user's institute
           try { this.questions[0].institute_id = String(instId); } catch(e){}
         }
@@ -451,7 +453,7 @@ export class AdminQuestionsComponent {
     const raw = sessionStorage.getItem('user')
     if (raw) {
       const u = JSON.parse(raw);
-      const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute || '';
+      const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute?.institute_id || u?.institute?.id || (typeof u?.institute === 'string' ? u.institute : '');
       if (instId) {
         fd.append('institute_id', String(instId));
       }
@@ -568,6 +570,27 @@ export class AdminQuestionsComponent {
     }
   }
 
+  private getScopedInstituteId(instId?: string): string {
+    if (!this.isSuperAdmin && this.loginInstituteId) return String(this.loginInstituteId);
+    return String(instId || this.questions?.[0]?.institute_id || '');
+  }
+
+  private getCategoryInstituteId(item: any): string {
+    return String(
+      item?.institute_id ??
+      item?.instituteId ??
+      item?.institute?.institute_id ??
+      item?.institute?.id ??
+      item?.institutes?.institute_id ??
+      item?.institutes?.id ??
+      ''
+    );
+  }
+
+  private isAllowedCategoryForInstitute(item: any, scopedInstitute: string): boolean {
+    if (this.isSuperAdmin || !scopedInstitute) return true;
+    return this.getCategoryInstituteId(item) === String(scopedInstitute);
+  }
   loadInstitutes(){
     this.loader.show();
     this.http.get<any>(this.institutesUrl).subscribe({
@@ -585,6 +608,7 @@ export class AdminQuestionsComponent {
   }
   onQuestionInstituteChange(instId?: string) {
     try {
+      instId = this.getScopedInstituteId(instId);
       if (this.questions && this.questions[0]) this.questions[0].institute_id = instId || '';
       if (this.questions && this.questions[0]) this.questions[0].category_id = '';
       this.selectedCategory = null;
@@ -600,6 +624,7 @@ export class AdminQuestionsComponent {
 
   loadCategories(instId?: string, showLoader: boolean = true){
     if (showLoader) this.loader.show();
+    instId = this.getScopedInstituteId(instId);
     if (!instId) {
       this.categories = [];
       this.selectedCategory = null;
@@ -613,13 +638,15 @@ export class AdminQuestionsComponent {
     this.http.get<any>(url).subscribe({
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
-        this.categories = arr.map((r:any) => ({
+        const scopedInstitute = this.getScopedInstituteId(instId);
+        this.categories = arr.filter((r: any) => this.isAllowedCategoryForInstitute(r, scopedInstitute)).map((r:any) => ({
           name: r.name || r.category_name || '',
           category_id: r.category_id || r.id,
           description: r.description || r.desc || '',
           type: r.type || r.category_type || '',
           mark_each_question: (typeof r.mark_each_question !== 'undefined') ? r.mark_each_question : (r.mark_for_each_question ?? r.question_mark ?? r.marks ?? null),
-          mark_for_each_question: r.mark_for_each_question ?? r.mark_each_question ?? r.question_mark ?? r.marks ?? null
+          mark_for_each_question: r.mark_for_each_question ?? r.mark_each_question ?? r.question_mark ?? r.marks ?? null,
+          institute: r.institute || { institute_id: r.institute_id || r.instituteId || null }
         }));
         // if a category was prefilled on the first question, set control to that object so autocomplete shows it
         try {
