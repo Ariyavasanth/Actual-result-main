@@ -1006,7 +1006,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     const requested = Number(this.newCategory.questions) || 0;
     const maxMessage = `The selected Question Bank contains only ${available} questions. Please enter a number between 1 and ${available}.`;
     const minMessage = available > 0 ? `Please enter a number between 1 and ${available}.` : 'The selected Question Bank does not contain any questions.';
-    const allRandomMessage = `⚠️ You've selected all available questions (${requested}/${available}). Random selection has no effect because every student will receive the same questions.`;
+    const allRandomMessage = `You have selected all available questions. Random selection has no effect because every student will receive the same questions.`;
     let message = '';
 
     if (!this.selectedCategory) message = '';
@@ -1021,9 +1021,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private shouldBlockRandomAllQuestionSelection(): boolean {
-    const available = this.selectedQuestionBankQuestionCount;
-    const requested = Number(this.newCategory.questions) || 0;
-    return !!this.selectedCategory && !!this.newCategory.randomize_questions && available > 0 && requested === available;
+    return false;
   }
 
 
