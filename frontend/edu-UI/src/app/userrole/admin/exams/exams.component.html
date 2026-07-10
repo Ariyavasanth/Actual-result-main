@@ -281,8 +281,8 @@
                                     <div class="label">Total questions</div>
                                     <div class="value">{{ selectedExam.total_questions || selectedExam.questions_count || '—' }}</div>
 
-                                    <div class="label">Pass mark</div>
-                                    <div class="value">{{ selectedExam.pass_mark ?? selectedExam.passMark ?? '—' }}</div>
+                                    <div class="label">Pass Percentage</div>
+                                    <div class="value">{{ selectedExam.pass_mark ?? selectedExam.passMark ?? '—' }}%</div>
 
                                     <div class="label">Public access</div>
                                     <div class="value">{{ selectedExam.public_access ? 'Yes' : 'No' }}</div>

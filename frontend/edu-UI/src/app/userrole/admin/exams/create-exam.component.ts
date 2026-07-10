@@ -1126,6 +1126,7 @@ export class CreateExamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.title || !this.title.trim()) { notify('Title is required', 'error'); return; }
     if (!this.institute) { notify('Institute is required', 'error'); return; }
     if (this.durationMinutes === null || isNaN(Number(this.durationMinutes))) { notify('Duration is required', 'error'); return; }
+    if (this.passMark !== null && this.passMark !== undefined && (Number(this.passMark) < 0 || Number(this.passMark) > 100)) { notify('Pass Percentage must be between 0 and 100', 'error'); return; }
 
     const currentUser = this.getCurrentUserId();
     const payload: any = {

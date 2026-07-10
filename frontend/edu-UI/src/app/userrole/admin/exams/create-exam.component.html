@@ -80,9 +80,10 @@
                                     </mat-form-field>
                                     <mat-form-field appearance="outline" class="field-half">
                                         <mat-icon matPrefix>check_circle</mat-icon>
-                                        <mat-label>Pass mark</mat-label>
+                                        <mat-label>Pass Percentage</mat-label>
                                         <input matInput id="passMark" type="number" [(ngModel)]="passMark"
-                                            name="passMark" placeholder="e.g. 40" />
+                                            name="passMark" placeholder="e.g. 50" min="0" max="100" />
+                                        <span matSuffix>%</span>
                                     </mat-form-field>
                                 </div>
 
@@ -373,7 +374,7 @@
                 </div>
             </mat-step>
 
-            <!-- â•â•â• Step 3: Review â•â•â• -->
+            <!-- ═══ Step 3: Review ═══ -->
             <mat-step>
                 <ng-template matStepLabel>Review</ng-template>
                 <div class="step-content">
@@ -381,7 +382,7 @@
                         <div class="section-header">
                             <mat-icon class="section-icon">fact_check</mat-icon>
                             <div class="section-header-text">
-                                <h2 class="section-heading">Review & Submit</h2>
+                                <h2 class="section-heading">Review &amp; Submit</h2>
                                 <p class="section-desc">Please review all information before saving.</p>
                             </div>
                         </div>
@@ -393,8 +394,8 @@
                                     <mat-icon>assignment</mat-icon> Basic Info
                                 </h4>
                                 <div class="review-items">
-                                    <div class="review-item"><span class="review-label">Title</span><span class="review-value">{{ title || 'â€”' }}</span></div>
-                                    <div class="review-item"><span class="review-label">Description</span><span class="review-value">{{ description || 'â€”' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Title</span><span class="review-value">{{ title || '—' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Description</span><span class="review-value">{{ description || '—' }}</span></div>
                                 </div>
                             </div>
 
@@ -404,8 +405,8 @@
                                     <mat-icon>settings</mat-icon> Settings
                                 </h4>
                                 <div class="review-items">
-                                    <div class="review-item"><span class="review-label">Duration</span><span class="review-value">{{ durationMinutes || 'â€”' }} mins</span></div>
-                                    <div class="review-item"><span class="review-label">Pass mark</span><span class="review-value">{{ passMark || 'â€”' }}</span></div>
+                                    <div class="review-item"><span class="review-label">Duration</span><span class="review-value">{{ durationMinutes || '—' }} mins</span></div>
+                                    <div class="review-item"><span class="review-label">Pass Percentage</span><span class="review-value">{{ passMark || '—' }}%</span></div>
                                     <div class="review-item"><span class="review-label">Attempts</span><span class="review-value">{{ numberOfAttempts || 0 }}</span></div>
                                 </div>
                             </div>
@@ -413,7 +414,7 @@
                             <!-- Questions & Question Banks -->
                             <div class="review-section review-section--full">
                                 <h4 class="review-section-title">
-                                    <mat-icon>quiz</mat-icon> Questions & Question Banks
+                                    <mat-icon>quiz</mat-icon> Questions &amp; Question Banks
                                 </h4>
                                 <div class="review-items review-items--grid">
                                     <div class="review-item"><span class="review-label">Total questions</span><span class="review-value">{{ totalQuestions || 0 }}</span></div>
