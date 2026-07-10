@@ -705,7 +705,7 @@ export class AdminScheduleTestComponent {
     const start = this.model.startDateTime || `${this.model.startDate} ${this.model.startTime}`;
     const duration = Number(this.model.durationMin) || 10;
     const total_questions = Number(this.model.totalQuestions) || 0;
-    const number_of_attempts = Number(this.model.maxAttempts) || 1;
+
 
     // compute end_time by adding duration minutes to the start datetime
     // If explicit endDate/endTime provided, prefer those values for end_time
@@ -807,7 +807,6 @@ export class AdminScheduleTestComponent {
       institute_id: any;
       duration_mins: number;
       total_questions: number;
-      number_of_attempts: number;
       assigned_user_ids: string[];
       categories: any;
       start_time: string | null;
@@ -823,7 +822,6 @@ export class AdminScheduleTestComponent {
       institute_id: this.model.institute, // bind to institute_id from the select
       duration_mins: duration,
       total_questions,
-      number_of_attempts,
       assigned_user_ids: this.selectedUsers || [],
       categories: Array.isArray(this.model.categories) ? this.model.categories : undefined,
       start_time: startIso,

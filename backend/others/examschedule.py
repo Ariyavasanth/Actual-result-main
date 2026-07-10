@@ -32,6 +32,9 @@ def add_exam_schedule(request):
         return None
 
     try:
+        exam = session.query(Exam).filter_by(exam_id=exam_id).first()
+        number_of_attempts_val = exam.number_of_attempts if exam else 1
+
         add_schedule = ExamSchedule(
             title=title,
             exam_id=exam_id,
@@ -40,7 +43,8 @@ def add_exam_schedule(request):
             end_time=end_time,
             published=1 if published else 0,
             user_review=1 if user_review else 0,
-            created_by=created_by
+            created_by=created_by,
+            number_of_attempts=number_of_attempts_val
         )
         session.add(add_schedule)
         session.flush()
@@ -123,11 +127,13 @@ def update_exam_schedule(request):
                 sched.duration_mins = int(data.get('duration_mins') or 0)
             except Exception:
                 pass
-        if 'number_of_attempts' in data:
-            try:
-                sched.number_of_attempts = int(data.get('number_of_attempts') or 0)
-            except Exception:
-                pass
+        
+        # Automatically update attempts from selected Test, ignoring any attempts field in request payload
+        if sched.exam_id:
+            exam = session.query(Exam).filter_by(exam_id=sched.exam_id).first()
+            if exam:
+                sched.number_of_attempts = exam.number_of_attempts
+
         if 'total_questions' in data:
             try:
                 sched.total_questions = int(data.get('total_questions') or 0)
