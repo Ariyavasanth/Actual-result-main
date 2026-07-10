@@ -8,6 +8,14 @@ from sqlalchemy import or_
 import random
 
 
+def safe_isoformat(val):
+    if val is None:
+        return None
+    if hasattr(val, 'isoformat'):
+        return val.isoformat()
+    return str(val)
+
+
 def add_exam(request):
     # get exam details from the request
     data = request.get_json(silent=True) or {}
@@ -312,8 +320,8 @@ def get_exam_details(request):
                 "pass_mark": exam.pass_mark,
                 "published": True if exam.published == 1 else False,
                 "public_access": True if exam.public_access == 1 else False,
-                # "start_time": exam.start_time,
-                # "end_time": exam.end_time,
+                "start_time": safe_isoformat(exam.start_time),
+                "end_time": safe_isoformat(exam.end_time),
                 "created_by": created_user_name,
                 "created_date": exam.created_date,
                 "updated_by": updated_user_name,
@@ -463,8 +471,8 @@ def get_user_exam_details(request):
                 "pass_mark": getattr(exam_obj, "pass_mark", None),
                 "number_of_attempts": getattr(schedule_obj, "number_of_attempts", None),
                 "user_review" :user_review,
-                "start_time": getattr(schedule_obj, "start_time", getattr(exam_obj, "start_time", None)),
-                "end_time": getattr(schedule_obj, "end_time", getattr(exam_obj, "end_time", None)),
+                "start_time": safe_isoformat(getattr(schedule_obj, "start_time", getattr(exam_obj, "start_time", None))),
+                "end_time": safe_isoformat(getattr(schedule_obj, "end_time", getattr(exam_obj, "end_time", None))),
                 "created_by": getattr(schedule_obj, "created_by", getattr(exam_obj, "created_by", None)),
                 "created_date": getattr(schedule_obj, "created_date", getattr(exam_obj, "created_date", None)),
                 "updated_by": getattr(schedule_obj, "updated_by", None),

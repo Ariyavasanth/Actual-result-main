@@ -23,6 +23,7 @@ export interface UserTestRow {
   title?: string;
   start_time?: string;
   end_time?: string;
+  scheduleTest?: string;
   duration_mins?: number;
   total_questions?: number;
   total_marks?: number;
@@ -44,7 +45,7 @@ export class UserExamComponent{
   loading = false;
   instituteId = '';
   // table and filters
-  displayedColumns: string[] = ['title','start','end','duration','questions','pass_mark','number_of_attempts','status','actions'];
+  displayedColumns: string[] = ['title','scheduleTest','duration','questions','pass_mark','number_of_attempts','status','actions'];
   dataSource = new MatTableDataSource<UserTestRow>([]);
   // Per-tab filtered tables
   activeSource = new MatTableDataSource<UserTestRow>([]);
@@ -226,30 +227,62 @@ export class UserExamComponent{
         return `${dd}-${mmm}-${yyyy} ${hh}:${mm}`;
       };
 
-      this.exams = arr.map((x: any) => ({
-        test_id: x.test_id || x.id || x.exam_id,
-        schedule_id: x.schedule_id || '',
-        title: x.schedule_title || x.name || '', //exam_title
-        // whether review is available for this user on this exam
-        user_review: x.user_review || x.review_available || x.review || false,
-        start_time: fmtDate(x.start_time || x.start),
-        end_time: fmtDate(x.end_time || x.end),
-        pass_mark: x.pass_mark || 0,
-        number_of_attempts: x.number_of_attempts || 0,
-        duration_mins: x.duration_mins || x.duration || 0,
-        total_questions: x.total_questions || x.questions_count || 0,
-        total_marks: x.total_marks || x.marks || 0,
-        type: x.type
-      }));
+      this.exams = arr.map((x: any) => {
+        const startVal = fmtDate(x.start_time || x.start);
+        const endVal = fmtDate(x.end_time || x.end);
+        const scheduleTest = (startVal || endVal) ? `${startVal || '—'} - ${endVal || '—'}` : '—';
+        return {
+          test_id: x.test_id || x.id || x.exam_id,
+          schedule_id: x.schedule_id || '',
+          title: x.schedule_title || x.name || '', //exam_title
+          // whether review is available for this user on this exam
+          user_review: x.user_review || x.review_available || x.review || false,
+          start_time: startVal,
+          end_time: endVal,
+          scheduleTest,
+          pass_mark: x.pass_mark || 0,
+          number_of_attempts: x.number_of_attempts || 0,
+          duration_mins: x.duration_mins || x.duration || 0,
+          total_questions: x.total_questions || x.questions_count || 0,
+          total_marks: x.total_marks || x.marks || 0,
+          type: x.type
+        };
+      });
       this.loading = false;
       this.dataSource.data = this.exams;
       // populate per-tab sources
       this.updateTabDataSources();
       try{ 
-        this.dataSource.sort = this.sort; 
-        this.activeSource.sort = this.sort;
-        this.completeSource.sort = this.sort;
-        this.upcomingSource.sort = this.sort;
+        const configureSorting = (src: MatTableDataSource<UserTestRow>) => {
+          src.sort = this.sort;
+          src.sortingDataAccessor = (item: UserTestRow, property: string) => {
+            if (property === 'scheduleTest') {
+              const rawStart = item.start_time;
+              if (!rawStart) return 0;
+              const parts = rawStart.split(' ');
+              if (parts.length >= 2) {
+                const dateParts = parts[0].split('-');
+                if (dateParts.length === 3) {
+                  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                  const month = months.indexOf(dateParts[1]);
+                  if (month >= 0) {
+                    const timeParts = parts[1].split(':');
+                    const d = new Date(Number(dateParts[2]), month, Number(dateParts[0]), Number(timeParts[0] || 0), Number(timeParts[1] || 0));
+                    return d.getTime();
+                  }
+                }
+              }
+              const fallback = Date.parse(rawStart);
+              return isNaN(fallback) ? 0 : fallback;
+            }
+            return (item as any)[property];
+          };
+        };
+
+        configureSorting(this.dataSource);
+        configureSorting(this.activeSource);
+        configureSorting(this.completeSource);
+        configureSorting(this.upcomingSource);
       }catch(e){}
       this.loader.hide();
       },
