@@ -16,6 +16,40 @@ def safe_isoformat(val):
     return str(val)
 
 
+def _category_pool_question_ids(session, category_id):
+    rows = session.query(QuestionMapping.question_id).filter(
+        QuestionMapping.category_id == category_id
+    ).all()
+    return [r.question_id for r in rows]
+
+
+def _resolve_fixed_question_ids(session, category_id, number_of_questions, question_ids):
+    """Resolve the fixed (non-randomized) question set for a category.
+
+    Admin hand-picks (if any) are honored as-is. Any remaining slots up to
+    number_of_questions are filled with a one-time random pick from the
+    category's question bank, so every user is served the exact same set.
+    """
+    seen = set()
+    unique_ids = []
+    for qid in (question_ids or []):
+        key = str(qid)
+        if key not in seen:
+            seen.add(key)
+            unique_ids.append(qid)
+
+    if number_of_questions and len(unique_ids) < number_of_questions:
+        pool_ids = _category_pool_question_ids(session, category_id)
+        remaining_pool = [qid for qid in pool_ids if str(qid) not in seen]
+        needed = number_of_questions - len(unique_ids)
+        if needed >= len(remaining_pool):
+            unique_ids.extend(remaining_pool)
+        else:
+            unique_ids.extend(random.sample(remaining_pool, needed))
+
+    return unique_ids
+
+
 def add_exam(request):
     # get exam details from the request
     data = request.get_json(silent=True) or {}
@@ -74,6 +108,15 @@ def add_exam(request):
                 randomize_questions =1
             else:
                 randomize_questions = 0
+
+            pool_count = len(_category_pool_question_ids(session, category_id))
+            if number_of_questions and pool_count < number_of_questions:
+                session.rollback()
+                return {
+                    "statusMessage": f"Question bank does not have enough questions (requested {number_of_questions}, available {pool_count})",
+                    "status": False
+                }, 400
+
             new_mapping  =ExamMapping(
                 exam_id= exam_id,
                 category_id =category_id,
@@ -82,7 +125,7 @@ def add_exam(request):
             )
             session.add(new_mapping)
             if randomize_questions == 0:
-                questions_list = category.get("question_ids", [])
+                questions_list = _resolve_fixed_question_ids(session, category_id, number_of_questions, category.get("question_ids", []))
                 for question_id in questions_list:
                     add_exam_question_mapping = ExamQuestionMapping(
                         exam_id = exam_id,
@@ -165,6 +208,15 @@ def update_exam(request):
                 randomize_questions = 1
             else:
                 randomize_questions = 0
+
+            pool_count = len(_category_pool_question_ids(session, category_id))
+            if number_of_questions and pool_count < number_of_questions:
+                session.rollback()
+                return {
+                    "statusMessage": f"Question bank does not have enough questions (requested {number_of_questions}, available {pool_count})",
+                    "status": False
+                }, 400
+
             new_mapping = ExamMapping(
                 exam_id=exam_id,
                 category_id=category_id,
@@ -173,7 +225,7 @@ def update_exam(request):
             )
             session.add(new_mapping)
             if randomize_questions == 0:
-                questions_list = category.get('question_ids', [])
+                questions_list = _resolve_fixed_question_ids(session, category_id, number_of_questions, category.get('question_ids', []))
                 for question_id in questions_list:
                     add_exam_question_mapping = ExamQuestionMapping(
                         exam_id=exam_id,

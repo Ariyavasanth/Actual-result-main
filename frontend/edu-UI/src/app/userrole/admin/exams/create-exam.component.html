@@ -262,6 +262,10 @@
                                     </div>
                                 </div>
                                 <div class="question-count-error" *ngIf="questionCountError" [class.warning-msg]="questionCountError.includes('Random selection has no effect')">{{ questionCountError }}</div>
+                                <div class="muted question-mode-hint" *ngIf="selectedCategory">
+                                    <span *ngIf="newCategory.randomize_questions">Each student gets a freshly randomized set of {{ newCategory.questions || 0 }} question(s) when they start the test.</span>
+                                    <span *ngIf="!newCategory.randomize_questions">A fixed set of {{ newCategory.questions || 0 }} question(s) is chosen once and given to every student. Optionally hand-pick specific questions below.</span>
+                                </div>
 
                                 <div *ngIf="model.categories?.length">
                                     <div class="category-list">

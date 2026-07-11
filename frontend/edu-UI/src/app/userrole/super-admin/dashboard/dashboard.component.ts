@@ -81,7 +81,12 @@ export class SuperDashboardComponent implements OnInit {
   }
 
   get industryOptions(): string[] {
-    return this.uniqueSorted(this.instituteOptions.map(i => i.industry));
+    return this.uniqueSorted([
+      ...this.instituteOptions.map(i => i.industry),
+      'School',
+      'BPO',
+      'Bank'
+    ]);
   }
 
   get countryOptions(): string[] {
