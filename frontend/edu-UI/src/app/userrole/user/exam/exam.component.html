@@ -108,7 +108,7 @@
                         <td mat-cell *matCellDef="let row">
                            <div class="exam-actions">
                               <button *ngIf="(((row.type || '') | lowercase) === 'active')" mat-flat-button
-                                 (click)="launchTest(row)" class="launch-btn">
+                                 (click)="confirmStartTest(row)" class="launch-btn">
                                  <mat-icon>rocket_launch</mat-icon> Start
                               </button>
                                <span *ngIf="isUpcomingTest(row.type)" class="upcoming-label">Scheduled</span>
@@ -209,7 +209,7 @@
             </div>
             <div class="actions">
                <button *ngIf="(((exam.type || '') | lowercase) === 'active')" mat-button color="primary"
-                  (click)="launchTest(exam)">Launch</button>
+                  (click)="confirmStartTest(exam)">Launch</button>
             </div>
          </div>
       </div>

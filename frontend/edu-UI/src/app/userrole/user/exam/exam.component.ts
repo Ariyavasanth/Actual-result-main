@@ -16,6 +16,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { PageMetaService } from 'src/app/shared/services/page-meta.service';
 import { LoaderService } from 'src/app/shared/services/loader.service';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 export interface UserTestRow {
   test_id?: string;
@@ -34,9 +35,89 @@ export interface UserTestRow {
 }
 
 @Component({
+  selector: 'app-confirm-start-test-dialog',
+  standalone: true,
+  imports: [MatDialogModule, MatButtonModule, MatIconModule],
+  template: `
+    <div class='start-confirm-dialog'>
+      <div class='dialog-icon' aria-hidden='true'>
+        <mat-icon>rocket_launch</mat-icon>
+      </div>
+      <h2>Start Test</h2>
+      <p class='dialog-message'>Are you sure you want to start this test?</p>
+      <p class='dialog-warning'>Once you start, the test timer will begin and cannot be paused.</p>
+      <div class='dialog-actions'>
+        <button mat-button class='cancel-button' [mat-dialog-close]='false'>Cancel</button>
+        <button mat-flat-button class='start-button' [mat-dialog-close]='true'>Start Test</button>
+      </div>
+    </div>
+  `,
+  styles: [`
+    :host { display: block; }
+    .start-confirm-dialog {
+      box-sizing: border-box;
+      height: 18.4rem;
+      padding: 1.35rem 1.25rem 0.9rem;
+      text-align: center;
+      color: #16293d;
+    }
+    .dialog-icon {
+      width: 4rem;
+      height: 4rem;
+      margin: 0 auto 0.8rem;
+      border-radius: 50%;
+      background: #f0edff;
+      color: #287cff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dialog-icon mat-icon {
+      width: 2rem;
+      height: 2rem;
+      font-size: 2rem;
+      line-height: 2rem;
+    }
+    h2 {
+      margin: 0 0 0.45rem;
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    p { margin: 0; color: #657180; }
+    .dialog-message { font-size: 1.15rem; }
+    .dialog-warning {
+      margin-top: 0.3rem;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+    .dialog-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.9rem;
+      margin-top: 1rem;
+    }
+    .dialog-actions button {
+      height: 2.85rem;
+      border-radius: 0.7rem;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+    .cancel-button { border: 0.0625rem solid #dfe4ea; color: #354252; }
+    .start-button { background: #287cff; color: #fff; }
+    @media (max-width: 30rem) {
+      .start-confirm-dialog { height: auto; }
+      .dialog-actions { grid-template-columns: 1fr; }
+    }
+  `]
+})
+export class ConfirmStartTestDialogComponent {}
+
+@Component({
   selector: 'app-user-exams',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, RouterModule, FormsModule, MatTableModule, MatIconModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatSortModule, MatTabsModule, MatPaginatorModule],
+  imports: [CommonModule, HttpClientModule, RouterModule, FormsModule, MatTableModule, MatIconModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatSortModule, MatTabsModule, MatPaginatorModule, MatDialogModule],
   templateUrl: './exam.component.html',
   styleUrls: ['./exam.component.scss']
 })
@@ -58,7 +139,7 @@ export class UserExamComponent{
   private examsUrl = `${API_BASE}/get-user-exams-details`;
   private launchUrl = `${API_BASE}/launch-exam`;
 
-  constructor(private http: HttpClient,private pageMeta: PageMetaService, private loader: LoaderService, private router: Router ){
+  constructor(private http: HttpClient,private pageMeta: PageMetaService, private loader: LoaderService, private router: Router, private dialog: MatDialog ){
     // try to read institute id from sessionStorage
     try{
       const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
@@ -356,6 +437,17 @@ export class UserExamComponent{
       const v = opt.is_correct !== undefined ? opt.is_correct : (opt.isCorrect !== undefined ? opt.isCorrect : 0);
       return Number(v) === 1 || v === true;
     }catch(e){ return false; }
+  }
+
+  confirmStartTest(ex: UserTestRow): void {
+    this.dialog.open(ConfirmStartTestDialogComponent, {
+      width: '32.8rem',
+      maxWidth: 'calc(100vw - 2rem)',
+      autoFocus: false,
+      restoreFocus: true
+    }).afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed) this.launchTest(ex);
+    });
   }
 
   launchTest(ex: UserTestRow){
