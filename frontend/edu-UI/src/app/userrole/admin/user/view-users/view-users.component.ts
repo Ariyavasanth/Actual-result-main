@@ -68,7 +68,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   totalCount = 0; // total records from API
 
   // filter model and lists (match fields in the filters panel)
-  filters: any = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '' };
+  filters: any = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '', industry: '', sector: '' };
   // institutes: Array<{ id: string; name: string }> = [];
   institutes: Array<{ short_name: string; institute_id?: string }> = [];
   countries: Array<{ code: string; name: string }> = [];
@@ -76,6 +76,17 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   cities: Array<{ code: string; name: string }> = [];
   departments: Array<{ id: string; name: string }> = [];
   teams: Array<{ id: string; name: string }> = [];
+
+  // Industry -> Sector dependency (mirrors view-institutes.component.ts)
+  industryTypes = ['School', 'College', 'BPO', 'Bank', 'IT'];
+  industrySectors = ['School', 'Engineering', 'Arts', 'Healthcare', 'Finance', 'Banking', 'IT'];
+  private sectorMap: Record<string, string[]> = {
+    'School': ['School'],
+    'College': ['Engineering', 'Arts'],
+    'BPO': ['Healthcare', 'Finance'],
+    'Bank': ['Bank'],
+    'IT': ['IT']
+  };
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -117,9 +128,9 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
 
     this.pageMeta.setMeta('Users', 'Manage platform users');
     this.loadInstitutes();
+    this.loadCountries();
     this.applyGlobalInstituteScopeIfActive();
     this.restoreUsersReturnState();
-    // this.loadCountries();
     // this.loadCities();
 
     try { } catch(e) {}
@@ -131,6 +142,9 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
       this.filters.institute = iid || '';
       this.syncInstituteSearch();
       this.pageIndex = 0;
+      // Department depends on Institute, Team depends on Department - clear both downstream.
+      this.filters.department = '';
+      this.filters.team = '';
 
       if (iid) {
         this.loadDepartments(iid);
@@ -141,6 +155,12 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
         this.teams = [];
       }
     } catch (e) { }
+  }
+
+  onDepartmentFilterChange() {
+    // Team has no real data dependency on Department (no department_id on teams), so we only
+    // gate its enabled state here - clearing the selection when Department is cleared.
+    if (!this.filters.department) this.filters.team = '';
   }
 
   // load departments for the selected institute
@@ -199,7 +219,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     if (this.filters.department) chips.push({ key: 'department', label: `Department: ${this.getSelectedName(this.departments, this.filters.department)}`, removable: true });
     if (this.filters.team) chips.push({ key: 'team', label: `Team: ${this.getSelectedName(this.teams, this.filters.team)}`, removable: true });
     if (this.filters.country) chips.push({ key: 'country', label: `Country: ${this.getSelectedName(this.countries, this.filters.country, 'code')}`, removable: true });
-    if (this.filters.city) chips.push({ key: 'city', label: `City: ${this.getSelectedName(this.cities, this.filters.city, 'code')}`, removable: true });
+    if (this.filters.city) chips.push({ key: 'city', label: `City: ${this.filters.city}`, removable: true });
     if (this.filters.active_status !== '') chips.push({ key: 'active_status', label: `Status: ${this.filters.active_status ? 'Active' : 'Inactive'}`, removable: true });
     return chips;
   }
@@ -209,18 +229,21 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     if (key === 'institute' && this.isSuperAdmin) {
       this.selectedInstitute = '';
       this.filters.institute = '';
+      this.filters.department = '';
+      this.filters.team = '';
       this.instituteSearch = '';
       this.departments = [];
       this.teams = [];
       this.countries = [];
       this.cities = [];
     } else if (key === 'name') this.filters.name = '';
-    else if (key === 'department') this.filters.department = '';
+    else if (key === 'department') { this.filters.department = ''; this.filters.team = ''; }
     else if (key === 'team') this.filters.team = '';
     else if (key === 'country') { this.filters.country = ''; this.filters.city = ''; }
     else if (key === 'city') this.filters.city = '';
     else if (key === 'active_status') this.filters.active_status = '';
     this.pageIndex = 0;
+    this.refreshInstituteScope();
     this.refreshAfterFilterChipChange();
   }
 
@@ -281,7 +304,8 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     if (this.filters.department) params.department = this.filters.department;
     if (this.filters.team) params.team = this.filters.team;
     if (this.filters.country) params.country = this.filters.country;
-    if (this.filters.city) params.city = this.filters.city;
+    const cityId = this.resolveCityId(this.filters.city);
+    if (cityId) params.city = cityId;
     if (this.filters.campus) params.campus = this.filters.campus;
     if (this.filters.joining_from) params.joining_from = this.filters.joining_from;
     if (this.filters.joining_to) params.joining_to = this.filters.joining_to;
@@ -373,14 +397,16 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
 
   resetFilters(){
     this.pageIndex = 0;
-    this.filters = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '' };
+    this.filters = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '', industry: '', sector: '' };
     this.selectedInstitute = '';
     this.instituteSearch = '';
     this.filter = '';
     this.dataSource.filter = '';
     this.states=[];
+    this.cities = [];
     this.departments = [];
     this.teams = [];
+    this.loadInstitutes();
     if (!this.isSuperAdmin) {
       try {
         const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
@@ -507,16 +533,19 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     this.instituteSearch = found ? found.short_name : '';
   }
 
-  loadCountries( instituteId: string){ 
+  // Country is now the first, standalone filter (independent of Institute), so load the full
+  // global country list rather than scoping it to a single institute's campuses.
+  loadCountries( instituteId?: string){
     const url = `${API_BASE}/location-hierarchy`;
-    this.http.get<any>(url, { params: { institute_id: instituteId } }).subscribe({ next: (res) => { try{ const countries = res?.data?.countries || res?.countries || res?.data || []; this.countries = countries.map((c:any)=> ({ code: c.country_code || c.code || c.id, name: c.country_name || c.name || c.country })); }catch(e){ this.countries = []; } }, error: () => { this.countries = []; } });
+    this.http.get<any>(url).subscribe({ next: (res) => { try{ const countries = res?.data?.countries || res?.countries || res?.data || []; this.countries = countries.map((c:any)=> ({ code: c.country_code || c.code || c.id, name: c.country_name || c.name || c.country })); }catch(e){ this.countries = []; } }, error: () => { this.countries = []; } });
   }
 
   // load states and cities for a selected country (aggregate from countries payload or request country scoped)
   onCountryChange(){
     this.states = [];
     this.cities = [];
-    if(!this.filters.country) return;
+    this.filters.city = '';
+    if(!this.filters.country) { this.refreshInstituteScope(); return; }
     const url = `${API_BASE}/location-hierarchy`;
     const selectedCountry = this.filters.country;
     this.http.get<any>(url, { params: { country_id: selectedCountry } }).subscribe({ next: (res) => {
@@ -560,7 +589,78 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
 
         this.cities = (allCities || []).map((c:any)=> ({ code: c.city_code || c.code || c.id, name: c.city_name || c.name || c.city }));
       }catch(e){ this.states = []; this.cities = []; }
-    }, error: () => { this.states = []; this.cities = []; } });
+      this.refreshInstituteScope();
+    }, error: () => { this.states = []; this.cities = []; this.refreshInstituteScope(); } });
+  }
+
+  // City is a free-text/autocomplete field; suggestions are filtered by whatever the user typed.
+  filteredCities() {
+    const q = String(this.filters.city || '').trim().toLowerCase();
+    if (!q) return this.cities;
+    return this.cities.filter(c => (c.name || '').toLowerCase().includes(q));
+  }
+
+  // The backend's city filter (get-users / get-institutes) expects a city id, not a name, so
+  // resolve the typed/selected city name back to its id here.
+  private resolveCityId(cityName: string): string {
+    const name = String(cityName || '').trim().toLowerCase();
+    if (!name) return '';
+    const found = this.cities.find(c => String(c.name || '').trim().toLowerCase() === name);
+    return found ? String(found.code) : '';
+  }
+
+  onCityFilterChange() {
+    this.refreshInstituteScope();
+  }
+
+  onIndustryFilterChange() {
+    this.filters.sector = '';
+    this.refreshInstituteScope();
+  }
+
+  scopedSectors(): string[] {
+    const industry = this.filters.industry;
+    if (!industry) return [];
+    return this.sectorMap[industry] || [];
+  }
+
+  onSectorFilterChange() {
+    this.refreshInstituteScope();
+  }
+
+  // Reload Institute options scoped to the currently selected Country/City/Industry/Sector.
+  // Falls back to the full institute list (get-institute-list, via loadInstitutes) when none
+  // of those are selected. Reuses the same get-institutes endpoint view-institutes uses.
+  private refreshInstituteScope() {
+    const params: any = {};
+    if (this.filters.country) params.country = this.filters.country;
+    const cityId = this.resolveCityId(this.filters.city);
+    if (cityId) params.city = cityId;
+    if (this.filters.industry) params.industry = this.filters.industry;
+    if (this.filters.sector) params.sector = this.filters.sector;
+
+    if (!Object.keys(params).length) {
+      this.loadInstitutes();
+      return;
+    }
+
+    this.http.get<any>(`${API_BASE}/get-institutes`, { params }).subscribe({
+      next: (res) => {
+        try {
+          const data = Array.isArray(res?.data) ? res.data : [];
+          this.institutes = data.map((r: any) => ({
+            institute_id: r.institute_id || r.id || r._id || '',
+            short_name: r.short_name || r.name || r.institute_name || ''
+          }));
+        } catch (e) {
+          this.institutes = [];
+        }
+        if (this.selectedInstitute && !this.institutes.some(i => String(i.institute_id) === String(this.selectedInstitute))) {
+          this.onInstituteChange('');
+        }
+      },
+      error: () => { this.institutes = []; }
+    });
   }
 
   onStateChange(){ this.cities = []; if(!this.filters.state) return; const url = `${API_BASE}/location-hierarchy`; this.http.get<any>(url, { params: { country: this.filters.country, state: this.filters.state } }).subscribe({ next: (res) => { try{ const cities = res?.data?.cities || res?.cities || res?.data || []; this.cities = cities.map((c:any)=> ({ code: c.city_code || c.code || c.id, name: c.city_name || c.name || c.city })); }catch(e){ this.cities = []; } }, error: () => { this.cities = []; } }); }

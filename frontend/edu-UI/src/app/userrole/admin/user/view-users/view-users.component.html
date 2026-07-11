@@ -50,36 +50,6 @@
           <h4><mat-icon>tune</mat-icon> Filters</h4>
         </div>
         <div class="filter-block">
-          <mat-form-field appearance="outline" class="filter-item local-institute-field" *ngIf="isSuperAdmin">
-            <mat-label>Institute</mat-label>
-            <mat-select [(ngModel)]="selectedInstitute" (selectionChange)="onInstituteChange($event.value)">
-              <!-- [disabled]="!isSuperAdmin"> -->
-              <mat-option value="">Any</mat-option>
-              <mat-option *ngFor="let i of institutes" [value]="i.institute_id">{{i.short_name}}</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="filter-item">
-            <mat-label>Name</mat-label>
-            <input matInput placeholder="Name or username" [(ngModel)]="filters.name" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="filter-item">
-            <mat-label>Department</mat-label>
-            <mat-select [(ngModel)]="filters.department">
-              <mat-option value="">Any</mat-option>
-              <mat-option *ngFor="let d of departments" [value]="d.id">{{d.name}}</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="filter-item">
-            <mat-label>Team</mat-label>
-            <mat-select [(ngModel)]="filters.team">
-              <mat-option value="">Any</mat-option>
-              <mat-option *ngFor="let t of teams" [value]="t.id">{{t.name}}</mat-option>
-            </mat-select>
-          </mat-form-field>
-
           <mat-form-field appearance="outline" class="filter-item">
             <mat-label>Country</mat-label>
             <mat-select [(ngModel)]="filters.country" (selectionChange)="onCountryChange()">
@@ -90,10 +60,60 @@
 
           <mat-form-field appearance="outline" class="filter-item">
             <mat-label>City</mat-label>
-            <mat-select [(ngModel)]="filters.city">
+            <input matInput placeholder="Any" [disabled]="!filters.country" [(ngModel)]="filters.city"
+              [matAutocomplete]="cityAuto" (blur)="onCityFilterChange()" />
+            <mat-autocomplete #cityAuto="matAutocomplete" (optionSelected)="onCityFilterChange()">
               <mat-option value="">Any</mat-option>
-              <mat-option *ngFor="let c of cities" [value]="c.code">{{c.name}}</mat-option>
+              <mat-option *ngFor="let c of filteredCities()" [value]="c.name">{{c.name}}</mat-option>
+            </mat-autocomplete>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Industry</mat-label>
+            <mat-select [(ngModel)]="filters.industry" (selectionChange)="onIndustryFilterChange()">
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let t of industryTypes" [value]="t">{{t}}</mat-option>
             </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Sector</mat-label>
+            <mat-select [(ngModel)]="filters.sector" [disabled]="!filters.industry"
+              (selectionChange)="onSectorFilterChange()">
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let s of scopedSectors()" [value]="s">{{s}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item local-institute-field" *ngIf="isSuperAdmin">
+            <mat-label>Institute</mat-label>
+            <mat-select [(ngModel)]="selectedInstitute" (selectionChange)="onInstituteChange($event.value)">
+              <!-- [disabled]="!isSuperAdmin"> -->
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let i of institutes" [value]="i.institute_id">{{i.short_name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Department</mat-label>
+            <mat-select [(ngModel)]="filters.department" [disabled]="!selectedInstitute"
+              (selectionChange)="onDepartmentFilterChange()">
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let d of departments" [value]="d.id">{{d.name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Team</mat-label>
+            <mat-select [(ngModel)]="filters.team" [disabled]="!filters.department">
+              <mat-option value="">Any</mat-option>
+              <mat-option *ngFor="let t of teams" [value]="t.id">{{t.name}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-item">
+            <mat-label>Name</mat-label>
+            <input matInput placeholder="Name or username" [(ngModel)]="filters.name" />
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="filter-item">
