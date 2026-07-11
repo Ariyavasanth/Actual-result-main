@@ -53,44 +53,64 @@
       </div>
       <div class="filter-block">
         <mat-form-field appearance="outline" class="filter-item">
-          <mat-label>Institute</mat-label>
-          <input matInput placeholder="Any" [(ngModel)]="filters.name" [matAutocomplete]="instituteAuto" />
-          <mat-autocomplete #instituteAuto="matAutocomplete">
-            <mat-option value="">Any</mat-option>
-            <mat-option *ngFor="let i of filteredInstituteOptions()" [value]="i.name">{{i.name}}</mat-option>
-          </mat-autocomplete>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="filter-item">
-          <mat-label>Industry</mat-label>
-          <mat-select [(ngModel)]="filters.industry" placeholder="Industry type">
-            <mat-option value="">Any</mat-option>
-            <mat-option *ngFor="let t of industryTypes" [value]="t">{{t}}</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="filter-item">
-          <mat-label>Sector</mat-label>
-          <mat-select [(ngModel)]="filters.sector" placeholder="Industry sector">
-            <mat-option value="">Any</mat-option>
-            <mat-option *ngFor="let s of industrySectors" [value]="s">{{s}}</mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="filter-item">
           <mat-label>Country</mat-label>
-          <mat-select [(ngModel)]="filters.country">
+          <mat-select [(ngModel)]="filters.country" (openedChange)="onFilterSelectOpened($event, 'country')"
+            (selectionChange)="onCountryFilterChange()">
+            <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+              <input matInput class="select-search-input" placeholder="Search country" [(ngModel)]="countrySearch"
+                [ngModelOptions]="{standalone: true}" (click)="$event.stopPropagation()"
+                (keydown)="stopFilterSearchEvent($event)" (keyup)="stopFilterSearchEvent($event)"
+                (input)="stopFilterSearchEvent($event)" />
+            </mat-option>
             <mat-option value="">Any</mat-option>
-            <mat-option *ngFor="let c of countries" [value]="c.code">{{c.name}}</mat-option>
+            <mat-option *ngFor="let c of filteredCountries" [value]="c.code">{{c.name}}</mat-option>
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="filter-item">
           <mat-label>City</mat-label>
-          <mat-select [(ngModel)]="filters.city">
+          <input matInput placeholder="Any" [disabled]="!filters.country" [(ngModel)]="filters.city"
+            (blur)="onCityFilterChange()" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-item">
+          <mat-label>Industry</mat-label>
+          <mat-select [(ngModel)]="filters.industry" placeholder="Industry type"
+            (openedChange)="onFilterSelectOpened($event, 'industry')" (selectionChange)="onIndustryFilterChange()">
+            <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+              <input matInput class="select-search-input" placeholder="Search industry" [(ngModel)]="industrySearch"
+                [ngModelOptions]="{standalone: true}" (click)="$event.stopPropagation()"
+                (keydown)="stopFilterSearchEvent($event)" (keyup)="stopFilterSearchEvent($event)"
+                (input)="stopFilterSearchEvent($event)" />
+            </mat-option>
             <mat-option value="">Any</mat-option>
-            <mat-option *ngFor="let c of cities" [value]="c.code">{{c.name}}</mat-option>
+            <mat-option *ngFor="let t of filteredIndustryTypes" [value]="t">{{t}}</mat-option>
           </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-item">
+          <mat-label>Sector</mat-label>
+          <mat-select [(ngModel)]="filters.sector" placeholder="Industry sector" [disabled]="!filters.industry"
+            (openedChange)="onFilterSelectOpened($event, 'sector')" (selectionChange)="onSectorFilterChange()">
+            <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+              <input matInput class="select-search-input" placeholder="Search sector" [(ngModel)]="sectorSearch"
+                [ngModelOptions]="{standalone: true}" (click)="$event.stopPropagation()"
+                (keydown)="stopFilterSearchEvent($event)" (keyup)="stopFilterSearchEvent($event)"
+                (input)="stopFilterSearchEvent($event)" />
+            </mat-option>
+            <mat-option value="">Any</mat-option>
+            <mat-option *ngFor="let s of filteredSectors" [value]="s">{{s}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-item">
+          <mat-label>Institute</mat-label>
+          <input matInput placeholder="Any" [disabled]="!filters.industry && !filters.sector"
+            [(ngModel)]="filters.name" [matAutocomplete]="instituteAuto" />
+          <mat-autocomplete #instituteAuto="matAutocomplete">
+            <mat-option value="">Any</mat-option>
+            <mat-option *ngFor="let i of filteredInstituteOptions()" [value]="i.name">{{i.name}}</mat-option>
+          </mat-autocomplete>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="filter-item">

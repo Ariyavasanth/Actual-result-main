@@ -231,6 +231,20 @@ $modal-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 @media (max-width: 26.25rem) { .filters-panel { width: calc(100% - 1.5rem); min-width: unset; max-width: calc(100% - 1.5rem); } }
 :host ::ng-deep .filters-panel .mat-form-field-label { font-size: var(--font-size-base) !important; }
 
+/* Searchable filter dropdowns (Country/City/Industry/Sector) */
+:host ::ng-deep .select-search-option {
+  height: auto !important;
+  min-height: 3rem;
+  cursor: default;
+}
+:host ::ng-deep .select-search-option .mdc-list-item__primary-text { width: 100%; }
+:host ::ng-deep .select-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.875rem;
+}
+
 .applied-filters { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: -0.25rem; padding: 0.75rem 1rem; background: #f8fafc; border: 0.0625rem solid #e2e8f0; border-radius: 0.5rem; }
 .applied-filters-title { font-size: 0.78rem; font-weight: 700; color: #475569; text-transform: uppercase; }
 .applied-filter-chip { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 1.75rem; padding: 0.25rem 0.625rem; border-radius: 0.5rem; background: #fff; border: 0.0625rem solid #cbd5e1; color: #1e293b; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
