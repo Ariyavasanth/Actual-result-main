@@ -50,7 +50,6 @@ export class UserExamComponent{
   // Per-tab filtered tables
   activeSource = new MatTableDataSource<UserTestRow>([]);
   completeSource = new MatTableDataSource<UserTestRow>([]);
-  upcomingSource = new MatTableDataSource<UserTestRow>([]);
   search = '';
   filterPublished: string = '';
 
@@ -228,8 +227,10 @@ export class UserExamComponent{
       };
 
       this.exams = arr.map((x: any) => {
-        const startVal = fmtDate(x.start_time || x.start);
-        const endVal = fmtDate(x.end_time || x.end);
+        const isCompleted = ['complete', 'completed', 'done'].includes((x.type || '').toString().toLowerCase());
+        const startVal = fmtDate(isCompleted ? x.user_start_time : (x.start_time || x.start));
+        const endVal = fmtDate(isCompleted ? x.user_end_time : (x.end_time || x.end));
+        const completedScheduleTest = startVal ? `${startVal} - ${endVal || '--'}` : '--';
         const scheduleTest = (startVal || endVal) ? `${startVal || '—'} - ${endVal || '—'}` : '—';
         return {
           test_id: x.test_id || x.id || x.exam_id,
@@ -239,7 +240,7 @@ export class UserExamComponent{
           user_review: x.user_review || x.review_available || x.review || false,
           start_time: startVal,
           end_time: endVal,
-          scheduleTest,
+          scheduleTest: isCompleted ? completedScheduleTest : scheduleTest,
           pass_mark: x.pass_mark || 0,
           number_of_attempts: x.number_of_attempts || 0,
           duration_mins: x.duration_mins || x.duration || 0,
@@ -282,7 +283,6 @@ export class UserExamComponent{
         configureSorting(this.dataSource);
         configureSorting(this.activeSource);
         configureSorting(this.completeSource);
-        configureSorting(this.upcomingSource);
       }catch(e){}
       this.loader.hide();
       },
@@ -297,9 +297,12 @@ export class UserExamComponent{
     const isComplete = (t?: string) => ['complete','completed','done'].includes(lc(t));
     const isUpcoming = (t?: string) => ['upcoming','scheduled','pending','upcomming'].includes(lc(t));
 
-    this.activeSource.data = this.exams.filter(e => isActive(e.type));
+    this.activeSource.data = this.exams.filter(e => isActive(e.type) || isUpcoming(e.type));
     this.completeSource.data = this.exams.filter(e => isComplete(e.type));
-    this.upcomingSource.data = this.exams.filter(e => isUpcoming(e.type));
+  }
+
+  isUpcomingTest(type?: string): boolean {
+    return ['upcoming','scheduled','pending','upcomming'].includes((type || '').toString().toLowerCase());
   }
 
   // Helpers used by the template to safely check selected options
@@ -380,7 +383,7 @@ export class UserExamComponent{
       const byPublished = this.filterPublished === '' ? true : ((this.filterPublished === 'live') ? !!row.published : !row.published);
       return byText && byPublished;
     };
-    [this.dataSource, this.activeSource, this.completeSource, this.upcomingSource].forEach(ds => {
+    [this.dataSource, this.activeSource, this.completeSource].forEach(ds => {
       ds.filterPredicate = predicate;
       ds.filter = q;
     });
@@ -390,5 +393,3 @@ export class UserExamComponent{
     try{ this.dataSource.sort = this.sort; }catch(e){}
   }
 }
-
-

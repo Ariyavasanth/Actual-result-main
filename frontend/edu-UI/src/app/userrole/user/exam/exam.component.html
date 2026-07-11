@@ -97,7 +97,9 @@
                      <ng-container matColumnDef="status">
                         <th mat-header-cell *matHeaderCellDef>Status</th>
                         <td mat-cell *matCellDef="let row">
-                           <div class="status-pill status-pill--active"><span class="status-dot-sm"></span>{{ row.type | titlecase }}</div>
+                           <div class="status-pill" [ngClass]="isUpcomingTest(row.type) ? 'status-pill--upcoming' : 'status-pill--active'">
+                              <span class="status-dot-sm"></span>{{ isUpcomingTest(row.type) ? 'UPCOMING' : 'ACTIVE' }}
+                           </div>
                         </td>
                      </ng-container>
 
@@ -109,6 +111,7 @@
                                  (click)="launchTest(row)" class="launch-btn">
                                  <mat-icon>rocket_launch</mat-icon> Start
                               </button>
+                               <span *ngIf="isUpcomingTest(row.type)" class="upcoming-label">Scheduled</span>
                            </div>
                         </td>
                      </ng-container>
@@ -173,66 +176,6 @@
                                  (click)="viewReview(row)" class="review-btn">
                                  <mat-icon>rule</mat-icon> Review
                               </button>
-                           </div>
-                        </td>
-                     </ng-container>
-                     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                     <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-                  </table>
-                  <mat-paginator [pageSizeOptions]="[25,50,100]" showFirstLastButtons class="custom-paginator"></mat-paginator>
-               </div>
-            </mat-tab>
-
-            <mat-tab [label]="'Upcoming (' + upcomingSource.data.length + ')'">
-               <div class="tab-table">
-                  <table mat-table [dataSource]="upcomingSource" class="mat-elevation-z1 compact premium-table" matSort>
-                     <ng-container matColumnDef="title">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Title</th>
-                        <td mat-cell *matCellDef="let row" class="cell-primary">
-                           <div class="exam-cell">
-                              <!-- <div class="exam-avatar exam-avatar--upcoming">{{ (row.title || '?').charAt(0).toUpperCase() }}</div> -->
-                              <div class="exam-info">
-                                 <span class="exam-name">{{ row.title }}</span>
-                                 <!-- <span class="exam-sub">{{ row.total_questions || 0 }} questions • {{ row.duration_mins || '—' }} min</span> -->
-                              </div>
-                           </div>
-                        </td>
-                     </ng-container>
-                     <ng-container matColumnDef="scheduleTest">
-                        <th mat-header-cell *matHeaderCellDef mat-sort-header>Schedule Test</th>
-                        <td mat-cell *matCellDef="let row">{{ row.scheduleTest || '—' }}</td>
-                     </ng-container>
-                     <ng-container matColumnDef="duration">
-                        <th mat-header-cell *matHeaderCellDef>Duration</th>
-                        <td mat-cell *matCellDef="let row">
-                           <span class="duration-chip">{{ row.duration_mins || '—' }} min</span>
-                        </td>
-                     </ng-container>
-                     <ng-container matColumnDef="questions">
-                        <th mat-header-cell *matHeaderCellDef>Questions</th>
-                        <td mat-cell *matCellDef="let row">{{ row.total_questions || 0 }}</td>
-                     </ng-container>
-                     <ng-container matColumnDef="pass_mark">
-                        <th mat-header-cell *matHeaderCellDef>Pass %</th>
-                        <td mat-cell *matCellDef="let row">{{ row.pass_mark || 0 }}%</td>
-                     </ng-container>
-                     <ng-container matColumnDef="number_of_attempts">
-                        <th mat-header-cell *matHeaderCellDef>Attempts</th>
-                        <td mat-cell *matCellDef="let row">
-                           <span class="attempts-chip">{{ row.number_of_attempts || 0 }}</span>
-                        </td>
-                     </ng-container>
-                     <ng-container matColumnDef="status">
-                        <th mat-header-cell *matHeaderCellDef>Status</th>
-                        <td mat-cell *matCellDef="let row">
-                           <div class="status-pill status-pill--upcoming"><span class="status-dot-sm"></span>{{ row.type | titlecase }}</div>
-                        </td>
-                     </ng-container>
-                     <ng-container matColumnDef="actions">
-                        <th mat-header-cell *matHeaderCellDef>Actions</th>
-                        <td mat-cell *matCellDef="let row">
-                           <div class="exam-actions">
-                              <span class="upcoming-label">Scheduled</span>
                            </div>
                         </td>
                      </ng-container>

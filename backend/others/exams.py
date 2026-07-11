@@ -484,6 +484,14 @@ def get_user_exam_details(request):
                 user_attempt = 0
             else:
                 user_attempt = len(attempts)
+
+            # Match the attempt represented by this user's list row. These are
+            # the same fields used by the Test Review dialog.
+            displayed_attempt = max(
+                attempts,
+                key=lambda attempt: getattr(attempt, 'attempt_number', 0) or 0,
+                default=None
+            )
             
             no_of_attempts = schedule_obj.number_of_attempts if schedule_obj else exam_obj.number_of_attempts if exam_obj else 0
 
@@ -513,6 +521,10 @@ def get_user_exam_details(request):
                     user_review = True
 
             scheduler_data.append({
+                # Return raw datetimes so Flask serializes them exactly like
+                # the Started/Submitted values in the Test Review API.
+                'user_start_time': getattr(displayed_attempt, 'started_date', None),
+                'user_end_time': getattr(displayed_attempt, 'submitted_date', None),
                 "mapping_id": getattr(row, "mapping_id", None),
                 "schedule_id": getattr(schedule_obj, "schedule_id", None),
                 "schedule_title": getattr(schedule_obj, "title", None),
