@@ -436,17 +436,57 @@ export class ViewInstitutesComponent implements OnInit, AfterViewInit, OnDestroy
     return this.countries.filter(c => (c.name || '').toLowerCase().includes(term));
   }
 
-  // Loads cities scoped to a single country via the existing location-hierarchy?country_id=...
-  // call (same endpoint/param the register page's LocationService already uses), instead of
-  // filtering the entire global cities list in the browser (which is what caused the lag).
+  // Load canonical cities for the selected country, then keep only cities used by
+  // registered institutes/campuses in that country.
   private loadCitiesForCountry(countryCode: string) {
     if (!countryCode) { this.filterCityOptions = []; return; }
+    this.filterCityOptions = [];
+    const selectedCountry = this.countries.find(country => String(country.code) === String(countryCode));
+    const countryName = selectedCountry?.name || '';
+    if (!countryName) return;
     const url = `${API_BASE}/location-hierarchy`;
     this.http.get<any>(url, { params: { country_id: countryCode } }).subscribe({
       next: (res) => {
         try {
           const data = Array.isArray(res?.data?.cities) ? res.data.cities : [];
-          this.filterCityOptions = data.map((c: any) => ({ code: c.id ?? c.city_id ?? c.code, name: c.name ?? c.city_name ?? c.city }));
+          const hierarchyCities = data.map((city: any) => ({
+            code: city.id ?? city.city_id ?? city.city_code ?? city.code,
+            name: city.name ?? city.city_name ?? city.city
+          })).filter((city: any) => city.code && city.name);
+
+          this.http.get<any>(this.apiUrl, { params: { country: countryName } }).subscribe({
+            next: (instituteRes) => {
+              try {
+                const institutes = Array.isArray(instituteRes?.data) ? instituteRes.data : [];
+                const registeredCities: Array<{ code: string; name: string }> = [];
+                institutes.forEach((institute: any) => {
+                  const locations = [institute, ...(Array.isArray(institute?.campuses) ? institute.campuses : [])];
+                  locations.forEach((location: any) => {
+                    const rawCity = location?.city;
+                    const cityCode = location?.city_id || location?.city_code
+                      || (typeof rawCity === 'object' ? rawCity?.city_id || rawCity?.id || rawCity?.city_code || rawCity?.code : rawCity);
+                    const cityName = location?.city_name
+                      || (typeof rawCity === 'object' ? rawCity?.city_name || rawCity?.name || rawCity?.city : rawCity);
+                    const hierarchyMatch = hierarchyCities.find((city: any) =>
+                      (cityCode && String(city.code).toLowerCase() === String(cityCode).toLowerCase())
+                      || (cityName && String(city.name).trim().toLowerCase() === String(cityName).trim().toLowerCase())
+                    );
+                    const resolved = hierarchyMatch || (cityCode && cityName ? { code: cityCode, name: cityName } : null);
+                    if (resolved) registeredCities.push({ code: String(resolved.code), name: String(resolved.name).trim() });
+                  });
+                });
+                const uniqueByName = new Map<string, { code: string; name: string }>();
+                registeredCities.forEach(city => {
+                  const key = city.name.toLowerCase();
+                  if (!uniqueByName.has(key)) uniqueByName.set(key, city);
+                });
+                this.filterCityOptions = Array.from(uniqueByName.values()).sort((a, b) => a.name.localeCompare(b.name));
+              } catch (e) {
+                this.filterCityOptions = [];
+              }
+            },
+            error: () => { this.filterCityOptions = []; }
+          });
         } catch (e) {
           this.filterCityOptions = [];
         }
@@ -454,7 +494,6 @@ export class ViewInstitutesComponent implements OnInit, AfterViewInit, OnDestroy
       error: () => { this.filterCityOptions = []; }
     });
   }
-
   get filteredIndustryTypes(): string[] {
     const term = (this.industrySearch || '').trim().toLowerCase();
     if (!term) return this.industryTypes;
