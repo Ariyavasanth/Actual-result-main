@@ -164,11 +164,11 @@
                               <span>Make this schedule visible to assigned students.</span>
                            </div>
                            <div class="toggle-setting">
-                              <mat-slide-toggle [(ngModel)]="model.multiplereview" name="multipleReview" [disabled]="readOnly">Multiple Review</mat-slide-toggle>
+                              <mat-slide-toggle [formControl]="multipleReviewControl">Multiple Review</mat-slide-toggle>
                               <span>Allow students to reopen the review for the same submitted attempt. This does not allow retakes.</span>
                            </div>
                            <div class="toggle-setting toggle-setting--review">
-                              <mat-slide-toggle [(ngModel)]="model.userreview" name="instantReview" [disabled]="readOnly">Instant Review</mat-slide-toggle>
+                              <mat-slide-toggle [formControl]="instantReviewControl">Instant Review</mat-slide-toggle>
                               <span>Make the selected review content available immediately after submission.</span>
                            </div>
                            <mat-radio-group *ngIf="!model.userreview" class="review-options" [(ngModel)]="model.reviewMode"

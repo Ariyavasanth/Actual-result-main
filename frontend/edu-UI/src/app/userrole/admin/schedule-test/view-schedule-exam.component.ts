@@ -486,9 +486,14 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
         };
         // gather potential fields and set canonical keys
         const pub = payload.publish ?? payload.published ?? payload.is_published ?? payload.isPublished ?? payload.published_flag;
-        const rev = payload.user_review ?? payload.userreview ?? payload.review_available ?? payload.review ?? payload.allow_review;
+        const rev = payload.instant_review ?? payload.user_review ?? payload.userreview ?? payload.review_available ?? payload.review ?? payload.allow_review;
+        const multipleReview = payload.multiple_review ?? payload.multiplereview ?? payload.multipleReview ?? payload.is_multiple_review ?? payload.settings?.multiple_review;
         if (typeof pub !== 'undefined') payload.publish = normalizeBool(pub);
-        if (typeof rev !== 'undefined') payload.user_review = normalizeBool(rev);
+        if (typeof rev !== 'undefined') {
+          payload.instant_review = normalizeBool(rev);
+          payload.user_review = normalizeBool(rev);
+        }
+        if (typeof multipleReview !== 'undefined') payload.multiple_review = normalizeBool(multipleReview);
 
         // Normalize assigned_users to array of ids so the edit form can preselect assigned users
         try {

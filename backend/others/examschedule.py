@@ -280,6 +280,8 @@ def get_exam_schedule_details(request):
         filter = []
         args = getattr(request, "args", {})
         filter.append(func.coalesce(ExamSchedule.is_deleted, False) == False)
+        if args.get('schedule_id'):
+            filter.append(ExamSchedule.schedule_id == args.get('schedule_id'))
         if args.get("institute_id"):
             filter.append(ExamSchedule.institute_id == args.get("institute_id"))
         if args.get("name"):
