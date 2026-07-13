@@ -5,6 +5,46 @@ import datetime
 from others.exam_review import validate_answers
 from sqlalchemy import func
 
+VALID_REVIEW_MODES = {'no_review', 'after_schedule_ends', 'scheduled', 'manual'}
+
+def _as_bool(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return value.strip().lower() in ('1', 'true', 'yes', 'on')
+    return bool(value)
+
+def _parse_iso_datetime(value, field_name):
+    if not value:
+        return None
+    try:
+        return datetime.datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    except (TypeError, ValueError):
+        raise ValueError(f'{field_name} must be a valid ISO 8601 datetime')
+
+def _review_settings(data, defaults=None):
+    defaults = defaults or {}
+    instant_review = _as_bool(data.get('instant_review', data.get('userreview', data.get('user_review'))), defaults.get('instant_review', False))
+    review_mode = 'instant' if instant_review else data.get('review_mode', defaults.get('review_mode', 'no_review'))
+    if not instant_review and review_mode not in VALID_REVIEW_MODES:
+        raise ValueError('review_mode must be no_review, after_schedule_ends, scheduled, or manual')
+
+    review_at = _parse_iso_datetime(data.get('review_at'), 'review_at') if 'review_at' in data else defaults.get('review_at')
+    if review_mode == 'scheduled' and review_at is None:
+        raise ValueError('review_at is required when review_mode is scheduled')
+    if review_mode != 'scheduled':
+        review_at = None
+
+    return {
+        'instant_review': instant_review,
+        'review_mode': review_mode,
+        'review_at': review_at,
+        'show_score': _as_bool(data.get('show_score'), defaults.get('show_score', True)),
+        'show_correct_answers': _as_bool(data.get('show_correct_answers'), defaults.get('show_correct_answers', True)),
+        'show_student_answers': _as_bool(data.get('show_student_answers'), defaults.get('show_student_answers', True)),
+        'show_explanations': _as_bool(data.get('show_explanations'), defaults.get('show_explanations', True)),
+    }
+
 def add_exam_schedule(request):
     # get exam details from the request
     data = request.json
@@ -16,7 +56,10 @@ def add_exam_schedule(request):
     total_questions = data.get("total_questions")
     number_of_attempts = data.get("number_of_attempts")
     published = data.get("published", False)
-    user_review = data.get("userreview", False)
+    try:
+        review_settings = _review_settings(data)
+    except ValueError as error:
+        return {"statusMessage": str(error), "status": False}, 400
 
     start_time_str = data.get("start_time")
     end_time_str = data.get("end_time")
@@ -43,7 +86,13 @@ def add_exam_schedule(request):
             start_time=start_time,
             end_time=end_time,
             published=1 if published else 0,
-            user_review=1 if user_review else 0,
+            user_review=1 if review_settings['instant_review'] else 0,
+            review_mode=review_settings['review_mode'],
+            review_at=review_settings['review_at'],
+            show_score=review_settings['show_score'],
+            show_correct_answers=review_settings['show_correct_answers'],
+            show_student_answers=review_settings['show_student_answers'],
+            show_explanations=review_settings['show_explanations'],
             created_by=created_by,
             number_of_attempts=number_of_attempts_val,
             pass_mark=pass_mark_val
@@ -143,13 +192,35 @@ def update_exam_schedule(request):
             except Exception:
                 pass
 
-        # published / user_review
+        # published / review settings
         if 'published' in data:
             sched.published = 1 if data.get('published') else 0
         if 'userreview' in data:
             sched.user_review = 1 if data.get('userreview') else 0
         if 'user_review' in data:
             sched.user_review = 1 if data.get('user_review') else 0
+
+        review_keys = {'instant_review', 'userreview', 'user_review', 'review_mode', 'review_at', 'show_score', 'show_correct_answers', 'show_student_answers', 'show_explanations'}
+        if review_keys.intersection(data):
+            try:
+                settings = _review_settings(data, {
+                    'instant_review': sched.user_review == 1,
+                    'review_mode': sched.review_mode or 'no_review',
+                    'review_at': sched.review_at,
+                    'show_score': sched.show_score,
+                    'show_correct_answers': sched.show_correct_answers,
+                    'show_student_answers': sched.show_student_answers,
+                    'show_explanations': sched.show_explanations,
+                })
+            except ValueError as error:
+                return {"statusMessage": str(error), "status": False}, 400
+            sched.user_review = 1 if settings['instant_review'] else 0
+            sched.review_mode = settings['review_mode']
+            sched.review_at = settings['review_at']
+            sched.show_score = settings['show_score']
+            sched.show_correct_answers = settings['show_correct_answers']
+            sched.show_student_answers = settings['show_student_answers']
+            sched.show_explanations = settings['show_explanations']
 
         # times
         start_time_str = data.get('start_time')
@@ -267,6 +338,13 @@ def get_exam_schedule_details(request):
                 "updated_date": schedule.updated_date,
                 "published": True if schedule.published == 1 else False,
                 "user_review": True if schedule.user_review == 1 else False,
+                "instant_review": True if schedule.user_review == 1 else False,
+                "review_mode": schedule.review_mode or ('instant' if schedule.user_review == 1 else 'no_review'),
+                "review_at": schedule.review_at,
+                "show_score": True if schedule.show_score is None else bool(schedule.show_score),
+                "show_correct_answers": True if schedule.show_correct_answers is None else bool(schedule.show_correct_answers),
+                "show_student_answers": True if schedule.show_student_answers is None else bool(schedule.show_student_answers),
+                "show_explanations": True if schedule.show_explanations is None else bool(schedule.show_explanations),
             })
     # institute_id	start_time	end_time	created_by	created_date	updated_by	updated_date	published
         json_data = {

@@ -822,6 +822,7 @@ export class AdminScheduleTestComponent {
       created_by: string;
       published: any;
       userreview: any;
+      instant_review: boolean;
       review_mode: string;
       review_at: string | null;
       show_score: boolean;
@@ -843,6 +844,7 @@ export class AdminScheduleTestComponent {
       created_by: sessionStorage.getItem('user_id') || sessionStorage.getItem('username') || 'admin',
       published: this.model.publish || false,
       userreview: !!this.model.userreview,
+      instant_review: !!this.model.userreview,
       review_mode: this.model.userreview ? 'instant' : (this.model.reviewMode || 'no_review'),
       review_at: reviewAtIso,
       show_score: !!this.model.showScore,
@@ -945,7 +947,7 @@ export class AdminScheduleTestComponent {
           };
           const pubCandidates = [e.publish, e.published, e.is_published, e.isPublished, e.published_flag, (e.settings && e.settings.publish)];
           for (const c of pubCandidates) { if (typeof c !== 'undefined') { this.model.publish = toBool(c); break; } }
-          const reviewCandidates = [e.user_review, e.userreview, e.review_available, e.review, e.allow_review, e.review_enabled, e.is_reviewable, (e.settings && e.settings.user_review)];
+          const reviewCandidates = [e.instant_review, e.user_review, e.userreview, e.review_available, e.review, e.allow_review, e.review_enabled, e.is_reviewable, (e.settings && e.settings.user_review)];
           for (const c of reviewCandidates) { if (typeof c !== 'undefined') { this.model.userreview = toBool(c); break; } }
           this.applyReviewSettings(e, toBool);
         } catch (err) { /* ignore */ }
@@ -1006,7 +1008,7 @@ export class AdminScheduleTestComponent {
           };
           const pubCandidates = [v.publish, v.published, v.is_published, v.isPublished, v.published_flag, (v.settings && v.settings.publish)];
           for (const c of pubCandidates) { if (typeof c !== 'undefined') { this.model.publish = toBool(c); break; } }
-          const reviewCandidates = [v.user_review, v.userreview, v.review_available, v.review, v.allow_review, v.review_enabled, v.is_reviewable, (v.settings && v.settings.user_review)];
+          const reviewCandidates = [v.instant_review, v.user_review, v.userreview, v.review_available, v.review, v.allow_review, v.review_enabled, v.is_reviewable, (v.settings && v.settings.user_review)];
           for (const c of reviewCandidates) { if (typeof c !== 'undefined') { this.model.userreview = toBool(c); break; } }
           this.applyReviewSettings(v, toBool);
         } catch (err) { /* ignore */ }

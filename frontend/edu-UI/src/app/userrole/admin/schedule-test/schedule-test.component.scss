@@ -58,6 +58,13 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 .date-field { flex:0 1 60%; }
 .time-field { flex:1 0 9rem; }
 .schedule-toggles { display:grid; align-items:center; gap:1.5rem; margin-top:0.625rem; }
+.review-settings-panel { margin-top:1rem; padding:1rem; border:1px solid var(--theme-3-border); border-radius:$radius; background:var(--bg-2); }
+.review-settings-panel h3 { margin:0 0 0.75rem; font:600 0.9rem/1.2 inherit; color:var(--theme-3-text-1); }
+.review-options,.review-content-options { display:grid; gap:0.75rem; margin-top:0.875rem; }
+.review-schedule-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0.75rem; margin:0.25rem 0 0.25rem 1.75rem; }
+.review-schedule-fields mat-form-field { width:100%; }
+.review-content-panel { margin-top:0.75rem; }
+.review-content-options { grid-template-columns:repeat(2,minmax(0,1fr)); margin-top:0; }
 
 /* ── Exam preview ── */
 .exam-preview { margin-top:0.625rem; padding:1rem 1.125rem; border-radius:0.75rem; background:var(--bg-2); border:1px dashed var(--theme-3-border); }
@@ -113,4 +120,4 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 
 /* ── Responsive ── */
 @media (max-width:56.25rem) { .schedule-row{flex-direction:column;} .time-field{flex:1 1 100%;max-width:100%;} .form-col-2{flex:1 1 100%;} .section-block{padding:0.875rem 1rem;} .review-grid{grid-template-columns:1fr;} .review-summary .row{grid-template-columns:1fr;} .review-summary .label{margin-bottom:0.25rem;} }
-@media (max-width:45rem) { .page{padding:0.75rem 0.75rem 2rem;} .step-content{padding:1rem;} .field-row{flex-direction:column;gap:0;} :host ::ng-deep .mat-horizontal-stepper-header-container{overflow-x:auto;} }
+@media (max-width:45rem) { .page{padding:0.75rem 0.75rem 2rem;} .step-content{padding:1rem;} .field-row{flex-direction:column;gap:0;} .review-schedule-fields,.review-content-options{grid-template-columns:1fr;} .review-schedule-fields{margin-left:0;} :host ::ng-deep .mat-horizontal-stepper-header-container{overflow-x:auto;} }
