@@ -4,7 +4,7 @@ from db.db import SQLiteDB
 from db.models import User, Exam, ExamSchedule, Question, Option, Answer,Exam_Attempt, ExamScheduleMapping, ExamReviewComments,ExamReviewCommentsHistory, MarksHistory
 from others.llm import descriptive_evaluation, openai_client
 
-def review_user_exam(request):
+def review_user_exam(request, current_user=None):
 
     db = SQLiteDB()
     session = db.connect()
@@ -15,6 +15,16 @@ def review_user_exam(request):
 
     user_id: str = args.get("user_id", "")
     schedule_id: str = args.get("scheduler_id", "")
+    attempt_id: str = args.get("attempt_id", "")
+
+    current_user_role = str(getattr(current_user, "user_role", "") or "").lower()
+    is_student_request = current_user_role in ("user", "student", "learner")
+
+    # A student review allowance belongs to the authenticated student. Never
+    # let one student consume another student's per-attempt allowance.
+    if is_student_request and str(getattr(current_user, "user_id", "")) != str(user_id):
+        session.close()
+        return {"statusMessage": "Access denied", "status": False}, 403
 
     try:
         # Fetch exam attempt records for the user and exam schedule
@@ -33,26 +43,69 @@ def review_user_exam(request):
             return {"statusMessage": "Schedule not found", "status": False}, 404
 
         completed_attempts = [attempt for attempt in attempts if attempt.submitted_date or attempt.status in ('submitted', 'evaluated')]
-        now = datetime.datetime.utcnow()
+        completed_attempts.sort(key=lambda attempt: attempt.attempt_number or 0)
         review_mode = exam_schedule.review_mode or ('instant' if exam_schedule.user_review == 1 else 'no_review')
-        review_available = bool(completed_attempts) and (
+
+        requested_attempt = None
+        if attempt_id:
+            requested_attempt = next(
+                (attempt for attempt in completed_attempts if str(attempt.attempt_id) == str(attempt_id)),
+                None
+            )
+            if not requested_attempt:
+                return {"statusMessage": "Submitted attempt not found", "status": False}, 404
+        elif is_student_request and completed_attempts:
+            # Older student clients do not send attempt_id. Select one eligible
+            # attempt so another attempt in the schedule remains independent.
+            eligible_attempts = completed_attempts
+            if review_mode == 'manual':
+                eligible_attempts = [attempt for attempt in completed_attempts if attempt.status == 'evaluated']
+            unreviewed_attempts = [
+                attempt for attempt in eligible_attempts
+                if not getattr(attempt, 'review_opened_at', None)
+            ]
+            fallback_attempts = (
+                unreviewed_attempts
+                if not bool(exam_schedule.multiple_review) and unreviewed_attempts
+                else eligible_attempts
+            )
+            requested_attempt = fallback_attempts[-1] if fallback_attempts else None
+
+        review_attempts = [requested_attempt] if requested_attempt else completed_attempts
+        now = datetime.datetime.utcnow()
+        review_available = bool(review_attempts) and (
             review_mode == 'instant'
             or (review_mode == 'after_schedule_ends' and exam_schedule.end_time and now >= exam_schedule.end_time)
             or (review_mode == 'scheduled' and exam_schedule.review_at and now >= exam_schedule.review_at)
-            or (review_mode == 'manual' and any(attempt.status == 'evaluated' for attempt in completed_attempts))
+            or (review_mode == 'manual' and any(attempt.status == 'evaluated' for attempt in review_attempts))
         )
         if not review_available:
             return {"statusMessage": "Review is not available for this test", "status": False}, 403
 
-        # This gates repeat viewing of the same submitted attempt, not creation of another attempt.
-        if not bool(exam_schedule.multiple_review) and any(attempt.review_opened_at for attempt in completed_attempts):
+        # Multiple Review is a student-only, per-attempt allowance. Admins use
+        # the same public endpoint but must never check or consume it.
+        if (is_student_request and not bool(exam_schedule.multiple_review)
+                and requested_attempt.review_opened_at):
             return {"statusMessage": "This test review has already been viewed", "status": False}, 403
+
+        if is_student_request:
+            if not bool(exam_schedule.multiple_review):
+                claimed = session.query(Exam_Attempt).filter(
+                    Exam_Attempt.attempt_id == requested_attempt.attempt_id,
+                    Exam_Attempt.review_opened_at.is_(None)
+                ).update({Exam_Attempt.review_opened_at: now}, synchronize_session=False)
+                if not claimed:
+                    return {"statusMessage": "This test review has already been viewed", "status": False}, 403
+                requested_attempt.review_opened_at = now
+            elif requested_attempt.review_opened_at is None:
+                requested_attempt.review_opened_at = now
+                session.add(requested_attempt)
 
         exam = session.query(Exam).filter(Exam.exam_id == exam_schedule.exam_id).first()
         total_questions = exam.total_questions if exam else 0
 
         attempt_reviews = []
-        for attempt in completed_attempts:
+        for attempt in review_attempts:
             review_data = {}
             review_data["attempt_id"] = attempt.attempt_id
             review_data["attempt_number"] = attempt.attempt_number
@@ -173,11 +226,8 @@ def review_user_exam(request):
             review_data["total_marks"] = total_marks if exam_schedule.show_score else None
             attempt_reviews.append(review_data)
 
-        for attempt in completed_attempts:
-            if attempt.review_opened_at is None:
-                attempt.review_opened_at = now
-                session.add(attempt)
-        session.commit()
+        if is_student_request:
+            session.commit()
 
     except Exception as e:
         print(f"Error in review_user_exam: {str(e)}" + " - Line # : " + str(e.__traceback__.tb_lineno))

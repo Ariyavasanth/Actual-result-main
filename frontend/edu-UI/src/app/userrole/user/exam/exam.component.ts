@@ -34,6 +34,7 @@ export interface UserTestRow {
   type?: string;
   user_review?: boolean;
   review_available?: boolean;
+  review_attempt_id?: string;
   attempted?: boolean;
   expired?: boolean;
 }
@@ -196,7 +197,9 @@ export class UserExamComponent{
       const userId = userRaw ? (JSON.parse(userRaw)?.user_id || JSON.parse(userRaw)?.id || '') : '';
       const schedulerId = row.schedule_id || row.test_id || '';
       if(!userId || !schedulerId) { try { notify('Missing user or test identifiers for review', 'error'); } catch(e){}; return; }
-      const url = `${API_BASE}/review-user-exam?user_id=${encodeURIComponent(String(userId))}&scheduler_id=${encodeURIComponent(String(schedulerId))}`;
+      const attemptId = (row as any).review_attempt_id || (row as any).attempt_id || '';
+      const attemptParam = attemptId ? `&attempt_id=${encodeURIComponent(String(attemptId))}` : '';
+      const url = `${API_BASE}/review-user-exam?user_id=${encodeURIComponent(String(userId))}&scheduler_id=${encodeURIComponent(String(schedulerId))}${attemptParam}`;
       this.reviewLoading = true; this.reviewAttempts = []; this.reviewOpen = true; this.reviewSelectedAttempt = 0;
       this.http.get<any>(url).subscribe({ next: (res) => {
         try{
@@ -253,7 +256,12 @@ export class UserExamComponent{
     }catch(e){ try { notify('Failed to request review', 'error'); } catch(e){} }
   }
 
-  closeReview(){ this.reviewOpen = false; this.reviewAttempts = []; this.reviewSelectedAttempt = 0; }
+  closeReview(){
+    this.reviewOpen = false;
+    this.reviewAttempts = [];
+    this.reviewSelectedAttempt = 0;
+    this.loadExams();
+  }
 
   /** Filter review comments by category (missing / incorrect / incomplete) */
   reviewComments(q: any, categories: string | string[]): any[] {
@@ -334,6 +342,7 @@ export class UserExamComponent{
           // whether review is available for this user on this exam
           user_review: reviewAvailable,
           review_available: reviewAvailable,
+          review_attempt_id: x.review_attempt_id || '',
           attempted,
           expired,
           start_time: startVal,

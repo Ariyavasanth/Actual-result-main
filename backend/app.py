@@ -362,7 +362,8 @@ def get_user_exams():
 @edu_blueprint.route('/review-user-exam', methods=['GET'])
 @jwt_required
 def review_user_exam_route():
-    response_data, status_code = review_user_exam(request)
+    current_user = get_current_user_from_request()
+    response_data, status_code = review_user_exam(request, current_user)
     return jsonify(response_data), status_code
 
 @edu_blueprint.route('/validate-answers/<attempt_id>', methods=['POST'])

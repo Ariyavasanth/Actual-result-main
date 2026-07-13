@@ -584,8 +584,21 @@ def get_user_exam_details(request):
                 elif review_mode == 'manual':
                     user_review = any(attempt.status == 'evaluated' for attempt in submitted_attempts)
 
-            # multiple_review means repeated views of submitted results only; it never grants a retake.
-            already_reviewed = any(getattr(attempt, 'review_opened_at', None) for attempt in submitted_attempts)
+            # The review row represents one submitted attempt. With one-time
+            # review, select the newest eligible attempt that is still unseen.
+            review_candidates = submitted_attempts
+            if review_mode == 'manual':
+                review_candidates = [attempt for attempt in submitted_attempts if attempt.status == 'evaluated']
+            unreviewed_attempts = [
+                attempt for attempt in review_candidates
+                if not getattr(attempt, 'review_opened_at', None)
+            ]
+            displayed_review_attempt = max(
+                unreviewed_attempts if not bool(schedule_obj.multiple_review) and unreviewed_attempts else review_candidates,
+                key=lambda attempt: getattr(attempt, 'attempt_number', 0) or 0,
+                default=None
+            )
+            already_reviewed = bool(review_candidates) and not bool(unreviewed_attempts)
             if already_reviewed and not bool(schedule_obj.multiple_review):
                 user_review = False
             if schedule_obj.start_time <= current_time <= schedule_obj.end_time:
@@ -602,6 +615,7 @@ def get_user_exam_details(request):
             scheduler_data.append({
                 'review_available': user_review,
                 'multiple_review': bool(schedule_obj.multiple_review),
+                'review_attempt_id': getattr(displayed_review_attempt, 'attempt_id', None),
                 'attempted': attempted,
                 'expired': expired,
                 # Return raw datetimes so Flask serializes them exactly like
