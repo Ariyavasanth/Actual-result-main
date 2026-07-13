@@ -67,7 +67,14 @@
 
                      <ng-container matColumnDef="scheduleTest">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Schedule Test</th>
-                        <td mat-cell *matCellDef="let row">{{ row.scheduleTest || '—' }}</td>
+                        <td mat-cell *matCellDef="let row">
+                           <div *ngIf="row.scheduleTest; else noActiveSchedule" class="schedule-range">
+                              <div class="schedule-time schedule-time--start">{{ row.scheduleTest.split(' - ')[0] }}</div>
+                              <div class="schedule-separator">-</div>
+                              <div class="schedule-time schedule-time--end">{{ row.scheduleTest.split(' - ')[1] || '—' }}</div>
+                           </div>
+                           <ng-template #noActiveSchedule>—</ng-template>
+                        </td>
                      </ng-container>
 
                      <ng-container matColumnDef="duration">
@@ -140,7 +147,14 @@
                      </ng-container>
                      <ng-container matColumnDef="scheduleTest">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header>Schedule Test</th>
-                        <td mat-cell *matCellDef="let row">{{ row.scheduleTest || '—' }}</td>
+                        <td mat-cell *matCellDef="let row">
+                           <div *ngIf="row.scheduleTest; else noCompletedSchedule" class="schedule-range">
+                              <div class="schedule-time schedule-time--start">{{ row.scheduleTest.split(' - ')[0] }}</div>
+                              <div class="schedule-separator">-</div>
+                              <div class="schedule-time schedule-time--end">{{ row.scheduleTest.split(' - ')[1] || '—' }}</div>
+                           </div>
+                           <ng-template #noCompletedSchedule>—</ng-template>
+                        </td>
                      </ng-container>
                      <ng-container matColumnDef="duration">
                         <th mat-header-cell *matHeaderCellDef>Duration</th>
@@ -198,7 +212,12 @@
                   <!-- <div class="exam-card-avatar">{{ (exam.title || '?').charAt(0).toUpperCase() }}</div> -->
                   <div>
                      <div class="title">{{exam.title}}</div>
-                     <div class="muted small">{{ exam.scheduleTest || '—' }}</div>
+                     <div *ngIf="exam.scheduleTest; else noMobileSchedule" class="schedule-range schedule-range--mobile">
+                        <div class="schedule-time schedule-time--start">{{ exam.scheduleTest.split(' - ')[0] }}</div>
+                        <div class="schedule-separator">-</div>
+                        <div class="schedule-time schedule-time--end">{{ exam.scheduleTest.split(' - ')[1] || '—' }}</div>
+                     </div>
+                     <ng-template #noMobileSchedule><div class="muted small">—</div></ng-template>
                   </div>
                </div>
                <div class="pill">{{ exam.total_questions || 0 }} Q</div>

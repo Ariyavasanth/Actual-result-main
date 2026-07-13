@@ -16,7 +16,7 @@ $shadow-panel: 0 1.5rem 3.75rem rgba(5,18,40,0.22), 0 0.375rem 1rem rgba(5,18,40
   --yellow-bg: #fff8e6;
   --orange-bg: #fff4e1;
   --blue-bg: #e6f0ff;
-  --green-text: #166534;
+  --green-text: #16a34a;
   --red-text: #b91c1c;
   --yellow-text: #b45309;
   --orange-text: #c2410c;
@@ -66,6 +66,15 @@ $shadow-panel: 0 1.5rem 3.75rem rgba(5,18,40,0.22), 0 0.375rem 1rem rgba(5,18,40
 .premium-table td.mat-cell { padding: 0.625rem 0.875rem; font-size: 0.8125rem; color: var(--theme-3-text-2, #334155); border-bottom: 0.0625rem solid #f1f5f9; vertical-align: middle; transition: background 0.15s $ease; }
 .premium-table tr.mat-row:nth-child(even) td { background: rgba(248,250,252,0.5); }
 .premium-table tr.mat-row:hover td { background: rgba(99,102,241,0.045); }
+
+// Schedule range
+.schedule-range { display: inline-flex; flex-direction: column; align-items: stretch; min-width: 0; max-width: 100%; }
+.schedule-time { display: flex; align-items: center; gap: 0.5rem; min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+.schedule-time::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; flex: 0 0 0.5rem; }
+.schedule-time--start::before { background: var(--green-text, #16a34a); }
+.schedule-time--end::before { background: var(--red-text, #dc2626); }
+.schedule-separator { align-self: center; line-height: 1; padding: 0.125rem 0; }
+.schedule-range--mobile { margin-top: 0.25rem; font-size: 0.75rem; color: var(--theme-3-text-3); }
 
 // ── Avatar cell for tables ──
 .exam-cell { display: flex; align-items: center; gap: 0.75rem; }
@@ -172,7 +181,7 @@ $shadow-panel: 0 1.5rem 3.75rem rgba(5,18,40,0.22), 0 0.375rem 1rem rgba(5,18,40
 .status-badge.status-correct { background:var(--green-bg); color:var(--green-text); border:0.0625rem solid var(--bgreen-border); }
 .status-badge.status-incorrect { background:var(--red-bg); color:var(--red-text); border:0.0625rem solid var(--bred-border); }
 .result-badge { display:inline-block; padding:0.25rem 0.75rem; border-radius:1rem; font-size:0.6875rem; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
-.result-badge.result-pass { background:linear-gradient(135deg, var(--green-text), #059669); color:var(--button-text-1)!important; box-shadow:0 0.125rem 0.5rem var(--theme-3-hanover-bg); }
+.result-badge.result-pass { background:linear-gradient(135deg, var(--green-text), #16a34a); color:var(--button-text-1)!important; box-shadow:0 0.125rem 0.5rem var(--theme-3-hanover-bg); }
 .result-badge.result-fail { background:linear-gradient(135deg, var(--red-text), #dc2626); color:var(--button-text-1); box-shadow:0 0.125rem 0.5rem var(--theme-3-hanover-bg); }
 
 // ── Question review cards ──
@@ -325,4 +334,3 @@ $shadow-panel: 0 1.5rem 3.75rem rgba(5,18,40,0.22), 0 0.375rem 1rem rgba(5,18,40
   .meta-row.secondary-row .meta-item:not(:last-child)::after { display:none; }
   .meta-row.secondary-row .meta-item:not(:last-child) { border-bottom:0.0625rem solid var(--bg-2); }
 }
-
