@@ -479,7 +479,10 @@ def get_user_exam_details(request):
         ).join(
             Exam,
             ExamSchedule.exam_id == Exam.exam_id
-        ).filter(*filter).all()
+        ).filter(
+            ExamSchedule.published == 1,
+            *filter
+        ).all()
 
         # Include completed history when the schedule still exists but its
         # current user mapping was changed after this user submitted it.
@@ -519,6 +522,7 @@ def get_user_exam_details(request):
                     Exam,
                     ExamSchedule.exam_id == Exam.exam_id
                 ).filter(
+                    ExamSchedule.published == 1,
                     ExamSchedule.schedule_id.in_(missing_schedule_ids)
                 ).all()
                 rows.extend((None, schedule, exam) for schedule, exam in history_rows)
@@ -701,6 +705,15 @@ def launch_exam_details(schedule_id, user_id):
         return {"statusMessage": "Error connecting to database", "status": False}, 500
 
     try:
+        # An unpublished schedule must behave like a missing schedule for all
+        # student-facing access, including direct launch requests.
+        exam_schedule = session.query(ExamSchedule).filter(
+            ExamSchedule.schedule_id == schedule_id,
+            ExamSchedule.published == 1
+        ).first()
+        if not exam_schedule:
+            return {"statusMessage": "Schedule not found", "status": False}, 404
+
         # add Exam_Attempts 
         # Check if an attempt already exists for this user and exam
         existing_attempt = session.query(Exam_Attempt).filter_by(schedule_id=schedule_id, user_id=user_id).order_by(Exam_Attempt.attempt_number.desc()).first()
@@ -718,9 +731,6 @@ def launch_exam_details(schedule_id, user_id):
         )
         session.add(new_attempt)
         session.commit()
-
-        # get ExamSchedule details
-        exam_schedule = session.query(ExamSchedule).filter_by(schedule_id=schedule_id).first()
 
         # get Exam details
         exam_data = session.query(Exam).filter_by(exam_id=exam_schedule.exam_id).first()
@@ -840,12 +850,26 @@ def submit_exam_answers(data):
         submitted_date = data.get("submitted_at")
         time_taken_mins = data.get("time_taken_mins")
         attempt_id = data.get("attempt_id")
+
+        # Re-check publication at submission time because a schedule may have
+        # been unpublished after the student launched it. When an attempt
+        # exists, bind this check to its actual schedule as well as the
+        # request's schedule_id so a different published ID cannot bypass it.
+        exam_attempt = session.query(Exam_Attempt).filter_by(attempt_id=attempt_id).first()
+        attempt_schedule_id = exam_attempt.schedule_id if exam_attempt else schedule_id
+        exam_schedule = session.query(ExamSchedule).filter(
+            ExamSchedule.schedule_id == schedule_id,
+            ExamSchedule.schedule_id == attempt_schedule_id,
+            ExamSchedule.published == 1
+        ).first()
+        if not exam_schedule:
+            session.close()
+            return {"statusMessage": "Schedule not found", "status": False}, 404
         
         submitted_date = datetime.fromisoformat(submitted_date.replace("Z", "+00:00"))
 
         # update records in Exam_Attempt
         # Update the Exam_Attempt record for the given attempt_id
-        exam_attempt = session.query(Exam_Attempt).filter_by(attempt_id=attempt_id).first()
         if exam_attempt:
             exam_attempt.submitted_date = submitted_date
             exam_attempt.status = "submitted"

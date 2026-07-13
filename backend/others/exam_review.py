@@ -23,7 +23,12 @@ def review_user_exam(request):
             Exam_Attempt.schedule_id == schedule_id
         ).all()
         # get total questions in the exam
-        exam_schedule = session.query(ExamSchedule).filter(ExamSchedule.schedule_id == schedule_id ).first()
+        # Treat unpublished schedules as missing so students cannot bypass the
+        # schedule list and open a review directly.
+        exam_schedule = session.query(ExamSchedule).filter(
+            ExamSchedule.schedule_id == schedule_id,
+            ExamSchedule.published == 1
+        ).first()
         if not exam_schedule:
             return {"statusMessage": "Schedule not found", "status": False}, 404
 
