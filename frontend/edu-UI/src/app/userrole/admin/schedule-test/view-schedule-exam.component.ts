@@ -55,7 +55,7 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
   schedules: any[] = [];
   dataSource = new MatTableDataSource<any>([]);
   hasAppliedFilters = false;
-  columns: string[] = ['title', 'institute', 'start', 'end', 'publish', 'actions'];
+  columns: string[] = ['title', 'institute', 'schedule', 'publish', 'actions'];
   selectedSchedule: any = null;
 
   private baseUrl = API_BASE;
@@ -306,6 +306,8 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
   //   }, error: (err) => { console.warn('Failed to load categories', err); this.categories = []; } });
   // }
   ngAfterViewInit(): void {
+    this.dataSource.sortingDataAccessor = (item: any, property: string) =>
+      property === 'schedule' ? item.start : item[property];
     this.dataSource.sort = this.sort;
   }
 

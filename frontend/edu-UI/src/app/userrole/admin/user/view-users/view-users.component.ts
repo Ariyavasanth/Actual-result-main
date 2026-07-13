@@ -533,13 +533,59 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     this.instituteSearch = found ? found.short_name : '';
   }
 
-  // Country is now the first, standalone filter (independent of Institute), so load the full
-  // global country list rather than scoping it to a single institute's campuses.
-  loadCountries( instituteId?: string){
-    const url = `${API_BASE}/location-hierarchy`;
-    this.http.get<any>(url).subscribe({ next: (res) => { try{ const countries = res?.data?.countries || res?.countries || res?.data || []; this.countries = countries.map((c:any)=> ({ code: c.country_code || c.code || c.id, name: c.country_name || c.name || c.country })); }catch(e){ this.countries = []; } }, error: () => { this.countries = []; } });
-  }
+  // Populate the Country filter only from countries used by registered institutes.
+  loadCountries(instituteId?: string) {
+    this.countries = [];
+    const hierarchyUrl = `${API_BASE}/location-hierarchy`;
+    this.http.get<any>(hierarchyUrl).subscribe({
+      next: (hierarchyRes) => {
+        try {
+          const locationCountries = hierarchyRes?.data?.countries || hierarchyRes?.countries || hierarchyRes?.data || [];
+          const hierarchyCountries = (Array.isArray(locationCountries) ? locationCountries : []).map((country: any) => ({
+            code: country.country_code || country.code || country.id,
+            name: country.country_name || country.name || country.country
+          })).filter((country: any) => country.code && country.name);
 
+          this.http.get<any>(`${API_BASE}/get-institutes`).subscribe({
+            next: (instituteRes) => {
+              try {
+                const institutes = Array.isArray(instituteRes?.data) ? instituteRes.data : [];
+                const registeredCountries: Array<{ code: string; name: string }> = [];
+                institutes.forEach((institute: any) => {
+                  const locations = [institute, ...(Array.isArray(institute?.campuses) ? institute.campuses : [])];
+                  locations.forEach((location: any) => {
+                    const rawCountry = location?.country;
+                    const countryCode = location?.country_id || location?.country_code
+                      || (typeof rawCountry === 'object' ? rawCountry?.country_id || rawCountry?.id || rawCountry?.country_code || rawCountry?.code : rawCountry);
+                    const countryName = location?.country_name
+                      || (typeof rawCountry === 'object' ? rawCountry?.country_name || rawCountry?.name || rawCountry?.country : rawCountry);
+                    const hierarchyMatch = hierarchyCountries.find((country: any) =>
+                      (countryCode && String(country.code).toLowerCase() === String(countryCode).toLowerCase())
+                      || (countryName && String(country.name).trim().toLowerCase() === String(countryName).trim().toLowerCase())
+                    );
+                    const resolved = hierarchyMatch || (countryCode && countryName ? { code: countryCode, name: countryName } : null);
+                    if (resolved) registeredCountries.push({ code: String(resolved.code), name: String(resolved.name).trim() });
+                  });
+                });
+                const uniqueByName = new Map<string, { code: string; name: string }>();
+                registeredCountries.forEach(country => {
+                  const key = country.name.toLowerCase();
+                  if (!uniqueByName.has(key)) uniqueByName.set(key, country);
+                });
+                this.countries = Array.from(uniqueByName.values()).sort((a, b) => a.name.localeCompare(b.name));
+              } catch (e) {
+                this.countries = [];
+              }
+            },
+            error: () => { this.countries = []; }
+          });
+        } catch (e) {
+          this.countries = [];
+        }
+      },
+      error: () => { this.countries = []; }
+    });
+  }
   // load states and cities for a selected country (aggregate from countries payload or request country scoped)
   onCountryChange(){
     this.states = [];

@@ -150,16 +150,22 @@
                     <td mat-cell *matCellDef="let s">{{ s.institute }}</td>
                 </ng-container>
 
-                <!-- Start Column -->
-                <ng-container matColumnDef="start">
-                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Start</th>
-                    <td mat-cell *matCellDef="let s">{{ s.start || '—' }}</td>
-                </ng-container>
-
-                <!-- End Column -->
-                <ng-container matColumnDef="end">
-                    <th mat-header-cell *matHeaderCellDef mat-sort-header>End</th>
-                    <td mat-cell *matCellDef="let s">{{ s.end || '—' }}</td>
+                <!-- Schedule Column -->
+                <ng-container matColumnDef="schedule">
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Schedule Test</th>
+                    <td mat-cell *matCellDef="let s">
+                        <div class="schedule-cell">
+                            <div class="schedule-time">
+                                <span class="schedule-marker schedule-marker--start" aria-hidden="true"></span>
+                                <span>{{ s.start || '—' }}</span>
+                            </div>
+                            <div class="schedule-separator" aria-hidden="true">-</div>
+                            <div class="schedule-time">
+                                <span class="schedule-marker schedule-marker--end" aria-hidden="true"></span>
+                                <span>{{ s.end || '—' }}</span>
+                            </div>
+                        </div>
+                    </td>
                 </ng-container>
 
                 <!-- Publish Column -->
