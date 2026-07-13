@@ -18,9 +18,20 @@ def _parse_iso_datetime(value, field_name):
     if not value:
         return None
     try:
-        return datetime.datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+        parsed = datetime.datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+        # SQL Server DateTime is timezone-naive; normalize incoming ISO values to naive UTC.
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        return parsed
     except (TypeError, ValueError):
         raise ValueError(f'{field_name} must be a valid ISO 8601 datetime')
+
+def _schedule_times(data, current_start=None, current_end=None):
+    start_time = _parse_iso_datetime(data.get('start_time'), 'start_time') if 'start_time' in data else current_start
+    end_time = _parse_iso_datetime(data.get('end_time'), 'end_time') if 'end_time' in data else current_end
+    if start_time and end_time and end_time < start_time:
+        raise ValueError('end_time must be after or equal to start_time')
+    return start_time, end_time
 
 def _review_settings(data, defaults=None):
     defaults = defaults or {}
@@ -56,18 +67,13 @@ def add_exam_schedule(request):
     total_questions = data.get("total_questions")
     number_of_attempts = data.get("number_of_attempts")
     published = data.get("published", False)
+    multiple_review = _as_bool(data.get('multiple_review', data.get('multiplereview')), False)
     try:
         review_settings = _review_settings(data)
+        start_time, end_time = _schedule_times(data)
     except ValueError as error:
         return {"statusMessage": str(error), "status": False}, 400
-
-    start_time_str = data.get("start_time")
-    end_time_str = data.get("end_time")
     created_by = data.get("created_by")
-
-    # Convert ISO 8601 string to datetime object
-    start_time = datetime.datetime.fromisoformat(start_time_str.replace("Z", "+00:00")) if start_time_str else None
-    end_time = datetime.datetime.fromisoformat(end_time_str.replace("Z", "+00:00")) if end_time_str else None
 
     db = SQLiteDB()
     session = db.connect()
@@ -86,6 +92,7 @@ def add_exam_schedule(request):
             start_time=start_time,
             end_time=end_time,
             published=1 if published else 0,
+            multiple_review=multiple_review,
             user_review=1 if review_settings['instant_review'] else 0,
             review_mode=review_settings['review_mode'],
             review_at=review_settings['review_at'],
@@ -93,6 +100,8 @@ def add_exam_schedule(request):
             show_correct_answers=review_settings['show_correct_answers'],
             show_student_answers=review_settings['show_student_answers'],
             show_explanations=review_settings['show_explanations'],
+            duration_mins=duration_mins,
+            total_questions=total_questions,
             created_by=created_by,
             number_of_attempts=number_of_attempts_val,
             pass_mark=pass_mark_val
@@ -195,6 +204,8 @@ def update_exam_schedule(request):
         # published / review settings
         if 'published' in data:
             sched.published = 1 if data.get('published') else 0
+        if 'multiple_review' in data or 'multiplereview' in data:
+            sched.multiple_review = _as_bool(data.get('multiple_review', data.get('multiplereview')), False)
         if 'userreview' in data:
             sched.user_review = 1 if data.get('userreview') else 0
         if 'user_review' in data:
@@ -223,18 +234,10 @@ def update_exam_schedule(request):
             sched.show_explanations = settings['show_explanations']
 
         # times
-        start_time_str = data.get('start_time')
-        end_time_str = data.get('end_time')
-        if start_time_str:
-            try:
-                sched.start_time = datetime.datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
-            except Exception:
-                pass
-        if end_time_str:
-            try:
-                sched.end_time = datetime.datetime.fromisoformat(end_time_str.replace('Z', '+00:00'))
-            except Exception:
-                pass
+        try:
+            sched.start_time, sched.end_time = _schedule_times(data, sched.start_time, sched.end_time)
+        except ValueError as error:
+            return {"statusMessage": str(error), "status": False}, 400
 
         # updated_by
         if data.get('updated_by'):
@@ -339,6 +342,7 @@ def get_exam_schedule_details(request):
                 "published": True if schedule.published == 1 else False,
                 "user_review": True if schedule.user_review == 1 else False,
                 "instant_review": True if schedule.user_review == 1 else False,
+                "multiple_review": bool(schedule.multiple_review),
                 "review_mode": schedule.review_mode or ('instant' if schedule.user_review == 1 else 'no_review'),
                 "review_at": schedule.review_at,
                 "show_score": True if schedule.show_score is None else bool(schedule.show_score),

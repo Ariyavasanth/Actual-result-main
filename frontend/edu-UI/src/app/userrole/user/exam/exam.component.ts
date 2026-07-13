@@ -245,7 +245,11 @@ export class UserExamComponent{
         }catch(e){ this.reviewAttempts = []; }
         this.reviewLoading = false;
         this.loader.hide();
-      }, error: (err) => { console.warn('Failed to load review', err); this.reviewLoading = false; this.reviewAttempts = []; this.loader.hide();  } });
+      }, error: (err) => {
+        console.warn('Failed to load review', err);
+        try { notify(err?.error?.statusMessage || 'This review is not available.', 'error'); } catch (e) {}
+        this.reviewLoading = false; this.reviewAttempts = []; this.reviewOpen = false; this.loader.hide();
+      } });
     }catch(e){ try { notify('Failed to request review', 'error'); } catch(e){} }
   }
 

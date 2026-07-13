@@ -1,3 +1,4 @@
+import datetime
 from sqlalchemy import func
 from db.db import SQLiteDB
 from db.models import User, Exam, ExamSchedule, Question, Option, Answer,Exam_Attempt, ExamScheduleMapping, ExamReviewComments,ExamReviewCommentsHistory, MarksHistory
@@ -23,11 +24,30 @@ def review_user_exam(request):
         ).all()
         # get total questions in the exam
         exam_schedule = session.query(ExamSchedule).filter(ExamSchedule.schedule_id == schedule_id ).first()
+        if not exam_schedule:
+            return {"statusMessage": "Schedule not found", "status": False}, 404
+
+        completed_attempts = [attempt for attempt in attempts if attempt.submitted_date or attempt.status in ('submitted', 'evaluated')]
+        now = datetime.datetime.utcnow()
+        review_mode = exam_schedule.review_mode or ('instant' if exam_schedule.user_review == 1 else 'no_review')
+        review_available = bool(completed_attempts) and (
+            review_mode == 'instant'
+            or (review_mode == 'after_schedule_ends' and exam_schedule.end_time and now >= exam_schedule.end_time)
+            or (review_mode == 'scheduled' and exam_schedule.review_at and now >= exam_schedule.review_at)
+            or (review_mode == 'manual' and any(attempt.status == 'evaluated' for attempt in completed_attempts))
+        )
+        if not review_available:
+            return {"statusMessage": "Review is not available for this test", "status": False}, 403
+
+        # This gates repeat viewing of the same submitted attempt, not creation of another attempt.
+        if not bool(exam_schedule.multiple_review) and any(attempt.review_opened_at for attempt in completed_attempts):
+            return {"statusMessage": "This test review has already been viewed", "status": False}, 403
+
         exam = session.query(Exam).filter(Exam.exam_id == exam_schedule.exam_id).first()
         total_questions = exam.total_questions if exam else 0
 
         attempt_reviews = []
-        for attempt in attempts:
+        for attempt in completed_attempts:
             review_data = {}
             review_data["attempt_id"] = attempt.attempt_id
             review_data["attempt_number"] = attempt.attempt_number
@@ -36,10 +56,10 @@ def review_user_exam(request):
             time_delta = attempt.submitted_date - attempt.started_date if attempt.submitted_date and attempt.started_date else None
             review_data["time_taken"] = str(time_delta) if time_delta else None
             review_data["status"] = attempt.status
-            review_data["score"] = attempt.score
+            review_data["score"] = attempt.score if exam_schedule.show_score else None
             review_data["total_questions"] = total_questions
-            review_data["percentage"] = round(attempt.percentage, 2) if attempt.percentage is not None else None
-            review_data["result"] = attempt.feedback if hasattr(attempt, 'feedback') else ""
+            review_data["percentage"] = round(attempt.percentage, 2) if exam_schedule.show_score and attempt.percentage is not None else None
+            review_data["result"] = attempt.feedback if exam_schedule.show_score and hasattr(attempt, 'feedback') else ""
             review_data["review"] = []
             
             # get question, selected option, and correct answer
@@ -125,36 +145,41 @@ def review_user_exam(request):
                     "question_id": question_answer.question_id,
                     "question_text": question.question_text  if question else "",
                     "question_type": question_type,
-                    "options": [{"option_text": opt.option_text, "is_correct": opt.is_correct} for opt in options_list],
-                    "selected_option": [selected_option] if isinstance(selected_option, str) else selected_option,
-                    "correct_option": correct_answer_data,
-                    "review_comment": review_comment_dict,
-                    "is_correct": True if question_answer.is_correct == 1 else False,
-                    "marks_awarded": question_answer.marks_awarded if question_answer.marks_awarded is not None else 0,
+                    "options": [{"option_text": opt.option_text, "is_correct": opt.is_correct if exam_schedule.show_correct_answers else 0} for opt in options_list],
+                    "selected_option": ([selected_option] if isinstance(selected_option, str) else selected_option) if exam_schedule.show_student_answers else [],
+                    "correct_option": correct_answer_data if exam_schedule.show_correct_answers else None,
+                    "review_comment": review_comment_dict if exam_schedule.show_explanations else {},
+                    "is_correct": (True if question_answer.is_correct == 1 else False) if exam_schedule.show_correct_answers else None,
+                    "marks_awarded": (question_answer.marks_awarded if question_answer.marks_awarded is not None else 0) if exam_schedule.show_score else None,
                     "updated_by": updated_by.full_name if updated_by else question_answer.created_by,
                     "updated_date": question_answer.created_date,
-                    "question_marks": question_marks,
-                    "ai_marks": question_answer.ai_marks if question_answer.ai_marks is not None else 0,
-                    "ai_confidence": question_answer.ai_confidence if question_answer.ai_confidence is not None else 0,
-                    "manual_review_required": True if question_answer.manual_review_required == 1 else False,
-                    "manual_marks": question_answer.manual_marks if question_answer.manual_marks is not None else 0,
-                    "feedback": question_answer.feedback if hasattr(question_answer, 'feedback') else ""
+                    "question_marks": question_marks if exam_schedule.show_score else None,
+                    "ai_marks": (question_answer.ai_marks if question_answer.ai_marks is not None else 0) if exam_schedule.show_explanations else None,
+                    "ai_confidence": (question_answer.ai_confidence if question_answer.ai_confidence is not None else 0) if exam_schedule.show_explanations else None,
+                    "manual_review_required": (True if question_answer.manual_review_required == 1 else False) if exam_schedule.show_explanations else None,
+                    "manual_marks": (question_answer.manual_marks if question_answer.manual_marks is not None else 0) if exam_schedule.show_explanations else None,
+                    "feedback": question_answer.feedback if exam_schedule.show_explanations and hasattr(question_answer, 'feedback') else ""
                 })
                 # marks history can also be added here if needed by fetching from MarksHistory table
                 marks_history = session.query(MarksHistory).filter(MarksHistory.answer_id == question_answer.answer_id).all()
-                if marks_history:
+                if marks_history and exam_schedule.show_score:
                     review_data["review"][-1]["marks_history"] = [{"marks_awarded": mh.marks_awarded, "updated_by": session.query(User).filter(User.user_id == mh.updated_by).first().full_name , "updated_date": mh.updated_date} for mh in marks_history]
                 
-            review_data["total_marks"] = total_marks   
+            review_data["total_marks"] = total_marks if exam_schedule.show_score else None
             attempt_reviews.append(review_data)
+
+        for attempt in completed_attempts:
+            if attempt.review_opened_at is None:
+                attempt.review_opened_at = now
+                session.add(attempt)
+        session.commit()
 
     except Exception as e:
         print(f"Error in review_user_exam: {str(e)}" + " - Line # : " + str(e.__traceback__.tb_lineno))
         return {"statusMessage": f"Error fetching exam review: {str(e)}", "status": False}, 500
     finally:
         session.close()
-        json_data = {"statusMessage": "Success", "status": True, "data": attempt_reviews}
-        return json_data, 200
+    return {"statusMessage": "Success", "status": True, "data": attempt_reviews}, 200
 def validate_answers(attempt_id):
     db = SQLiteDB()
     session = db.connect()

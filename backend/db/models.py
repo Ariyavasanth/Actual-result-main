@@ -269,6 +269,8 @@ class ExamSchedule(Base):
      number_of_attempts = Column(Integer, default=1)
      published = Column(Integer, default=0)
      user_review = Column(Integer, default=0)
+     # Controls repeat viewing of one submitted attempt; this is not a retake/attempt setting.
+     multiple_review = Column(Boolean, nullable=False, default=False)
      review_mode = Column(String(32), default='no_review')
      review_at = Column(DateTime)
      show_score = Column(Boolean, default=True)
@@ -384,6 +386,7 @@ class Exam_Attempt(Base):
     attempt_number = Column(Integer, default=1)
     started_date = Column(DateTime)
     submitted_date = Column(DateTime)
+    review_opened_at = Column(DateTime)
     status = Column(String, CheckConstraint("status IN ('not_started', 'in_progress', 'submitted', 'evaluated')"), default='not_started')
     score = Column(Integer, default=0)
     percentage = Column(Float)

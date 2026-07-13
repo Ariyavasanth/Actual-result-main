@@ -25,6 +25,7 @@ import { UnauthorizedComponent } from '../shared/components/unauthorized/unautho
 import { PermissionGuard } from '../shared/guards/permission.guard';
 import { UserDashboardComponent } from '../userrole/user/dashboard/user-dashboard.component';
 import { GlobalInstituteScopeGuard } from '../shared/guards/global-institute-scope.guard';
+import { scheduleTestUnsavedChangesGuard } from '../shared/guards/schedule-test-unsaved-changes.guard';
 import { InstituteScopeInactiveComponent } from '../shared/components/institute-scope-inactive/institute-scope-inactive.component';
 
 const routes: Routes = [
@@ -37,7 +38,7 @@ const routes: Routes = [
   , { path: 'institutes-inactive', component: InstituteScopeInactiveComponent, canActivate: [PermissionGuard], data: { requiredRole: ['super_admin','superadmin','super-admin'] } }
   , { path: 'user-register', component: AdminUserRegisterComponent, canActivate: [PermissionGuard], data: { pageName: 'Users', action: 'add' } }
   , { path: 'questions', component: AdminQuestionsComponent, canActivate: [PermissionGuard], data: { pageName: 'Questions', action: 'add' } }
-  , { path: 'schedule-exam', component: AdminScheduleTestComponent, canActivate: [PermissionGuard], data: { pageName: 'Schedule Exam', action: 'add' } }
+  , { path: 'schedule-exam', component: AdminScheduleTestComponent, canActivate: [PermissionGuard], canDeactivate: [scheduleTestUnsavedChangesGuard], data: { pageName: 'Schedule Exam', action: 'add' } }
   , { path: 'view-schedule-exam', component: ViewScheduleExamComponent, canActivate: [PermissionGuard], data: { pageName: 'Schedule Exam', action: 'view' } }
   , { path: 'exams', component: AdminExamsComponent, canActivate: [PermissionGuard], data: { pageName: 'Exams', action: 'view' } }
   , { path: 'create-exam', component: CreateExamComponent, canActivate: [PermissionGuard], data: { pageName: 'Exams', action: 'add' } }

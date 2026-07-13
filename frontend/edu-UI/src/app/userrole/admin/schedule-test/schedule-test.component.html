@@ -1,4 +1,4 @@
-<div class="page admin-schedule-exam">
+<div class="page admin-schedule-exam" (input)="markDirty()" (change)="markDirty()">
    <!-- ── Top Toolbar ── -->
    <div class="toolbar">
       <div class="title"></div>
@@ -12,6 +12,13 @@
 
    <!-- ── Form Card ── -->
    <div class="form-card">
+      <div *ngIf="draftBannerVisible && !readOnly" class="draft-safety-banner" role="status">
+         <mat-icon>info</mat-icon>
+         <span>Your changes are not saved until you complete all steps and submit.</span>
+         <button mat-icon-button type="button" aria-label="Dismiss unsaved changes notice" (click)="draftBannerVisible = false">
+            <mat-icon>close</mat-icon>
+         </button>
+      </div>
       <mat-horizontal-stepper linear #stepper>
 
          <!-- ═══ STEP 1: BASIC INFO + SCHEDULE ═══ -->
@@ -100,12 +107,13 @@
                            </div>
                         </div>
 
+                        <div [formGroup]="scheduleTimingForm" class="schedule-timing-fields">
                         <!-- Start row -->
                         <div class="schedule-row">
                            <mat-form-field appearance="outline" class="schedule-field date-field">
                               <mat-label>Start date*</mat-label>
-                              <input matInput [matDatepicker]="startDatePicker" [(ngModel)]="model.startDate" name="startDate"
-                                 placeholder="Select start date" required />
+                              <input matInput [matDatepicker]="startDatePicker" formControlName="startDate"
+                                 placeholder="Select start date" required [readonly]="readOnly" />
                               <mat-datepicker-toggle matSuffix [for]="startDatePicker"></mat-datepicker-toggle>
                               <mat-datepicker #startDatePicker></mat-datepicker>
                               <mat-hint align="start">Required</mat-hint>
@@ -115,7 +123,7 @@
                            <mat-form-field appearance="outline" class="schedule-field time-field">
                               <mat-icon matPrefix>schedule</mat-icon>
                               <mat-label>Start time*</mat-label>
-                              <input matInput type="time" [(ngModel)]="model.startTime" name="startTime" placeholder="HH:MM" required />
+                              <input matInput type="time" formControlName="startTime" placeholder="HH:MM" required [readonly]="readOnly" />
                               <mat-hint align="start">Required</mat-hint>
                               <mat-error *ngIf="!model.startTime">Start time is required.</mat-error>
                            </mat-form-field>
@@ -125,8 +133,8 @@
                         <div class="schedule-row">
                            <mat-form-field appearance="outline" class="schedule-field date-field">
                               <mat-label>End date (optional)</mat-label>
-                              <input matInput [matDatepicker]="endDatePicker" [(ngModel)]="model.endDate" name="endDate"
-                                 placeholder="Select end date" />
+                              <input matInput [matDatepicker]="endDatePicker" formControlName="endDate"
+                                 placeholder="Select end date" [readonly]="readOnly" />
                               <mat-datepicker-toggle matSuffix [for]="endDatePicker"></mat-datepicker-toggle>
                               <mat-datepicker #endDatePicker></mat-datepicker>
                            </mat-form-field>
@@ -134,42 +142,55 @@
                            <mat-form-field appearance="outline" class="schedule-field time-field">
                               <mat-icon matPrefix>schedule</mat-icon>
                               <mat-label>End time (optional)</mat-label>
-                              <input matInput type="time" [(ngModel)]="model.endTime" name="endTime" placeholder="HH:MM" />
+                              <input matInput type="time" formControlName="endTime" placeholder="HH:MM" [readonly]="readOnly" />
                            </mat-form-field>
                         </div>
-
-
-
-                        <!-- Toggles -->
-                        <div class="schedule-toggles">
-                           <mat-slide-toggle [(ngModel)]="model.publish" [disabled]="readOnly">
-                              Publish
-                           </mat-slide-toggle>
-                           <mat-slide-toggle [(ngModel)]="model.multiplereview" [disabled]="readOnly">
-                              Multiple review
-                           </mat-slide-toggle>
+                        <div *ngIf="scheduleDateError" class="schedule-error" role="alert">
+                           <mat-icon>error_outline</mat-icon>
+                           <span>{{ scheduleDateError }}</span>
+                        </div>
                         </div>
 
-                        <div class="review-settings-panel">
-                           <h3>Review Settings</h3>
-                           <mat-slide-toggle [(ngModel)]="model.userreview" name="instantReview" [disabled]="readOnly">
-                              Instant Review
-                           </mat-slide-toggle>
+                        <div class="visibility-review-card">
+                           <div class="settings-card-header">
+                              <mat-icon>visibility</mat-icon>
+                              <div>
+                                 <h3>Visibility &amp; Review Behavior</h3>
+                                 <p>Control access to the test and how students can review a submitted attempt.</p>
+                              </div>
+                           </div>
+                           <div class="toggle-setting">
+                              <mat-slide-toggle [(ngModel)]="model.publish" name="publish" [disabled]="readOnly">Publish</mat-slide-toggle>
+                              <span>Make this schedule visible to assigned students.</span>
+                           </div>
+                           <div class="toggle-setting">
+                              <mat-slide-toggle [(ngModel)]="model.multiplereview" name="multipleReview" [disabled]="readOnly">Multiple Review</mat-slide-toggle>
+                              <span>Allow students to reopen the review for the same submitted attempt. This does not allow retakes.</span>
+                           </div>
+                           <div class="toggle-setting toggle-setting--review">
+                              <mat-slide-toggle [(ngModel)]="model.userreview" name="instantReview" [disabled]="readOnly">Instant Review</mat-slide-toggle>
+                              <span>Make the selected review content available immediately after submission.</span>
+                           </div>
                            <mat-radio-group *ngIf="!model.userreview" class="review-options" [(ngModel)]="model.reviewMode"
                               name="reviewMode" [disabled]="readOnly" aria-label="Review availability">
                               <mat-radio-button value="no_review">No Review</mat-radio-button>
                               <mat-radio-button value="after_schedule_ends">After Test Schedule Ends</mat-radio-button>
                               <mat-radio-button value="scheduled">Schedule Review</mat-radio-button>
-                              <div *ngIf="model.reviewMode === 'scheduled'" class="review-schedule-fields">
+                              <div *ngIf="model.reviewMode === 'scheduled'" class="review-schedule-fields" [formGroup]="reviewScheduleForm">
                                  <mat-form-field appearance="outline">
                                     <mat-label>Review Date</mat-label>
-                                    <input matInput [(ngModel)]="model.reviewDate" name="reviewDate" placeholder="DD/MM/YYYY" maxlength="10" [disabled]="readOnly" required />
+                                    <input matInput [matDatepicker]="reviewDatePicker" formControlName="reviewDate" placeholder="DD/MM/YYYY" [readonly]="readOnly" required />
+                                    <mat-datepicker-toggle matSuffix [for]="reviewDatePicker" [disabled]="readOnly"></mat-datepicker-toggle>
+                                    <mat-datepicker #reviewDatePicker></mat-datepicker>
                                     <mat-hint>DD/MM/YYYY</mat-hint>
+                                    <mat-error *ngIf="reviewScheduleForm.hasError('reviewIncomplete')">Review date is required.</mat-error>
                                  </mat-form-field>
                                  <mat-form-field appearance="outline">
                                     <mat-label>Review Time</mat-label>
-                                    <input matInput type="time" [(ngModel)]="model.reviewTime" name="reviewTime" placeholder="HH:MM" [disabled]="readOnly" required />
+                                    <input matInput type="time" formControlName="reviewTime" placeholder="HH:MM" [readonly]="readOnly" required />
                                     <mat-hint>HH:MM</mat-hint>
+                                    <mat-error *ngIf="reviewScheduleForm.get('reviewTime')?.hasError('pattern')">Use 24-hour HH:MM format.</mat-error>
+                                    <mat-error *ngIf="reviewScheduleForm.hasError('reviewIncomplete')">Review time is required.</mat-error>
                                  </mat-form-field>
                               </div>
                               <mat-radio-button value="manual">Manual Review</mat-radio-button>
@@ -184,6 +205,10 @@
                               <mat-checkbox [(ngModel)]="model.showStudentAnswers" name="showStudentAnswers" [disabled]="readOnly">Show Student Answers</mat-checkbox>
                               <mat-checkbox [(ngModel)]="model.showExplanations" name="showExplanations" [disabled]="readOnly">Show Explanations</mat-checkbox>
                            </div>
+                           <div class="review-preview" role="status" aria-live="polite">
+                              <mat-icon>info</mat-icon>
+                              <span>{{ reviewPreview }}</span>
+                           </div>
                         </div>
                      </div>
                   </div>
@@ -191,7 +216,7 @@
 
                <div class="form-actions">
                   <span></span>
-                  <button mat-button matStepperNext type="button" class="next-btn" [disabled]="readOnly">
+                  <button mat-button matStepperNext type="button" class="next-btn" [disabled]="readOnly || scheduleTimingForm.invalid || reviewScheduleInvalid">
                      <span>Next</span>
                      <mat-icon>arrow_forward</mat-icon>
                   </button>

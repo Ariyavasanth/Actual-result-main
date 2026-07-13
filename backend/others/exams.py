@@ -465,6 +465,9 @@ def get_user_exam_details(request):
                 ExamSchedule.end_time,
                 ExamSchedule.number_of_attempts,
                 ExamSchedule.user_review,
+                ExamSchedule.multiple_review,
+                ExamSchedule.review_mode,
+                ExamSchedule.review_at,
                 ExamSchedule.created_by,
                 ExamSchedule.created_date,
                 ExamSchedule.updated_by,
@@ -504,6 +507,9 @@ def get_user_exam_details(request):
                         ExamSchedule.end_time,
                         ExamSchedule.number_of_attempts,
                         ExamSchedule.user_review,
+                        ExamSchedule.multiple_review,
+                        ExamSchedule.review_mode,
+                        ExamSchedule.review_at,
                         ExamSchedule.created_by,
                         ExamSchedule.created_date,
                         ExamSchedule.updated_by,
@@ -555,30 +561,43 @@ def get_user_exam_details(request):
 
             # check scrore and feedback for last attempt
             attempts = sorted(attempts, key=lambda x: x.attempt_number)
-            attempts = attempts[-1] if attempts else None
-            feedback = attempts.feedback if attempts else ''
+            last_attempt = attempts[-1] if attempts else None
+            feedback = last_attempt.feedback if last_attempt else ''
 
             # if current time between start and end time, exam is active
             current_time = datetime.utcnow()
             attempted = user_attempt > 0
             expired = bool(schedule_obj.end_time and current_time > schedule_obj.end_time)
+            submitted_attempts = [attempt for attempt in attempts if attempt.submitted_date or attempt.status in ('submitted', 'evaluated')]
+            review_mode = schedule_obj.review_mode or ('instant' if user_review_data == 1 else 'no_review')
+            if submitted_attempts:
+                if review_mode == 'instant':
+                    user_review = True
+                elif review_mode == 'after_schedule_ends':
+                    user_review = expired
+                elif review_mode == 'scheduled':
+                    user_review = bool(schedule_obj.review_at and current_time >= schedule_obj.review_at)
+                elif review_mode == 'manual':
+                    user_review = any(attempt.status == 'evaluated' for attempt in submitted_attempts)
+
+            # multiple_review means repeated views of submitted results only; it never grants a retake.
+            already_reviewed = any(getattr(attempt, 'review_opened_at', None) for attempt in submitted_attempts)
+            if already_reviewed and not bool(schedule_obj.multiple_review):
+                user_review = False
             if schedule_obj.start_time <= current_time <= schedule_obj.end_time:
                 type = 'active'
                 if str(feedback).lower() == 'pass':
                     type = 'completed'
             elif schedule_obj.end_time and current_time > schedule_obj.end_time:
                 type = 'completed'
-                # if user_review_data == 1:
-                user_review = True
             else:
                 type = 'upcoming'
             if no_of_attempts <= user_attempt:
                 type = 'completed' # if no of attempts exceeded, user cannot review
-                if user_review_data == 1:
-                    user_review = True
 
             scheduler_data.append({
                 'review_available': user_review,
+                'multiple_review': bool(schedule_obj.multiple_review),
                 'attempted': attempted,
                 'expired': expired,
                 # Return raw datetimes so Flask serializes them exactly like

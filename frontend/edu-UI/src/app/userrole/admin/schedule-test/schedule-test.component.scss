@@ -16,6 +16,9 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 /* ── Form card (schedule card) ── */
 .form-card { width:100%; background:var(--bg-1); border:1px solid var(--theme-3-border); border-radius:$radius; box-shadow:$shadow-md; position:relative; overflow:visible; margin-bottom:3rem; }
 .form-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--button-1) 0%,#8b5cf6 50%,#06b6d4 100%); border-radius:$radius $radius 0 0; }
+.draft-safety-banner { display:flex; align-items:center; gap:0.625rem; min-height:2.5rem; padding:0.375rem 0.75rem 0.375rem 1rem; color:#1e40af; background:#eff6ff; border-bottom:1px solid #bfdbfe; font-size:0.8125rem; }
+.draft-safety-banner > span { flex:1; }
+.draft-safety-banner mat-icon { flex:0 0 auto; font-size:1.125rem; width:1.125rem; height:1.125rem; }
 
 /* ── Stepper overrides ── */
 :host ::ng-deep .mat-horizontal-stepper-header-container { padding:0.625rem 1.25rem 0.375rem; border-bottom:1px solid var(--theme-3-border); background:var(--bg-2); }
@@ -54,10 +57,21 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 
 /* ── Schedule fields ── */
 .schedule-row { display:flex; align-items:flex-start; gap:0.625rem; margin-bottom:0.625rem; }
+.schedule-timing-fields { padding:0.75rem; border:1px solid transparent; border-radius:$radius; }
+.schedule-timing-fields:has(.ng-invalid.ng-touched),.schedule-timing-fields:has(.schedule-error) { border-color:#dc2626; background:#fef2f2; }
+.schedule-error { display:flex; align-items:center; gap:0.375rem; margin:-0.25rem 0 0.75rem; color:#b91c1c; font-size:0.75rem; }
+.schedule-error mat-icon { width:1rem; height:1rem; font-size:1rem; }
 .schedule-field { flex:1 1 0; }
 .date-field { flex:0 1 60%; }
 .time-field { flex:1 0 9rem; }
-.schedule-toggles { display:grid; align-items:center; gap:1.5rem; margin-top:0.625rem; }
+.visibility-review-card { margin-top:0.875rem; padding:1rem; border:1px solid var(--theme-3-border); border-left:3px solid var(--button-1); border-radius:$radius; background:var(--bg-2); }
+.settings-card-header { display:flex; gap:0.625rem; margin-bottom:0.875rem; }
+.settings-card-header > mat-icon { color:var(--button-1); }
+.settings-card-header h3 { margin:0; font:600 0.95rem/1.2 inherit; color:var(--theme-3-text-1); }
+.settings-card-header p { margin:0.2rem 0 0; font:400 0.78rem/1.4 inherit; color:var(--theme-3-text-3); }
+.toggle-setting { display:grid; grid-template-columns:minmax(9rem,auto) 1fr; align-items:center; gap:0.75rem; padding:0.75rem 0; border-top:1px solid var(--theme-3-border); }
+.toggle-setting > span { color:var(--theme-3-text-3); font-size:0.78rem; line-height:1.4; }
+.toggle-setting--review { margin-top:0.25rem; }
 .review-settings-panel { margin-top:1rem; padding:1rem; border:1px solid var(--theme-3-border); border-radius:$radius; background:var(--bg-2); }
 .review-settings-panel h3 { margin:0 0 0.75rem; font:600 0.9rem/1.2 inherit; color:var(--theme-3-text-1); }
 .review-options,.review-content-options { display:grid; gap:0.75rem; margin-top:0.875rem; }
@@ -65,6 +79,8 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 .review-schedule-fields mat-form-field { width:100%; }
 .review-content-panel { margin-top:0.75rem; }
 .review-content-options { grid-template-columns:repeat(2,minmax(0,1fr)); margin-top:0; }
+.review-preview { display:flex; align-items:flex-start; justify-content:flex-end; gap:0.4rem; width:fit-content; max-width:42rem; margin:0.875rem 0 0 auto; padding:0.625rem 0.75rem; color:var(--theme-3-text-2); background:rgba(107,114,128,0.08); border:1px solid var(--theme-3-border); border-radius:0.625rem; font-size:0.78rem; line-height:1.4; text-align:right; }
+.review-preview mat-icon { flex:0 0 auto; color:var(--button-1); width:1rem; height:1rem; font-size:1rem; margin-top:0.05rem; }
 
 /* ── Exam preview ── */
 .exam-preview { margin-top:0.625rem; padding:1rem 1.125rem; border-radius:0.75rem; background:var(--bg-2); border:1px dashed var(--theme-3-border); }
@@ -120,4 +136,4 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 
 /* ── Responsive ── */
 @media (max-width:56.25rem) { .schedule-row{flex-direction:column;} .time-field{flex:1 1 100%;max-width:100%;} .form-col-2{flex:1 1 100%;} .section-block{padding:0.875rem 1rem;} .review-grid{grid-template-columns:1fr;} .review-summary .row{grid-template-columns:1fr;} .review-summary .label{margin-bottom:0.25rem;} }
-@media (max-width:45rem) { .page{padding:0.75rem 0.75rem 2rem;} .step-content{padding:1rem;} .field-row{flex-direction:column;gap:0;} .review-schedule-fields,.review-content-options{grid-template-columns:1fr;} .review-schedule-fields{margin-left:0;} :host ::ng-deep .mat-horizontal-stepper-header-container{overflow-x:auto;} }
+@media (max-width:45rem) { .page{padding:0.75rem 0.75rem 2rem;} .step-content{padding:1rem;} .field-row{flex-direction:column;gap:0;} .review-schedule-fields,.review-content-options{grid-template-columns:1fr;} .review-schedule-fields{margin-left:0;} .toggle-setting{grid-template-columns:1fr;} .review-preview{margin-left:0;text-align:left;} :host ::ng-deep .mat-horizontal-stepper-header-container{overflow-x:auto;} }
