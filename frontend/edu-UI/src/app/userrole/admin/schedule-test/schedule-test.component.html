@@ -75,15 +75,15 @@
                            </div>
                         </div>
 
-                        <!-- Scheduler name -->
+                        <!-- Schedule name -->
                         <div class="field-row">
                            <mat-form-field appearance="outline" class="field-full">
                               <mat-icon matPrefix>person</mat-icon>
-                              <mat-label>Scheduler name*</mat-label>
+                              <mat-label>Schedule name*</mat-label>
                               <input matInput id="schedulerName" [(ngModel)]="model.schedulerName" (ngModelChange)="onSchedulerNameInput()" name="schedulerName"
                                  placeholder="E.g. Weekly Math Test Batch A" [disabled]="readOnly" required />
                               <mat-hint align="start">Name used to identify this schedule.</mat-hint>
-                              <mat-error *ngIf="!model.schedulerName">Scheduler name is required.</mat-error>
+                              <mat-error *ngIf="!model.schedulerName">Schedule name is required.</mat-error>
                            </mat-form-field>
                         </div>
                      </div>
@@ -145,12 +145,45 @@
                            <mat-slide-toggle [(ngModel)]="model.publish" [disabled]="readOnly">
                               Publish
                            </mat-slide-toggle>
-                           <mat-slide-toggle [(ngModel)]="model.userreview" [disabled]="readOnly">
-                              Instant review
-                           </mat-slide-toggle>
                            <mat-slide-toggle [(ngModel)]="model.multiplereview" [disabled]="readOnly">
                               Multiple review
                            </mat-slide-toggle>
+                        </div>
+
+                        <div class="review-settings-panel">
+                           <h3>Review Settings</h3>
+                           <mat-slide-toggle [(ngModel)]="model.userreview" name="instantReview" [disabled]="readOnly">
+                              Instant Review
+                           </mat-slide-toggle>
+                           <mat-radio-group *ngIf="!model.userreview" class="review-options" [(ngModel)]="model.reviewMode"
+                              name="reviewMode" [disabled]="readOnly" aria-label="Review availability">
+                              <mat-radio-button value="no_review">No Review</mat-radio-button>
+                              <mat-radio-button value="after_schedule_ends">After Test Schedule Ends</mat-radio-button>
+                              <mat-radio-button value="scheduled">Schedule Review</mat-radio-button>
+                              <div *ngIf="model.reviewMode === 'scheduled'" class="review-schedule-fields">
+                                 <mat-form-field appearance="outline">
+                                    <mat-label>Review Date</mat-label>
+                                    <input matInput [(ngModel)]="model.reviewDate" name="reviewDate" placeholder="DD/MM/YYYY" maxlength="10" [disabled]="readOnly" required />
+                                    <mat-hint>DD/MM/YYYY</mat-hint>
+                                 </mat-form-field>
+                                 <mat-form-field appearance="outline">
+                                    <mat-label>Review Time</mat-label>
+                                    <input matInput type="time" [(ngModel)]="model.reviewTime" name="reviewTime" placeholder="HH:MM" [disabled]="readOnly" required />
+                                    <mat-hint>HH:MM</mat-hint>
+                                 </mat-form-field>
+                              </div>
+                              <mat-radio-button value="manual">Manual Review</mat-radio-button>
+                           </mat-radio-group>
+                        </div>
+
+                        <div class="review-settings-panel review-content-panel">
+                           <h3>Review Content</h3>
+                           <div class="review-content-options">
+                              <mat-checkbox [(ngModel)]="model.showScore" name="showScore" [disabled]="readOnly">Show Score</mat-checkbox>
+                              <mat-checkbox [(ngModel)]="model.showCorrectAnswers" name="showCorrectAnswers" [disabled]="readOnly">Show Correct Answers</mat-checkbox>
+                              <mat-checkbox [(ngModel)]="model.showStudentAnswers" name="showStudentAnswers" [disabled]="readOnly">Show Student Answers</mat-checkbox>
+                              <mat-checkbox [(ngModel)]="model.showExplanations" name="showExplanations" [disabled]="readOnly">Show Explanations</mat-checkbox>
+                           </div>
                         </div>
                      </div>
                   </div>
@@ -343,7 +376,7 @@
                         <div class="review-items">
                            <div class="review-item"><span class="review-label">Institute</span><span class="review-value">{{ (model.institute && (getInstituteName(model.institute) || model.institute)) || '—' }}</span></div>
                            <div class="review-item"><span class="review-label">Test</span><span class="review-value">{{ selectedExam?.title || model.exam_id || '—' }}</span></div>
-                           <div class="review-item"><span class="review-label">Scheduler name</span><span class="review-value">{{ model.schedulerName || '—' }}</span></div>
+                           <div class="review-item"><span class="review-label">Schedule name</span><span class="review-value">{{ model.schedulerName || '—' }}</span></div>
                         </div>
                      </div>
 
@@ -356,7 +389,8 @@
                            <div class="review-item"><span class="review-label">Start</span><span class="review-value">{{ formatDate(model.startDate) }} {{ model.startTime || '' }}</span></div>
                            <div class="review-item"><span class="review-label">End</span><span class="review-value">{{ formatDate(model.endDate) }} {{ model.endTime || '' }}</span></div>
                            <div class="review-item"><span class="review-label">Publish</span><span class="review-value"><span class="status-pill" [class.active]="model.publish">{{ model.publish ? 'Yes' : 'No' }}</span></span></div>
-                           <div class="review-item"><span class="review-label">User review</span><span class="review-value">{{ model.userreview ? 'Enabled' : 'Disabled' }}</span></div>
+                           <div class="review-item"><span class="review-label">Review</span><span class="review-value">{{ model.userreview ? 'Instant Review' : (model.reviewMode === 'no_review' ? 'No Review' : model.reviewMode === 'after_schedule_ends' ? 'After Test Schedule Ends' : model.reviewMode === 'scheduled' ? 'Scheduled ' + model.reviewDate + ' ' + model.reviewTime : 'Manual Review') }}</span></div>
+                           <div class="review-item"><span class="review-label">Review content</span><span class="review-value">{{ model.showScore ? 'Score; ' : '' }}{{ model.showCorrectAnswers ? 'Correct answers; ' : '' }}{{ model.showStudentAnswers ? 'Student answers; ' : '' }}{{ model.showExplanations ? 'Explanations' : '' }}</span></div>
                         </div>
                      </div>
 
