@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 from db.models import Institute, User
 from sqlalchemy import or_
+from sqlalchemy.orm import load_only
 import random
 
 
@@ -454,7 +455,68 @@ def get_user_exam_details(request):
             filter.append(or_(*conds))
 
         # join with Institute to fetch institute details as well
-        rows = session.query(ExamScheduleMapping, ExamSchedule, Exam).join(ExamSchedule, ExamScheduleMapping.schedule_id == ExamSchedule.schedule_id).join(Exam, ExamSchedule.exam_id == Exam.exam_id).filter(*filter).all()
+        rows = session.query(ExamScheduleMapping, ExamSchedule, Exam).options(
+            load_only(
+                ExamSchedule.schedule_id,
+                ExamSchedule.exam_id,
+                ExamSchedule.title,
+                ExamSchedule.institute_id,
+                ExamSchedule.start_time,
+                ExamSchedule.end_time,
+                ExamSchedule.number_of_attempts,
+                ExamSchedule.user_review,
+                ExamSchedule.created_by,
+                ExamSchedule.created_date,
+                ExamSchedule.updated_by,
+                ExamSchedule.updated_date
+            )
+        ).join(
+            ExamSchedule,
+            ExamScheduleMapping.schedule_id == ExamSchedule.schedule_id
+        ).join(
+            Exam,
+            ExamSchedule.exam_id == Exam.exam_id
+        ).filter(*filter).all()
+
+        # Include completed history when the schedule still exists but its
+        # current user mapping was changed after this user submitted it.
+        user_id = args.get('user_id', None)
+        if user_id:
+            returned_schedule_ids = {str(item[1].schedule_id) for item in rows}
+            completed_schedule_ids = {
+                str(item[0]) for item in session.query(Exam_Attempt.schedule_id).filter(
+                    Exam_Attempt.user_id == user_id,
+                    or_(
+                        Exam_Attempt.submitted_date.isnot(None),
+                        Exam_Attempt.status.in_(('submitted', 'evaluated'))
+                    )
+                ).distinct().all()
+            }
+            missing_schedule_ids = completed_schedule_ids - returned_schedule_ids
+            if missing_schedule_ids:
+                history_rows = session.query(ExamSchedule, Exam).options(
+                    load_only(
+                        ExamSchedule.schedule_id,
+                        ExamSchedule.exam_id,
+                        ExamSchedule.title,
+                        ExamSchedule.institute_id,
+                        ExamSchedule.start_time,
+                        ExamSchedule.end_time,
+                        ExamSchedule.number_of_attempts,
+                        ExamSchedule.user_review,
+                        ExamSchedule.created_by,
+                        ExamSchedule.created_date,
+                        ExamSchedule.updated_by,
+                        ExamSchedule.updated_date
+                    )
+                ).join(
+                    Exam,
+                    ExamSchedule.exam_id == Exam.exam_id
+                ).filter(
+                    ExamSchedule.schedule_id.in_(missing_schedule_ids)
+                ).all()
+                rows.extend((None, schedule, exam) for schedule, exam in history_rows)
+
         # keep exams as list of Exam objects for existing usage
         Schedule_list = [row[0] for row in rows]
         schedules = [row[1] for row in rows]
@@ -463,16 +525,9 @@ def get_user_exam_details(request):
             return {"statusMessage": "No exams found", "status": False}, 404
 
         scheduler_data = []
-        for row in Schedule_list:
-            # find corresponding schedule and exam objects for this mapping
-            try:
-                idx = Schedule_list.index(row)
-                schedule_obj = schedules[idx]
-                exam_obj = exams[idx]
-            except ValueError:
-                # fallback if mapping not found in list
-                schedule_obj = None
-                exam_obj = None
+        for idx, row in enumerate(Schedule_list):
+            schedule_obj = schedules[idx]
+            exam_obj = exams[idx]
             # get attempt data for this user and schedule
             user_id = args.get("user_id", None)
             attempts = session.query(Exam_Attempt).filter(
@@ -505,6 +560,8 @@ def get_user_exam_details(request):
 
             # if current time between start and end time, exam is active
             current_time = datetime.utcnow()
+            attempted = user_attempt > 0
+            expired = bool(schedule_obj.end_time and current_time > schedule_obj.end_time)
             if schedule_obj.start_time <= current_time <= schedule_obj.end_time:
                 type = 'active'
                 if str(feedback).lower() == 'pass':
@@ -521,6 +578,9 @@ def get_user_exam_details(request):
                     user_review = True
 
             scheduler_data.append({
+                'review_available': user_review,
+                'attempted': attempted,
+                'expired': expired,
                 # Return raw datetimes so Flask serializes them exactly like
                 # the Started/Submitted values in the Test Review API.
                 'user_start_time': getattr(displayed_attempt, 'started_date', None),

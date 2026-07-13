@@ -32,6 +32,10 @@ export interface UserTestRow {
   pass_mark?: number;
   number_of_attempts?: number;
   type?: string;
+  user_review?: boolean;
+  review_available?: boolean;
+  attempted?: boolean;
+  expired?: boolean;
 }
 
 @Component({
@@ -308,7 +312,13 @@ export class UserExamComponent{
       };
 
       this.exams = arr.map((x: any) => {
-        const isCompleted = ['complete', 'completed', 'done'].includes((x.type || '').toString().toLowerCase());
+        const normalizedType = (x.type || '').toString().toLowerCase();
+        const reviewAvailable = Boolean(x.user_review || x.review_available || x.review);
+        const attempted = Boolean(x.attempted);
+        const expired = Boolean(x.expired);
+        const isCompleted = ['complete', 'completed', 'done'].includes(normalizedType)
+          || (expired && attempted)
+          || reviewAvailable;
         const startVal = fmtDate(isCompleted ? x.user_start_time : (x.start_time || x.start));
         const endVal = fmtDate(isCompleted ? x.user_end_time : (x.end_time || x.end));
         const completedScheduleTest = startVal ? `${startVal} - ${endVal || '--'}` : '--';
@@ -318,7 +328,10 @@ export class UserExamComponent{
           schedule_id: x.schedule_id || '',
           title: x.schedule_title || x.name || '', //exam_title
           // whether review is available for this user on this exam
-          user_review: x.user_review || x.review_available || x.review || false,
+          user_review: reviewAvailable,
+          review_available: reviewAvailable,
+          attempted,
+          expired,
           start_time: startVal,
           end_time: endVal,
           scheduleTest: isCompleted ? completedScheduleTest : scheduleTest,
@@ -375,11 +388,14 @@ export class UserExamComponent{
   private updateTabDataSources(){
     const lc = (s?: string) => (s || '').toString().toLowerCase();
     const isActive = (t?: string) => ['active','live'].includes(lc(t));
-    const isComplete = (t?: string) => ['complete','completed','done'].includes(lc(t));
+    const isComplete = (exam: UserTestRow) =>
+      ['complete','completed','done'].includes(lc(exam.type))
+      || Boolean(exam.expired && exam.attempted)
+      || Boolean(exam.user_review || exam.review_available);
     const isUpcoming = (t?: string) => ['upcoming','scheduled','pending','upcomming'].includes(lc(t));
 
     this.activeSource.data = this.exams.filter(e => isActive(e.type) || isUpcoming(e.type));
-    this.completeSource.data = this.exams.filter(e => isComplete(e.type));
+    this.completeSource.data = this.exams.filter(isComplete);
   }
 
   isUpcomingTest(type?: string): boolean {

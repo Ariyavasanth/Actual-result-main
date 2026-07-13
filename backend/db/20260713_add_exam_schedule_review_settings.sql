@@ -1,11 +1,25 @@
 IF COL_LENGTH('dbo.ExamSchedules', 'review_mode') IS NULL
-BEGIN
     ALTER TABLE dbo.ExamSchedules ADD review_mode VARCHAR(32) NULL;
-    UPDATE dbo.ExamSchedules
-    SET review_mode = CASE WHEN user_review = 1 THEN 'instant' ELSE 'no_review' END;
-    ALTER TABLE dbo.ExamSchedules ALTER COLUMN review_mode VARCHAR(32) NOT NULL;
+GO
+
+UPDATE dbo.ExamSchedules
+SET review_mode = CASE WHEN user_review = 1 THEN 'instant' ELSE 'no_review' END
+WHERE review_mode IS NULL;
+GO
+
+ALTER TABLE dbo.ExamSchedules ALTER COLUMN review_mode VARCHAR(32) NOT NULL;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.default_constraints dc
+    INNER JOIN sys.columns c
+        ON c.object_id = dc.parent_object_id
+        AND c.column_id = dc.parent_column_id
+    WHERE dc.parent_object_id = OBJECT_ID('dbo.ExamSchedules')
+      AND c.name = 'review_mode'
+)
     ALTER TABLE dbo.ExamSchedules ADD CONSTRAINT DF_ExamSchedules_review_mode DEFAULT 'no_review' FOR review_mode;
-END;
 GO
 
 IF COL_LENGTH('dbo.ExamSchedules', 'review_at') IS NULL
