@@ -942,7 +942,18 @@ export class AdminScheduleTestComponent {
       try {
         // Date instance
         if (dateLike instanceof Date) {
-          return isNaN(dateLike.getTime()) ? null : dateLike;
+          if (isNaN(dateLike.getTime())) return null;
+
+          // Angular Material's datepicker returns a Date at midnight. Preserve the
+          // selected calendar date, but apply the value from the separate time
+          // control so edits submit the date and time shown in the form.
+          const result = new Date(dateLike.getTime());
+          if (timeLike !== undefined && timeLike !== null && String(timeLike).trim()) {
+            const timeMatch = String(timeLike).trim().match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+            if (!timeMatch) return null;
+            result.setHours(Number(timeMatch[1]), Number(timeMatch[2]), 0, 0);
+          }
+          return result;
         }
 
         // numeric timestamp
