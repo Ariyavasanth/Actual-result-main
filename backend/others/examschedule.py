@@ -5,7 +5,7 @@ import datetime
 from others.exam_review import validate_answers
 from sqlalchemy import func
 
-VALID_REVIEW_MODES = {'no_review', 'after_schedule_ends', 'scheduled', 'manual'}
+VALID_REVIEW_MODES = {'no_review', 'after_schedule_ends', 'after_everyone_finishes', 'scheduled', 'manual'}
 
 def _as_bool(value, default=False):
     if value is None:
@@ -38,7 +38,7 @@ def _review_settings(data, defaults=None):
     instant_review = _as_bool(data.get('instant_review', data.get('userreview', data.get('user_review'))), defaults.get('instant_review', False))
     review_mode = 'instant' if instant_review else data.get('review_mode', defaults.get('review_mode', 'no_review'))
     if not instant_review and review_mode not in VALID_REVIEW_MODES:
-        raise ValueError('review_mode must be no_review, after_schedule_ends, scheduled, or manual')
+        raise ValueError('review_mode must be no_review, after_schedule_ends, after_everyone_finishes, scheduled, or manual')
 
     review_at = _parse_iso_datetime(data.get('review_at'), 'review_at') if 'review_at' in data else defaults.get('review_at')
     if review_mode == 'scheduled' and review_at is None:

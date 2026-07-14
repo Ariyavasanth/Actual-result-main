@@ -340,7 +340,7 @@ export class AdminScheduleTestComponent {
   }
 
   get radioReviewMode(): string | null {
-    return ['after_schedule_ends', 'scheduled'].includes(this.model.reviewMode)
+    return ['after_schedule_ends', 'after_everyone_finishes', 'scheduled'].includes(this.model.reviewMode)
       ? this.model.reviewMode
       : null;
   }
@@ -362,7 +362,7 @@ export class AdminScheduleTestComponent {
   }
 
   onRadioReviewModeChange(value: string): void {
-    if (!['after_schedule_ends', 'scheduled'].includes(value)) return;
+    if (!['after_schedule_ends', 'after_everyone_finishes', 'scheduled'].includes(value)) return;
     this.model.reviewMode = value;
     this.markDirty();
   }
@@ -466,6 +466,7 @@ export class AdminScheduleTestComponent {
     let availability = 'instantly after submission';
     if (!this.model.userreview) {
       if (this.model.reviewMode === 'after_schedule_ends') availability = 'after the test schedule ends';
+      if (this.model.reviewMode === 'after_everyone_finishes') availability = 'after every assigned student finishes or the test schedule ends';
       if (this.model.reviewMode === 'scheduled') availability = 'at the scheduled review date/time';
       if (this.model.reviewMode === 'manual') availability = 'after an administrator completes evaluation';
     }
@@ -1262,7 +1263,7 @@ export class AdminScheduleTestComponent {
 
   private applyReviewSettings(value: any, toBool: (value: any) => boolean): void {
     const persistedReviewMode = value.review_mode || value.reviewMode;
-    if (['no_review', 'manual', 'after_schedule_ends', 'scheduled', 'instant'].includes(persistedReviewMode)) {
+    if (['no_review', 'manual', 'after_schedule_ends', 'after_everyone_finishes', 'scheduled', 'instant'].includes(persistedReviewMode)) {
       this.model.reviewMode = persistedReviewMode === 'instant' ? 'no_review' : persistedReviewMode;
     }
     const reviewAtValue = value.review_at || value.reviewAt;

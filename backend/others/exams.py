@@ -1,6 +1,6 @@
 from db.models import Exam, ExamSchedule, Question, Option, Answer,Exam_Attempt, ExamMapping, Categories, ExamScheduleMapping, QuestionMapping, ExamQuestionMapping
 from db.db import SQLiteDB
-from others.exam_review import validate_answers
+from others.exam_review import is_after_everyone_finished_available, validate_answers
 import sys
 from datetime import datetime
 from db.models import Institute, User
@@ -579,6 +579,8 @@ def get_user_exam_details(request):
                     user_review = True
                 elif review_mode == 'after_schedule_ends':
                     user_review = expired
+                elif review_mode == 'after_everyone_finishes':
+                    user_review = is_after_everyone_finished_available(session, schedule_obj, current_time)
                 elif review_mode == 'scheduled':
                     user_review = bool(schedule_obj.review_at and current_time >= schedule_obj.review_at)
                 elif review_mode == 'manual':

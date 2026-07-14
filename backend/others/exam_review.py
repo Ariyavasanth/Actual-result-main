@@ -4,6 +4,26 @@ from db.db import SQLiteDB
 from db.models import User, Exam, ExamSchedule, Question, Option, Answer,Exam_Attempt, ExamScheduleMapping, ExamReviewComments,ExamReviewCommentsHistory, MarksHistory
 from others.llm import descriptive_evaluation, openai_client
 
+def is_after_everyone_finished_available(session, exam_schedule, now=None):
+    """Unlock when all currently assigned students submitted, or time expired."""
+    now = now or datetime.datetime.utcnow()
+    if exam_schedule.end_time and now >= exam_schedule.end_time:
+        return True
+
+    assigned_user_ids = session.query(ExamScheduleMapping.user_id).filter(
+        ExamScheduleMapping.schedule_id == exam_schedule.schedule_id
+    ).distinct().all()
+    assigned_user_ids = [row[0] for row in assigned_user_ids]
+    if not assigned_user_ids:
+        return False
+
+    completed_count = session.query(func.count(func.distinct(Exam_Attempt.user_id))).filter(
+        Exam_Attempt.schedule_id == exam_schedule.schedule_id,
+        Exam_Attempt.user_id.in_(assigned_user_ids),
+        (Exam_Attempt.submitted_date.isnot(None) | Exam_Attempt.status.in_(('submitted', 'evaluated')))
+    ).scalar() or 0
+    return completed_count == len(assigned_user_ids)
+
 def review_user_exam(request, current_user=None):
 
     db = SQLiteDB()
@@ -76,6 +96,7 @@ def review_user_exam(request, current_user=None):
         review_available = bool(review_attempts) and (
             review_mode == 'instant'
             or (review_mode == 'after_schedule_ends' and exam_schedule.end_time and now >= exam_schedule.end_time)
+            or (review_mode == 'after_everyone_finishes' and is_after_everyone_finished_available(session, exam_schedule, now))
             or (review_mode == 'scheduled' and exam_schedule.review_at and now >= exam_schedule.review_at)
             or (review_mode == 'manual' and any(attempt.status == 'evaluated' for attempt in review_attempts))
         )

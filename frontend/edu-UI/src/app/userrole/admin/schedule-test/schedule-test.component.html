@@ -179,6 +179,7 @@
                               <mat-radio-group [ngModel]="radioReviewMode" (ngModelChange)="onRadioReviewModeChange($event)"
                                  name="reviewMode" [disabled]="readOnly" aria-label="Timed review availability">
                                  <mat-radio-button value="after_schedule_ends">After Test Schedule Ends</mat-radio-button>
+                                 <mat-radio-button value="after_everyone_finishes">After Everyone Finishes</mat-radio-button>
                                  <mat-radio-button value="scheduled">Schedule Review</mat-radio-button>
                               </mat-radio-group>
                               <div *ngIf="model.reviewMode === 'scheduled'" class="review-schedule-fields" [formGroup]="reviewScheduleForm">
@@ -418,7 +419,7 @@
                            <div class="review-item"><span class="review-label">Start</span><span class="review-value">{{ formatDate(model.startDate) }} {{ model.startTime || '' }}</span></div>
                            <div class="review-item"><span class="review-label">End</span><span class="review-value">{{ formatDate(model.endDate) }} {{ model.endTime || '' }}</span></div>
                            <div class="review-item"><span class="review-label">Publish</span><span class="review-value"><span class="status-pill" [class.active]="model.publish">{{ model.publish ? 'Yes' : 'No' }}</span></span></div>
-                           <div class="review-item"><span class="review-label">Review</span><span class="review-value">{{ model.userreview ? 'Instant Review' : (model.reviewMode === 'no_review' ? 'No Review' : model.reviewMode === 'after_schedule_ends' ? 'After Test Schedule Ends' : model.reviewMode === 'scheduled' ? 'Scheduled ' + model.reviewDate + ' ' + model.reviewTime : 'Manual Review') }}</span></div>
+                           <div class="review-item"><span class="review-label">Review</span><span class="review-value">{{ model.userreview ? 'Instant Review' : (model.reviewMode === 'no_review' ? 'No Review' : model.reviewMode === 'after_schedule_ends' ? 'After Test Schedule Ends' : model.reviewMode === 'after_everyone_finishes' ? 'After Everyone Finishes' : model.reviewMode === 'scheduled' ? 'Scheduled ' + model.reviewDate + ' ' + model.reviewTime : 'Manual Review') }}</span></div>
                            <div class="review-item"><span class="review-label">Review content</span><span class="review-value">{{ model.showScore ? 'Score; ' : '' }}{{ model.showCorrectAnswers ? 'Correct answers; ' : '' }}{{ model.showStudentAnswers ? 'Student answers; ' : '' }}{{ model.showExplanations ? 'Explanations' : '' }}</span></div>
                         </div>
                      </div>
