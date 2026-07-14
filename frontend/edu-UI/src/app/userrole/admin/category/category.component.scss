@@ -89,6 +89,11 @@ $shadow-md: 0 0.25rem 0.75rem rgba(0,0,0,0.06);
 .category-filters-panel .filter-col { display: flex; flex-direction: column; gap: 0.5rem; }
 .category-filters-panel .filter-checks { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem; padding: 0.25rem 1.25rem 0.75rem; }
 
+// Regular admin logins: visually swap the two filter columns (Institute/Question Bank/Departments/Teams/Active
+// Status on the left, Created After/Before on the right) without touching super admin's original layout.
+.category-filters-panel .filter-grid.admin-order .filter-col:nth-child(1) { order: 2; }
+.category-filters-panel .filter-grid.admin-order .filter-col:nth-child(2) { order: 1; }
+
 // Searchable filter dropdowns (Country/Industry/Sector)
 :host ::ng-deep .select-search-option { height: auto !important; min-height: 3rem; cursor: default; }
 :host ::ng-deep .select-search-option .mdc-list-item__primary-text { width: 100%; }
