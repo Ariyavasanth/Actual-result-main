@@ -26,6 +26,8 @@ import { TemplatePortal } from '@angular/cdk/portal';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { PortalModule } from '@angular/cdk/portal';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
+import { Subscription } from 'rxjs';
+import { GlobalInstituteContextService } from 'src/app/shared/services/global-institute-context.service';
 
 @Component({
   selector: 'app-category',
@@ -78,7 +80,14 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   filterPublicAccess: boolean | null = null; // tri-state: null = any, true = public, false = restricted
   // role
   isSuperAdmin: boolean = false;
+  isGlobalInstituteActive = false;
+  // Country/City/Industry/Sector are Super Admin-only, and are further hidden while the
+  // Super Admin has a Global Filter institute active (that institute already scopes the page).
+  get showLocationAndIndustryFilters(): boolean {
+    return this.isSuperAdmin && !this.isGlobalInstituteActive;
+  }
   private loginInstituteId: string | null = null;
+  private _globalInstituteSub: Subscription | null = null;
   institutes: Array<{ institute_id: string; short_name: string }> = [];
   departments: Array<{ id: string; name: string }> = [];
   teams: Array<{ id: string; name: string }> = [];
@@ -89,7 +98,7 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   hasAppliedFilters = false;
 
   private filtersOverlayRef: OverlayRef | null = null;
-  constructor(private http: HttpClient, private router: Router, private loader: LoaderService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private confirmService: ConfirmService) {}
+  constructor(private http: HttpClient, private router: Router, private loader: LoaderService, private pageMeta: PageMetaService, private overlay: Overlay, private vcr: ViewContainerRef, private confirmService: ConfirmService, private globalInstituteContext: GlobalInstituteContextService) {}
 
   ngOnInit(): void {
 
@@ -114,7 +123,12 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
     } catch (e) { /* ignore */ }
     this.loadFilterLists();
     this.loadCountries();
-    this.applyGlobalInstituteScopeIfActive();
+    try {
+      this._globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(() => {
+        this.isGlobalInstituteActive = this.globalInstituteContext.isGlobalFilterActive();
+        this.applyGlobalInstituteScopeIfActive();
+      });
+    } catch (e) { /* ignore in tests */ }
     this.restoreCategoryReturnState();
   }
 
@@ -129,6 +143,7 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   }
 
   ngOnDestroy(): void {
+  try { this._globalInstituteSub?.unsubscribe(); } catch (e) { /* ignore */ }
   this.saveCategoryReturnState();
 }
 
@@ -857,7 +872,7 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   }
 
   private applyGlobalInstituteScopeIfActive(): void {
-    const iid = sessionStorage.getItem('global_institute_id') || '';
+    const iid = this.globalInstituteContext.activeInstituteId;
     if (!iid) return;
     this.selectedInstitute = iid;
     this.hasAppliedFilters = false;

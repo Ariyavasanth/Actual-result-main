@@ -20,6 +20,7 @@ import { LoaderService } from 'src/app/shared/services/loader.service';
 import { ConfirmService } from 'src/app/shared/services/confirm.service';
 import { notify } from 'src/app/shared/global-notify';
 import { AuthService } from 'src/app/home/service/auth.service';
+import { GlobalInstituteContextService } from 'src/app/shared/services/global-institute-context.service';
 import { Subscription } from 'rxjs';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { OverlayModule } from '@angular/cdk/overlay';
@@ -99,12 +100,16 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   editableUser: any = null;
 
   isSuperAdmin = false;
+  isGlobalInstituteActive = false;
+  // Country/City/Industry/Sector are Super Admin-only, and are further hidden while the
+  // Super Admin has a Global Filter institute active (that institute already scopes the page).
   get showLocationAndIndustryFilters(): boolean {
-    return this.isSuperAdmin;
+    return this.isSuperAdmin && !this.isGlobalInstituteActive;
   }
 
   private _subs: Subscription | null = null;
-  constructor(private http: HttpClient, private router: Router, private loading: LoaderService, private auth: AuthService, private overlay: Overlay, private vcr: ViewContainerRef,private pageMeta: PageMetaService, private confirmService: ConfirmService) {
+  private _globalInstituteSub: Subscription | null = null;
+  constructor(private http: HttpClient, private router: Router, private loading: LoaderService, private auth: AuthService, private overlay: Overlay, private vcr: ViewContainerRef,private pageMeta: PageMetaService, private confirmService: ConfirmService, private globalInstituteContext: GlobalInstituteContextService) {
     // initialize isSuperAdmin from AuthService (synchronous helper)
     try {
       this.isSuperAdmin = this.checkSuperAdmin(this.auth.currentUserValue);
@@ -112,6 +117,12 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     try {
       this._subs = this.auth.user$.subscribe((user: any) => {
         this.isSuperAdmin = this.checkSuperAdmin(user);
+      });
+    } catch (e) { /* ignore in tests */ }
+    try {
+      this._globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(() => {
+        this.isGlobalInstituteActive = this.globalInstituteContext.isGlobalFilterActive();
+        this.applyGlobalInstituteScopeIfActive();
       });
     } catch (e) { /* ignore in tests */ }
   }
@@ -127,6 +138,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
 
   ngOnDestroy(): void {
     try { this._subs?.unsubscribe(); } catch (e) { /* ignore */ }
+    try { this._globalInstituteSub?.unsubscribe(); } catch (e) { /* ignore */ }
     this.saveUsersReturnState();
   }
   private filtersOverlayRef: OverlayRef | null = null;
@@ -135,7 +147,6 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     this.pageMeta.setMeta('Users', 'Manage platform users');
     this.loadInstitutes();
     this.loadCountries();
-    this.applyGlobalInstituteScopeIfActive();
     this.restoreUsersReturnState();
     // this.loadCities();
 
@@ -1052,7 +1063,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   }
 
   private applyGlobalInstituteScopeIfActive(): void {
-    const iid = sessionStorage.getItem('global_institute_id') || '';
+    const iid = this.globalInstituteContext.activeInstituteId;
     if (!iid) return;
     this.selectedInstitute = iid;
     try { this.filters.institute = iid; } catch (e) {}

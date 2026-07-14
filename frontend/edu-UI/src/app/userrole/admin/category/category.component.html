@@ -55,14 +55,15 @@
                 <div class="filters-panel-header">
                     <h4><mat-icon>tune</mat-icon> Filters</h4>
                 </div>
-                <div class="filter-block filter-grid" [class.admin-order]="!isSuperAdmin">
+                <div class="filter-block filter-grid" [class.admin-order]="!showLocationAndIndustryFilters">
 
-                    <!-- Column A: Country, City, Industry, Sector scope the Institute list (super admin only), then the date range.
-                         For regular admin logins (!isSuperAdmin), .admin-order visually swaps this to the right column via SCSS,
-                         since Country/City/Industry/Sector never render for them anyway (only Created After/Before remain). -->
+                    <!-- Column A: Country, City, Industry, Sector scope the Institute list (super admin only, and
+                         hidden while a Global Filter institute is active), then the date range.
+                         When these fields are hidden, .admin-order visually swaps this to the right column via SCSS,
+                         since Country/City/Industry/Sector don't render (only Created After/Before remain). -->
                     <div class="filter-col">
 
-                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="showLocationAndIndustryFilters">
                             <mat-label>Country</mat-label>
                             <mat-select [(ngModel)]="filterCountry" (openedChange)="onFilterSelectOpened($event, 'country')"
                                 (selectionChange)="onCountryFilterChange()">
@@ -77,13 +78,13 @@
                             </mat-select>
                         </mat-form-field>
 
-                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="showLocationAndIndustryFilters">
                             <mat-label>City</mat-label>
                             <input matInput placeholder="Any" [disabled]="!filterCountry" [(ngModel)]="filterCity"
                                 (blur)="onCityFilterChange()" />
                         </mat-form-field>
 
-                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="showLocationAndIndustryFilters">
                             <mat-label>Industry</mat-label>
                             <mat-select [(ngModel)]="filterIndustry" placeholder="Industry type"
                                 (openedChange)="onFilterSelectOpened($event, 'industry')" (selectionChange)="onIndustryFilterChange()">
@@ -98,7 +99,7 @@
                             </mat-select>
                         </mat-form-field>
 
-                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="showLocationAndIndustryFilters">
                             <mat-label>Sector</mat-label>
                             <mat-select [(ngModel)]="filterSector" placeholder="Industry sector" [disabled]="!filterIndustry"
                                 (openedChange)="onFilterSelectOpened($event, 'sector')" (selectionChange)="onSectorFilterChange()">

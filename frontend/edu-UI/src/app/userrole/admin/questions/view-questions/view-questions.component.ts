@@ -22,6 +22,7 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { LoaderService } from 'src/app/shared/services/loader.service';
 import { AuthService } from 'src/app/home/service/auth.service';
+import { GlobalInstituteContextService } from 'src/app/shared/services/global-institute-context.service';
 import { Subscription } from 'rxjs';
 import { API_BASE } from 'src/app/shared/api.config';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
@@ -92,7 +93,7 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
   
 
   private _subs: Subscription | null = null;
-  
+  private _globalInstituteSub: Subscription | null = null;
 
   private institutesUrl = `${API_BASE}/get-institute-list`;
   private examsUrl = `${API_BASE}/get-exams-list`;
@@ -156,8 +157,14 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
   }
  
   isSuperAdmin = false;
+  isGlobalInstituteActive = false;
+  // Country/City/Industry/Sector are Super Admin-only, and are further hidden while the
+  // Super Admin has a Global Filter institute active (that institute already scopes the page).
+  get showLocationAndIndustryFilters(): boolean {
+    return this.isSuperAdmin && !this.isGlobalInstituteActive;
+  }
   private loginInstituteId: string | null = null;
-  constructor(private http: HttpClient, private router: Router, private loading: LoaderService, private auth: AuthService, private overlay: Overlay, private vcr: ViewContainerRef,private pageMeta: PageMetaService, private confirmService: ConfirmService) {
+  constructor(private http: HttpClient, private router: Router, private loading: LoaderService, private auth: AuthService, private overlay: Overlay, private vcr: ViewContainerRef,private pageMeta: PageMetaService, private confirmService: ConfirmService, private globalInstituteContext: GlobalInstituteContextService) {
     
   this.initializeInstituteScopeFromSession();
 
@@ -179,13 +186,19 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
   // http is optional for tests; if present, load institutes
     if (this.http) this.loadInstitutes();
     if (this.http) this.loadCountries();
-    this.applyGlobalInstituteScopeIfActive();
+    try {
+      this._globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(() => {
+        this.isGlobalInstituteActive = this.globalInstituteContext.isGlobalFilterActive();
+        this.applyGlobalInstituteScopeIfActive();
+      });
+    } catch (e) { /* ignore in tests */ }
     // also load categories list for the Category filter, scoped for admins
     if (this.http) this.loadCategories(this.getScopedInstituteId());
   }
 
   ngOnDestroy(): void {
     try { this._subs?.unsubscribe(); } catch (e) { /* ignore */ }
+    try { this._globalInstituteSub?.unsubscribe(); } catch (e) { /* ignore */ }
      this.saveQuestionsReturnState();
   }
   get appliedFilterChips(): Array<{ key: string; label: string; removable: boolean }> {
@@ -1064,7 +1077,7 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
   }
 
   private applyGlobalInstituteScopeIfActive(): void {
-    const iid = sessionStorage.getItem('global_institute_id') || '';
+    const iid = this.globalInstituteContext.activeInstituteId;
     if (!iid) return;
     this.selectedInstitute = iid;
     this.hasAppliedFilters = false;

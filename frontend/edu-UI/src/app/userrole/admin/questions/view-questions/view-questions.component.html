@@ -64,10 +64,11 @@
                 </div>
                 <div class="filter-block filter-grid">
 
-                    <!-- Left column: Country, City, Industry, Sector scope the Institute list (super admin only), then the date range -->
+                    <!-- Left column: Country, City, Industry, Sector scope the Institute list (super admin only, and
+                         hidden while a Global Filter institute is active), then the date range -->
                     <div class="filter-col">
 
-                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="showLocationAndIndustryFilters">
                             <mat-label>Country</mat-label>
                             <mat-select [(ngModel)]="filterCountry" (openedChange)="onFilterSelectOpened($event, 'country')"
                                 (selectionChange)="onCountryFilterChange()">
@@ -82,13 +83,13 @@
                             </mat-select>
                         </mat-form-field>
 
-                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="showLocationAndIndustryFilters">
                             <mat-label>City</mat-label>
                             <input matInput placeholder="Any" [disabled]="!filterCountry" [(ngModel)]="filterCity"
                                 (blur)="onCityFilterChange()" />
                         </mat-form-field>
 
-                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="showLocationAndIndustryFilters">
                             <mat-label>Industry</mat-label>
                             <mat-select [(ngModel)]="filterIndustry" placeholder="Industry type"
                                 (openedChange)="onFilterSelectOpened($event, 'industry')" (selectionChange)="onIndustryFilterChange()">
@@ -103,7 +104,7 @@
                             </mat-select>
                         </mat-form-field>
 
-                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="showLocationAndIndustryFilters">
                             <mat-label>Sector</mat-label>
                             <mat-select [(ngModel)]="filterSector" placeholder="Industry sector" [disabled]="!filterIndustry"
                                 (openedChange)="onFilterSelectOpened($event, 'sector')" (selectionChange)="onSectorFilterChange()">
