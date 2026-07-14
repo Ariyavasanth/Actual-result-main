@@ -194,7 +194,15 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     const selected = this.teams.find(t => String(t.id) === String(this.filters.team));
     if (selected?.name !== this.teamSearch) this.filters.team = '';
   }
-  onDepartmentSelected(departmentName: string) {
+  onDepartmentSelected(departmentName: string | null) {
+    if (!departmentName) {
+      // "Any" selected: clear the department filter (and dependent team filter) instead of
+      // sending the literal "Any" value to the backend.
+      this.filters.department = '';
+      this.departmentSearch = 'Any';
+      this.onDepartmentFilterChange();
+      return;
+    }
     const department = this.departments.find(d => d.name === departmentName);
     if (!department) return;
     this.filters.department = department.id;
@@ -202,7 +210,13 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     this.onDepartmentFilterChange();
   }
 
-  onTeamSelected(teamName: string) {
+  onTeamSelected(teamName: string | null) {
+    if (!teamName) {
+      // "Any" selected: clear the team filter instead of sending the literal "Any" value.
+      this.filters.team = '';
+      this.teamSearch = 'Any';
+      return;
+    }
     const team = this.teams.find(t => t.name === teamName);
     if (!team) return;
     this.filters.team = team.id;

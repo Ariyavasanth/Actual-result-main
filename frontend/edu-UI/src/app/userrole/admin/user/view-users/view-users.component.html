@@ -103,7 +103,7 @@
               [(ngModel)]="departmentSearch" (ngModelChange)="onDepartmentSearchChange()" [matAutocomplete]="departmentAuto" />
             <mat-autocomplete #departmentAuto="matAutocomplete"
               (optionSelected)="onDepartmentSelected($event.option.value)">
-              <mat-option value="">Any</mat-option>
+              <mat-option [value]="null">Any</mat-option>
               <mat-option *ngFor="let d of filteredDepartments()" [value]="d.name">{{d.name}}</mat-option>
             </mat-autocomplete>
           </mat-form-field>
@@ -114,7 +114,7 @@
               [matAutocomplete]="teamAuto" />
             <mat-autocomplete #teamAuto="matAutocomplete"
               (optionSelected)="onTeamSelected($event.option.value)">
-              <mat-option value="">Any</mat-option>
+              <mat-option [value]="null">Any</mat-option>
               <mat-option *ngFor="let t of filteredTeams()" [value]="t.name">{{t.name}}</mat-option>
             </mat-autocomplete>
           </mat-form-field>
