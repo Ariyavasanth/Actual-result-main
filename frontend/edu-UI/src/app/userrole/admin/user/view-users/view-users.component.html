@@ -50,7 +50,8 @@
           <h4><mat-icon>tune</mat-icon> Filters</h4>
         </div>
         <div class="filter-block">
-          <mat-form-field appearance="outline" class="filter-item">
+          <ng-container *ngIf="showLocationAndIndustryFilters">
+            <mat-form-field appearance="outline" class="filter-item">
             <mat-label>Country</mat-label>
             <mat-select [(ngModel)]="filters.country" (selectionChange)="onCountryChange()">
               <mat-option value="">Any</mat-option>
@@ -85,6 +86,8 @@
             </mat-select>
           </mat-form-field>
 
+          </ng-container>
+
           <mat-form-field appearance="outline" class="filter-item local-institute-field" *ngIf="isSuperAdmin">
             <mat-label>Institute</mat-label>
             <mat-select [(ngModel)]="selectedInstitute" (selectionChange)="onInstituteChange($event.value)">
@@ -96,19 +99,24 @@
 
           <mat-form-field appearance="outline" class="filter-item">
             <mat-label>Department</mat-label>
-            <mat-select [(ngModel)]="filters.department" [disabled]="!selectedInstitute"
-              (selectionChange)="onDepartmentFilterChange()">
+            <input matInput placeholder="Type or select a department" [disabled]="!selectedInstitute"
+              [(ngModel)]="departmentSearch" (ngModelChange)="onDepartmentSearchChange()" [matAutocomplete]="departmentAuto" />
+            <mat-autocomplete #departmentAuto="matAutocomplete"
+              (optionSelected)="onDepartmentSelected($event.option.value)">
               <mat-option value="">Any</mat-option>
-              <mat-option *ngFor="let d of departments" [value]="d.id">{{d.name}}</mat-option>
-            </mat-select>
+              <mat-option *ngFor="let d of filteredDepartments()" [value]="d.name">{{d.name}}</mat-option>
+            </mat-autocomplete>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="filter-item">
             <mat-label>Team</mat-label>
-            <mat-select [(ngModel)]="filters.team" [disabled]="!filters.department">
+            <input matInput placeholder="Type or select a team" [(ngModel)]="teamSearch" (ngModelChange)="onTeamSearchChange()"
+              [matAutocomplete]="teamAuto" />
+            <mat-autocomplete #teamAuto="matAutocomplete"
+              (optionSelected)="onTeamSelected($event.option.value)">
               <mat-option value="">Any</mat-option>
-              <mat-option *ngFor="let t of teams" [value]="t.id">{{t.name}}</mat-option>
-            </mat-select>
+              <mat-option *ngFor="let t of filteredTeams()" [value]="t.name">{{t.name}}</mat-option>
+            </mat-autocomplete>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="filter-item">

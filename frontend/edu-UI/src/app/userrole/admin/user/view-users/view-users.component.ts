@@ -76,6 +76,8 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   cities: Array<{ code: string; name: string }> = [];
   departments: Array<{ id: string; name: string }> = [];
   teams: Array<{ id: string; name: string }> = [];
+  departmentSearch = '';
+  teamSearch = '';
 
   // Industry -> Sector dependency (mirrors view-institutes.component.ts)
   industryTypes = ['School', 'College', 'BPO', 'Bank', 'IT'];
@@ -97,6 +99,10 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   editableUser: any = null;
 
   isSuperAdmin = false;
+  get showLocationAndIndustryFilters(): boolean {
+    return this.isSuperAdmin;
+  }
+
   private _subs: Subscription | null = null;
   constructor(private http: HttpClient, private router: Router, private loading: LoaderService, private auth: AuthService, private overlay: Overlay, private vcr: ViewContainerRef,private pageMeta: PageMetaService, private confirmService: ConfirmService) {
     // initialize isSuperAdmin from AuthService (synchronous helper)
@@ -145,6 +151,8 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
       // Department depends on Institute, Team depends on Department - clear both downstream.
       this.filters.department = '';
       this.filters.team = '';
+      this.departmentSearch = '';
+      this.teamSearch = '';
 
       if (iid) {
         this.loadDepartments(iid);
@@ -163,11 +171,48 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     if (!this.filters.department) this.filters.team = '';
   }
 
+  filteredDepartments() {
+    const query = (this.departmentSearch || '').trim().toLowerCase();
+    return query ? this.departments.filter(d => d.name.toLowerCase().includes(query)) : this.departments;
+  }
+
+  filteredTeams() {
+    const query = (this.teamSearch || '').trim().toLowerCase();
+    return query ? this.teams.filter(t => t.name.toLowerCase().includes(query)) : this.teams;
+  }
+
+  onDepartmentSearchChange() {
+    const selected = this.departments.find(d => String(d.id) === String(this.filters.department));
+    if (selected?.name !== this.departmentSearch) {
+      this.filters.department = '';
+      this.filters.team = '';
+      this.teamSearch = '';
+    }
+  }
+
+  onTeamSearchChange() {
+    const selected = this.teams.find(t => String(t.id) === String(this.filters.team));
+    if (selected?.name !== this.teamSearch) this.filters.team = '';
+  }
+  onDepartmentSelected(departmentName: string) {
+    const department = this.departments.find(d => d.name === departmentName);
+    if (!department) return;
+    this.filters.department = department.id;
+    this.departmentSearch = department.name;
+    this.onDepartmentFilterChange();
+  }
+
+  onTeamSelected(teamName: string) {
+    const team = this.teams.find(t => t.name === teamName);
+    if (!team) return;
+    this.filters.team = team.id;
+    this.teamSearch = team.name;
+  }
   // load departments for the selected institute
   loadDepartments(instituteId: string) {
     const url = `${API_BASE}/get-department-list`;
     this.http.get<any>(url, { params: { institute_id: instituteId } }).subscribe({ next: (res) => {
-      try { const data = res?.data || []; this.departments = data.map((d: any) => ({ id: d.dept_id || d.id || d.deptId, name: d.name })); } catch(e){ this.departments = []; }
+      try { const data = res?.data || []; this.departments = data.map((d: any) => ({ id: d.dept_id || d.id || d.deptId, name: d.name })); this.departmentSearch = this.departments.find(d => String(d.id) === String(this.filters.department))?.name || ''; } catch(e){ this.departments = []; }
     }, error: () => { this.departments = []; } });
   }
 
@@ -175,7 +220,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   loadTeams(instituteId: string) {
     const url = `${API_BASE}/get-teams-list`;
     this.http.get<any>(url, { params: { institute_id: instituteId } }).subscribe({ next: (res) => {
-      try { const data = res?.data || []; this.teams = data.map((t: any) => ({ id: t.team_id || t.id || t.teamId, name: t.name })); } catch(e) { this.teams = []; }
+      try { const data = res?.data || []; this.teams = data.map((t: any) => ({ id: t.team_id || t.id || t.teamId, name: t.name })); this.teamSearch = this.teams.find(t => String(t.id) === String(this.filters.team))?.name || ''; } catch(e) { this.teams = []; }
     }, error: () => { this.teams = []; } });
   }
 
@@ -400,6 +445,8 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     this.filters = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '', industry: '', sector: '' };
     this.selectedInstitute = '';
     this.instituteSearch = '';
+    this.departmentSearch = '';
+    this.teamSearch = '';
     this.filter = '';
     this.dataSource.filter = '';
     this.states=[];
