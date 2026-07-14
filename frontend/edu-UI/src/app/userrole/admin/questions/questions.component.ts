@@ -142,6 +142,27 @@ export class AdminQuestionsComponent {
   filterCreationDate: Date | null = null;
   filterCreatedByMe = false;
   filterPublicAccess = false;
+  // location / industry filters that scope the Institute list (mirrors view-institutes.component.ts cascade)
+  filterCountry: string = '';
+  filterCity: string = '';
+  filterIndustry: string = '';
+  filterSector: string = '';
+  countries: Array<{ code: string; name: string }> = [];
+  filterCityOptions: Array<{ code: string; name: string }> = [];
+  private locationHierarchyRaw: any[] = [];
+  industryTypes = ['School', 'College', 'BPO', 'Bank', 'IT'];
+  industrySectors = ['School', 'Engineering', 'Arts', 'Healthcare', 'Finance', 'Banking', 'IT'];
+  // Industry -> Sector dependency map (mirrors institute-register.component.ts / view-institutes.component.ts)
+  private sectorMap: Record<string, string[]> = {
+    'School': ['School'],
+    'College': ['Engineering', 'Arts'],
+    'BPO': ['Healthcare', 'Finance'],
+    'Bank': ['Bank'],
+    'IT': ['IT']
+  };
+  countrySearch = '';
+  industrySearch = '';
+  sectorSearch = '';
 
   private apiUrl = `${API_BASE}/add-question`;
   // updated endpoints per request
@@ -167,6 +188,7 @@ export class AdminQuestionsComponent {
 
     // call to populate institutes dropdown; loadCategories will be triggered after institutes load if an institute is prefilled
     this.loadInstitutes();
+    this.loadCountries();
   }
 
   goBackToQuestions(): void {
@@ -591,7 +613,7 @@ export class AdminQuestionsComponent {
     if (this.isSuperAdmin || !scopedInstitute) return true;
     return this.getCategoryInstituteId(item) === String(scopedInstitute);
   }
-  loadInstitutes(){
+  loadInstitutes(onLoaded?: () => void){
     this.loader.show();
     this.http.get<any>(this.institutesUrl).subscribe({
       next: (res) => {
@@ -599,11 +621,196 @@ export class AdminQuestionsComponent {
         this.institutes = arr.map((r:any) => ({ name: r.name || r.institute_name || r.short_name || '', institute_id: r.institute_id || r.id }));
         // If an institute was prefilled (from session), ensure categories load for it
         try{ const pre = this.questions && this.questions[0] && (this.questions[0].institute_id || ''); if(pre) { this.loadDepartments(pre); this.loadTeams(pre); this.loadCategories(pre); } }catch(e){}
+        if (onLoaded) onLoaded();
       },
       complete: () => { this.loader.hide(); },
       error: (err) => { this.loader.hide();
         console.warn('Failed to load institutes', err);
       }
+    });
+  }
+
+  // ---- Country / City / Industry / Sector cascade (mirrors view-institutes.component.ts / category.component.ts) ----
+
+  get filteredCountries(): Array<{ code: string; name: string }> {
+    const term = (this.countrySearch || '').trim().toLowerCase();
+    if (!term) return this.countries;
+    return this.countries.filter(c => (c.name || '').toLowerCase().includes(term));
+  }
+
+  get filteredIndustryTypes(): string[] {
+    const term = (this.industrySearch || '').trim().toLowerCase();
+    if (!term) return this.industryTypes;
+    return this.industryTypes.filter(t => t.toLowerCase().includes(term));
+  }
+
+  // Sectors scoped to the selected industry; empty until an industry is selected.
+  private get scopedSectors(): string[] {
+    if (!this.filterIndustry) return [];
+    return this.sectorMap[this.filterIndustry] || [];
+  }
+
+  get filteredSectors(): string[] {
+    const scoped = this.scopedSectors;
+    const term = (this.sectorSearch || '').trim().toLowerCase();
+    if (!term) return scoped;
+    return scoped.filter(s => s.toLowerCase().includes(term));
+  }
+
+  onFilterSelectOpened(opened: boolean, field: 'country' | 'industry' | 'sector') {
+    if (opened) {
+      setTimeout(() => {
+        try {
+          const input = document.querySelector('.cdk-overlay-pane .select-search-input') as HTMLInputElement | null;
+          input?.focus();
+        } catch (e) { /* ignore non-browser environments */ }
+      });
+      return;
+    }
+    if (field === 'country') this.countrySearch = '';
+    else if (field === 'industry') this.industrySearch = '';
+    else if (field === 'sector') this.sectorSearch = '';
+  }
+
+  stopFilterSearchEvent(event: Event) {
+    event.stopPropagation();
+  }
+
+  // Only show countries that have at least one registered institute (mirrors
+  // view-institutes.component.ts loadRegisteredInstituteCountries), not the full world hierarchy.
+  loadCountries(){
+    const url = `${API_BASE}/location-hierarchy`;
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        try {
+          const countries = res?.data?.countries || res?.countries || res?.data || [];
+          this.locationHierarchyRaw = Array.isArray(countries) ? countries : [];
+          this.loadRegisteredInstituteCountries(this.locationHierarchyRaw);
+        } catch (e) { this.countries = []; }
+      },
+      error: () => { this.countries = []; }
+    });
+  }
+
+  private loadRegisteredInstituteCountries(locationCountries: any[]) {
+    this.countries = [];
+    this.http.get<any>(`${API_BASE}/get-institutes`).subscribe({
+      next: (res) => {
+        try {
+          const institutes = Array.isArray(res?.data) ? res.data : [];
+          const hierarchyCountries = (locationCountries || []).map((country: any) => ({
+            code: country.country_code || country.code || country.id,
+            name: country.country_name || country.name || country.country
+          })).filter((country: any) => country.code && country.name);
+          const registeredCountries: Array<{ code: string; name: string }> = [];
+          institutes.forEach((institute: any) => {
+            const locations = [institute, ...(Array.isArray(institute?.campuses) ? institute.campuses : [])];
+            locations.forEach((location: any) => {
+              const rawCountry = location?.country;
+              const countryCode = location?.country_id || location?.country_code
+                || (typeof rawCountry === 'object' ? rawCountry?.country_id || rawCountry?.id || rawCountry?.country_code || rawCountry?.code : rawCountry);
+              const countryName = location?.country_name
+                || (typeof rawCountry === 'object' ? rawCountry?.country_name || rawCountry?.name || rawCountry?.country : rawCountry);
+              const hierarchyMatch = hierarchyCountries.find((country: any) =>
+                (countryCode && String(country.code).toLowerCase() === String(countryCode).toLowerCase())
+                || (countryName && String(country.name).trim().toLowerCase() === String(countryName).trim().toLowerCase())
+              );
+              const resolved = hierarchyMatch || (countryCode && countryName ? { code: countryCode, name: countryName } : null);
+              if (resolved) registeredCountries.push({ code: String(resolved.code), name: String(resolved.name).trim() });
+            });
+          });
+          const uniqueByName = new Map<string, { code: string; name: string }>();
+          registeredCountries.forEach(country => {
+            const key = country.name.toLowerCase();
+            if (!uniqueByName.has(key)) uniqueByName.set(key, country);
+          });
+          this.countries = Array.from(uniqueByName.values()).sort((a, b) => a.name.localeCompare(b.name));
+        } catch (e) {
+          this.countries = [];
+        }
+      },
+      error: () => { this.countries = []; }
+    });
+  }
+
+  private loadCitiesForCountry(countryCode: string) {
+    this.filterCityOptions = [];
+    if (!countryCode) return;
+    const url = `${API_BASE}/location-hierarchy`;
+    this.http.get<any>(url, { params: { country_id: countryCode } }).subscribe({
+      next: (res) => {
+        try {
+          const data = Array.isArray(res?.data?.cities) ? res.data.cities : [];
+          this.filterCityOptions = data.map((city: any) => ({
+            code: city.id ?? city.city_id ?? city.city_code ?? city.code,
+            name: city.name ?? city.city_name ?? city.city
+          })).filter((city: any) => city.code && city.name).sort((a: any, b: any) => a.name.localeCompare(b.name));
+        } catch (e) { this.filterCityOptions = []; }
+      },
+      error: () => { this.filterCityOptions = []; }
+    });
+  }
+
+  // City is a free-text field holding the display name; resolve it back to its code
+  // (the backend's city filter expects an id) before sending it to get-institutes.
+  private resolveCityId(cityName: string): string {
+    const name = String(cityName || '').trim().toLowerCase();
+    if (!name) return '';
+    const found = this.filterCityOptions.find(c => String(c.name || '').trim().toLowerCase() === name);
+    return found ? String(found.code) : '';
+  }
+
+  onCountryFilterChange() {
+    this.filterCity = '';
+    this.loadCitiesForCountry(this.filterCountry);
+    this.refreshInstituteScope();
+  }
+
+  onCityFilterChange() {
+    this.refreshInstituteScope();
+  }
+
+  onIndustryFilterChange() {
+    this.filterSector = '';
+    this.refreshInstituteScope();
+  }
+
+  onSectorFilterChange() {
+    this.refreshInstituteScope();
+  }
+
+  // Reload the Institute options scoped to the currently selected Country/City/Industry/Sector.
+  // Falls back to the full institute list (get-institute-list) when none of those are selected.
+  private refreshInstituteScope() {
+    const params: any = {};
+    if (this.filterCountry) params.country = this.filterCountry;
+    const cityId = this.resolveCityId(this.filterCity);
+    if (cityId) params.city = cityId;
+    if (this.filterIndustry) params.industry = this.filterIndustry;
+    if (this.filterSector) params.sector = this.filterSector;
+
+    const clearStaleInstituteSelection = () => {
+      const current = this.questions?.[0]?.institute_id;
+      if (current && !this.institutes.some(i => String(i.institute_id) === String(current))) {
+        this.onQuestionInstituteChange('');
+      }
+    };
+
+    if (!Object.keys(params).length) {
+      this.loadInstitutes(clearStaleInstituteSelection);
+      return;
+    }
+
+    this.http.get<any>(`${API_BASE}/get-institutes`, { params }).subscribe({
+      next: (res) => {
+        const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        this.institutes = (data || []).map((r: any) => ({
+          name: r.name || r.institute_name || r.short_name || '',
+          institute_id: r.institute_id || r.id || r._id || ''
+        })).filter((i: any) => !!i.institute_id);
+        clearStaleInstituteSelection();
+      },
+      error: () => { this.institutes = []; }
     });
   }
   onQuestionInstituteChange(instId?: string) {
@@ -750,6 +957,15 @@ export class AdminQuestionsComponent {
     this.filterPublicAccess = false;
     this.questionBankFiltersApplied = false;
     if (reload) {
+      this.filterCountry = '';
+      this.filterCity = '';
+      this.filterIndustry = '';
+      this.filterSector = '';
+      this.filterCityOptions = [];
+      this.countrySearch = '';
+      this.industrySearch = '';
+      this.sectorSearch = '';
+      this.loadInstitutes();
       this.selectedCategory = null;
       try { if (this.questions && this.questions[0]) this.questions[0].category_id = ''; } catch(e) {}
       try { this.categoryCtrl.setValue(''); } catch(e) {}

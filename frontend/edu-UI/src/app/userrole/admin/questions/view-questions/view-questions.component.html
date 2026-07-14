@@ -58,96 +58,150 @@
 
         <!-- Filters panel -->
         <ng-template #filtersPanel>
-            <div class="filters-panel" (click)="$event.stopPropagation()">
+            <div class="filters-panel view-questions-filters-panel" (click)="$event.stopPropagation()">
                 <div class="filters-panel-header">
                     <h4><mat-icon>tune</mat-icon> Filters</h4>
                 </div>
-                <div class="filter-block">
-                    <mat-form-field appearance="outline" class="filter-item local-institute-field" *ngIf="isSuperAdmin">
-                        <mat-label>Institute</mat-label>
-                        <input matInput placeholder="All Institutes" [(ngModel)]="instituteSearch"
-                            [matAutocomplete]="questionInstituteAuto" />
-                        <mat-autocomplete #questionInstituteAuto="matAutocomplete"
-                            [displayWith]="displayInstitute"
-                            (optionSelected)="onInstituteAutocompleteSelected($event.option.value)">
-                            <mat-option value="">All Institutes</mat-option>
-                            <mat-option *ngFor="let inst of filteredInstitutes()"
-                                [value]="inst.institute_id">{{inst.name}}</mat-option>
-                        </mat-autocomplete>
-                    </mat-form-field>
+                <div class="filter-block filter-grid">
 
-                    <!-- <mat-form-field appearance="outline" class="filter-item">
+                    <!-- Left column: Country, City, Industry, Sector scope the Institute list (super admin only), then the date range -->
+                    <div class="filter-col">
+
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                            <mat-label>Country</mat-label>
+                            <mat-select [(ngModel)]="filterCountry" (openedChange)="onFilterSelectOpened($event, 'country')"
+                                (selectionChange)="onCountryFilterChange()">
+                                <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+                                    <input matInput class="select-search-input" placeholder="Search country" [(ngModel)]="countrySearch"
+                                        [ngModelOptions]="{standalone: true}" (click)="$event.stopPropagation()"
+                                        (keydown)="stopFilterSearchEvent($event)" (keyup)="stopFilterSearchEvent($event)"
+                                        (input)="stopFilterSearchEvent($event)" />
+                                </mat-option>
+                                <mat-option value="">Any</mat-option>
+                                <mat-option *ngFor="let c of filteredCountries" [value]="c.code">{{c.name}}</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                            <mat-label>City</mat-label>
+                            <input matInput placeholder="Any" [disabled]="!filterCountry" [(ngModel)]="filterCity"
+                                (blur)="onCityFilterChange()" />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                            <mat-label>Industry</mat-label>
+                            <mat-select [(ngModel)]="filterIndustry" placeholder="Industry type"
+                                (openedChange)="onFilterSelectOpened($event, 'industry')" (selectionChange)="onIndustryFilterChange()">
+                                <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+                                    <input matInput class="select-search-input" placeholder="Search industry" [(ngModel)]="industrySearch"
+                                        [ngModelOptions]="{standalone: true}" (click)="$event.stopPropagation()"
+                                        (keydown)="stopFilterSearchEvent($event)" (keyup)="stopFilterSearchEvent($event)"
+                                        (input)="stopFilterSearchEvent($event)" />
+                                </mat-option>
+                                <mat-option value="">Any</mat-option>
+                                <mat-option *ngFor="let t of filteredIndustryTypes" [value]="t">{{t}}</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="isSuperAdmin">
+                            <mat-label>Sector</mat-label>
+                            <mat-select [(ngModel)]="filterSector" placeholder="Industry sector" [disabled]="!filterIndustry"
+                                (openedChange)="onFilterSelectOpened($event, 'sector')" (selectionChange)="onSectorFilterChange()">
+                                <mat-option class="select-search-option" (click)="$event.stopPropagation()">
+                                    <input matInput class="select-search-input" placeholder="Search sector" [(ngModel)]="sectorSearch"
+                                        [ngModelOptions]="{standalone: true}" (click)="$event.stopPropagation()"
+                                        (keydown)="stopFilterSearchEvent($event)" (keyup)="stopFilterSearchEvent($event)"
+                                        (input)="stopFilterSearchEvent($event)" />
+                                </mat-option>
+                                <mat-option value="">Any</mat-option>
+                                <mat-option *ngFor="let s of filteredSectors" [value]="s">{{s}}</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+
+                        <!-- Creation Date after -->
+                        <mat-form-field appearance="outline" class="filter-item">
+                            <mat-label>Created After</mat-label>
+                            <input matInput [matDatepicker]="pickerAfter" placeholder="Select start date"
+                                [(ngModel)]="filterCreationDateAfter">
+                            <mat-datepicker-toggle matSuffix [for]="pickerAfter"></mat-datepicker-toggle>
+                            <mat-datepicker #pickerAfter></mat-datepicker>
+                        </mat-form-field>
+
+                        <!-- add creation date before filter -->
+                        <mat-form-field appearance="outline" class="filter-item">
+                            <mat-label>Created Before</mat-label>
+                            <input matInput [matDatepicker]="picker" placeholder="Select end date"
+                                [(ngModel)]="filterCreationDate">
+                            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                            <mat-datepicker #picker></mat-datepicker>
+                        </mat-form-field>
+
+                    </div>
+
+                    <!-- Right column: Institute -> Question Bank -> Department/Team, then Active Status -->
+                    <div class="filter-col">
+
+                        <mat-form-field appearance="outline" class="filter-item local-institute-field" *ngIf="isSuperAdmin">
+                            <mat-label>Institute</mat-label>
+                            <input matInput placeholder="All Institutes" [(ngModel)]="instituteSearch"
+                                [matAutocomplete]="questionInstituteAuto" />
+                            <mat-autocomplete #questionInstituteAuto="matAutocomplete"
+                                [displayWith]="displayInstitute"
+                                (optionSelected)="onInstituteAutocompleteSelected($event.option.value)">
+                                <mat-option value="">All Institutes</mat-option>
+                                <mat-option *ngFor="let inst of filteredInstitutes()"
+                                    [value]="inst.institute_id">{{inst.name}}</mat-option>
+                            </mat-autocomplete>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="filter-item">
+                            <mat-icon matPrefix>category</mat-icon>
                             <mat-label>Question Bank</mat-label>
-                            <input matInput placeholder="Enter question bank" [(ngModel)]="categoryFilterName">
-                        </mat-form-field> -->
+                            <input matInput [formControl]="categoryCtrl" [matAutocomplete]="categoryAuto"
+                                placeholder="Pick a question bank" />
+                            <mat-autocomplete #categoryAuto="matAutocomplete" [displayWith]="displayCategory"
+                                (optionSelected)="onCategorySelected($event.option.value)">
+                                <mat-option *ngFor="let c of (filteredCategories$ | async)" [value]="c">{{ c.name ||
+                                    c.category_name }}</mat-option>
+                            </mat-autocomplete>
+                        </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="filter-item">
-                        <mat-icon matPrefix>category</mat-icon>
-                        <mat-label>Question Bank</mat-label>
-                        <input matInput [formControl]="categoryCtrl" [matAutocomplete]="categoryAuto"
-                            placeholder="Pick a question bank" />
-                        <mat-autocomplete #categoryAuto="matAutocomplete" [displayWith]="displayCategory"
-                            (optionSelected)="onCategorySelected($event.option.value)">
-                            <mat-option *ngFor="let c of (filteredCategories$ | async)" [value]="c">{{ c.name ||
-                                c.category_name }}</mat-option>
-                        </mat-autocomplete>
-                    </mat-form-field>
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="selectedInstitute">
+                            <mat-label>Departments</mat-label>
+                            <mat-select multiple [(ngModel)]="selectedDepartments" placeholder="Select departments">
+                                <mat-option *ngFor="let d of departments" [value]="d.id">{{d.name}}</mat-option>
+                            </mat-select>
+                        </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="filter-item">
-                        <mat-label>Departments</mat-label>
-                        <mat-select multiple [(ngModel)]="selectedDepartments" placeholder="Select departments">
-                            <mat-option *ngFor="let d of departments" [value]="d.id">{{d.name}}</mat-option>
-                        </mat-select>
-                    </mat-form-field>
+                        <mat-form-field appearance="outline" class="filter-item" *ngIf="selectedInstitute">
+                            <mat-label>Teams</mat-label>
+                            <mat-select multiple [(ngModel)]="selectedTeams" placeholder="Select teams">
+                                <mat-option *ngFor="let t of teams" [value]="t.id">{{t.name}}</mat-option>
+                            </mat-select>
+                        </mat-form-field>
 
-                    <mat-form-field appearance="outline" class="filter-item">
-                        <mat-label>Teams</mat-label>
-                        <mat-select multiple [(ngModel)]="selectedTeams" placeholder="Select teams">
-                            <mat-option *ngFor="let t of teams" [value]="t.id">{{t.name}}</mat-option>
-                        </mat-select>
-                    </mat-form-field>
+                        <!-- Active status filter -->
+                        <mat-form-field appearance="outline" class="filter-item">
+                            <mat-label>Active Status</mat-label>
+                            <mat-select [(ngModel)]="filterActiveStatus" placeholder="Select status">
+                                <mat-option [value]="null">All</mat-option>
+                                <mat-option [value]="true">Active</mat-option>
+                                <mat-option [value]="false">Inactive</mat-option>
+                            </mat-select>
+                        </mat-form-field>
 
-                    <!-- Creation Date after -->
-                    <mat-form-field appearance="outline" class="filter-item">
-                        <mat-label>Created After</mat-label>
-                        <input matInput [matDatepicker]="pickerAfter" placeholder="Select start date"
-                            [(ngModel)]="filterCreationDateAfter">
-                        <mat-datepicker-toggle matSuffix [for]="pickerAfter"></mat-datepicker-toggle>
-                        <mat-datepicker #pickerAfter></mat-datepicker>
-                    </mat-form-field>
-
-                    <!-- add creation date before filter -->
-                    <mat-form-field appearance="outline" class="filter-item">
-                        <mat-label>Created Before</mat-label>
-                        <input matInput [matDatepicker]="picker" placeholder="Select end date"
-                            [(ngModel)]="filterCreationDate">
-                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                        <mat-datepicker #picker></mat-datepicker>
-                    </mat-form-field>
-
-                    <!-- Active status filter -->
-                    <mat-form-field appearance="outline" class="filter-item">
-                        <mat-label>Active Status</mat-label>
-                        <mat-select [(ngModel)]="filterActiveStatus" placeholder="Select status">
-                            <mat-option [value]="null">All</mat-option>
-                            <mat-option [value]="true">Active</mat-option>
-                            <mat-option [value]="false">Inactive</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                    <div class="filter-actions">
-                        <!-- Created By Me (checkbox) -->
-                        <div class="filter-item checkbox-item">
-                            <mat-checkbox [(ngModel)]="filterCreatedByMe">Created by me</mat-checkbox>
-                        </div>
-
-                        <!-- Public Access (checkbox) -->
-                        <div class="filter-item checkbox-item">
-                            <mat-checkbox [(ngModel)]="filterPublicAccess">Public
-                                access</mat-checkbox>
-                        </div>
                     </div>
 
                 </div>
+
+                <div class="filter-checks">
+                    <!-- Created By Me (checkbox) -->
+                    <mat-checkbox [(ngModel)]="filterCreatedByMe">Created by me</mat-checkbox>
+
+                    <!-- Public Access (checkbox) -->
+                    <mat-checkbox [(ngModel)]="filterPublicAccess">Public access</mat-checkbox>
+                </div>
+
                 <div class="filter-actions">
                     <button mat-flat-button (click)="onApply()" class="filter-apply-btn">
                         <mat-icon svgIcon="apply"></mat-icon> Apply

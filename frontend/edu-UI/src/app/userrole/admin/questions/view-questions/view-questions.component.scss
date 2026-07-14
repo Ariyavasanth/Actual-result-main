@@ -97,3 +97,19 @@ $shadow-md: 0 0.25rem 0.75rem rgba(0,0,0,0.06);
 .applied-filter-chip mat-icon { width: 1rem; height: 1rem; font-size: 1rem; color: #64748b; }
 .applied-filter-chip--locked { cursor: default; background: #eef2f7; color: #475569; }
 .applied-filter-clear { min-height: 1.75rem; padding: 0.25rem 0.75rem; border-radius: 0.5rem; border: 0.0625rem solid #1f7bff; background: #fff; color: #1f7bff; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+
+// Question filter panel — two-column layout
+.view-questions-filters-panel { min-width: 34rem; max-width: 44rem; }
+.view-questions-filters-panel .filter-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1rem; }
+.view-questions-filters-panel .filter-col { display: flex; flex-direction: column; gap: 0.5rem; }
+.view-questions-filters-panel .filter-checks { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.5rem; padding: 0.25rem 1.25rem 0.75rem; }
+
+// Searchable filter dropdowns (Country/Industry/Sector)
+:host ::ng-deep .select-search-option { height: auto !important; min-height: 3rem; cursor: default; }
+:host ::ng-deep .select-search-option .mdc-list-item__primary-text { width: 100%; }
+:host ::ng-deep .select-search-input { width: 100%; box-sizing: border-box; padding: 0.5rem 0.25rem; font-size: 0.875rem; }
+
+@media (max-width: 40rem) {
+  .view-questions-filters-panel { min-width: unset; max-width: calc(100vw - 1.5rem); width: calc(100vw - 1.5rem); }
+  .view-questions-filters-panel .filter-grid { grid-template-columns: 1fr; }
+}
