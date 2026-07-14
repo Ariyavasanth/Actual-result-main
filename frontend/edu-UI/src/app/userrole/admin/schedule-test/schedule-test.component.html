@@ -171,11 +171,16 @@
                               <mat-slide-toggle [formControl]="instantReviewControl">Instant Review</mat-slide-toggle>
                               <span>Make the selected review content available immediately after submission.</span>
                            </div>
-                           <mat-radio-group *ngIf="!model.userreview" class="review-options" [(ngModel)]="model.reviewMode"
-                              name="reviewMode" [disabled]="readOnly" aria-label="Review availability">
-                              <mat-radio-button value="no_review">No Review</mat-radio-button>
-                              <mat-radio-button value="after_schedule_ends">After Test Schedule Ends</mat-radio-button>
-                              <mat-radio-button value="scheduled">Schedule Review</mat-radio-button>
+                           <div *ngIf="!model.userreview" class="review-options" aria-label="Review availability">
+                              <mat-checkbox [checked]="noReviewChecked" (change)="onNoReviewChange($event.checked)"
+                                 [disabled]="readOnly">No Review</mat-checkbox>
+                              <mat-checkbox [checked]="manualReviewChecked" (change)="onManualReviewChange($event.checked)"
+                                 [disabled]="readOnly">Manual Review</mat-checkbox>
+                              <mat-radio-group [ngModel]="radioReviewMode" (ngModelChange)="onRadioReviewModeChange($event)"
+                                 name="reviewMode" [disabled]="readOnly" aria-label="Timed review availability">
+                                 <mat-radio-button value="after_schedule_ends">After Test Schedule Ends</mat-radio-button>
+                                 <mat-radio-button value="scheduled">Schedule Review</mat-radio-button>
+                              </mat-radio-group>
                               <div *ngIf="model.reviewMode === 'scheduled'" class="review-schedule-fields" [formGroup]="reviewScheduleForm">
                                  <mat-form-field appearance="outline">
                                     <mat-label>Review Date</mat-label>
@@ -193,8 +198,7 @@
                                     <mat-error *ngIf="reviewScheduleForm.hasError('reviewIncomplete')">Review time is required.</mat-error>
                                  </mat-form-field>
                               </div>
-                              <mat-radio-button value="manual">Manual Review</mat-radio-button>
-                           </mat-radio-group>
+                           </div>
                         </div>
 
                         <div class="review-settings-panel review-content-panel">

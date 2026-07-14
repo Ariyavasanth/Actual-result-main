@@ -329,6 +329,44 @@ export class AdminScheduleTestComponent {
     return this.reviewBehaviorForm.get('instantReview') as FormControl;
   }
 
+  // No Review is a stricter form of Manual Review. Deriving both checkbox
+  // states from the legacy review_mode preserves the existing API payload.
+  get noReviewChecked(): boolean {
+    return this.model.reviewMode === 'no_review';
+  }
+
+  get manualReviewChecked(): boolean {
+    return this.model.reviewMode === 'manual' || this.noReviewChecked;
+  }
+
+  get radioReviewMode(): string | null {
+    return ['after_schedule_ends', 'scheduled'].includes(this.model.reviewMode)
+      ? this.model.reviewMode
+      : null;
+  }
+
+
+  onNoReviewChange(checked: boolean): void {
+    this.model.reviewMode = checked ? 'no_review' : 'manual';
+    this.markDirty();
+  }
+
+  onManualReviewChange(checked: boolean): void {
+    if (checked) {
+      this.model.reviewMode = 'manual';
+    } else if (this.manualReviewChecked) {
+      // No Review depends on Manual Review; clear both to a valid legacy mode.
+      this.model.reviewMode = 'after_schedule_ends';
+    }
+    this.markDirty();
+  }
+
+  onRadioReviewModeChange(value: string): void {
+    if (!['after_schedule_ends', 'scheduled'].includes(value)) return;
+    this.model.reviewMode = value;
+    this.markDirty();
+  }
+
   /** Reload review flags from the persisted schedule when editing. */
   private refreshPersistedReviewSettings(): void {
     const scheduleId = this.model?.schedule_id || this.model?.id || this.model?._id;
@@ -1223,7 +1261,10 @@ export class AdminScheduleTestComponent {
   }
 
   private applyReviewSettings(value: any, toBool: (value: any) => boolean): void {
-    this.model.reviewMode = value.review_mode || value.reviewMode || this.model.reviewMode;
+    const persistedReviewMode = value.review_mode || value.reviewMode;
+    if (['no_review', 'manual', 'after_schedule_ends', 'scheduled', 'instant'].includes(persistedReviewMode)) {
+      this.model.reviewMode = persistedReviewMode === 'instant' ? 'no_review' : persistedReviewMode;
+    }
     const reviewAtValue = value.review_at || value.reviewAt;
     if (reviewAtValue) {
       const reviewAt = new Date(reviewAtValue);
