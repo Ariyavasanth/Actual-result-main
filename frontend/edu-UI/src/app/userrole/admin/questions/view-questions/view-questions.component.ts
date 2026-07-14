@@ -946,7 +946,18 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
     this.countrySearch = '';
     this.industrySearch = '';
     this.sectorSearch = '';
-    if (this.isSuperAdmin) this.loadInstitutes();
+    if (this.isSuperAdmin) {
+      // Institute is the top of the Institute -> Question Bank -> Department/Team chain;
+      // it must be cleared here so those dependents reload unscoped instead of staying
+      // pinned to whatever institute was previously selected.
+      this.selectedInstitute = '';
+      this.instituteSearch = '';
+      this.categoryCtrl.disable({ emitEvent: false });
+      this.departments = [];
+      this.teams = [];
+      this.loadInstitutes();
+    }
+    this.loadCategories(this.getScopedInstituteId());
     this.filter = '';
     this.dataSource.filter = '';
     this.questions = [];

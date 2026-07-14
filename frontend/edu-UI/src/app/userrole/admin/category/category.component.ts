@@ -717,8 +717,6 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
 
   onReset(){
     this.filterName = '';
-    if (this.selectedInstitute || this.loginInstituteId || this.isSuperAdmin) this.loadCategoryOptions();
-    // this.selectedInstitute = null;
     this.selectedDepartments = [];
     this.selectedTeams = [];
     this.filterCreationDateAfter = null;
@@ -734,7 +732,18 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
     this.countrySearch = '';
     this.industrySearch = '';
     this.sectorSearch = '';
-    if (this.isSuperAdmin) this.loadInstituteOptions();
+    if (this.isSuperAdmin) {
+      // Institute is the top of the Institute -> Question Bank -> Department/Team chain;
+      // it must be cleared here so those dependents reload unscoped instead of staying
+      // pinned to whatever institute was previously selected.
+      this.selectedInstitute = null;
+      this.instituteSearch = '';
+      this.departments = [];
+      this.teams = [];
+      this.loadGlobalDepartmentTeamLists();
+      this.loadInstituteOptions();
+    }
+    this.loadCategoryOptions();
     this.filter = '';
     this.dataSource.filter = '';
     this.categories = [];
