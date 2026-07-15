@@ -59,7 +59,7 @@
 
         <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Country</mat-label>
-          <mat-select [(ngModel)]="filterModel.country" (selectionChange)="onCountryChange()" [disabled]="isFilterLoading || !filterModel.industry">
+          <mat-select [(ngModel)]="filterModel.country" (selectionChange)="onCountryChange()" [disabled]="isFilterLoading">
             <mat-option value="">Select Country</mat-option>
             <mat-option *ngFor="let country of countryOptions" [value]="country">{{ country }}</mat-option>
           </mat-select>
@@ -75,7 +75,7 @@
 
         <mat-form-field appearance="outline" class="filter-field filter-field--institute">
           <mat-label>Institute Name</mat-label>
-          <mat-select [(ngModel)]="filterModel.institute_id" (selectionChange)="onInstituteSelectionChange()" [disabled]="isFilterLoading || !filterModel.city">
+          <mat-select [(ngModel)]="filterModel.institute_id" (selectionChange)="onInstituteSelectionChange()" [disabled]="isFilterLoading">
             <mat-option value="">Select Institute</mat-option>
             <mat-option *ngFor="let institute of filteredInstituteOptions" [value]="institute.id">{{ institute.name }}</mat-option>
           </mat-select>

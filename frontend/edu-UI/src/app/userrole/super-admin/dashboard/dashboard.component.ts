@@ -94,7 +94,10 @@ export class SuperDashboardComponent implements OnInit {
   }
 
   get cityOptions(): string[] {
-    return this.uniqueSorted(this.filteredByCountry().map(i => i.city));
+    // City choices depend only on Country; Industry still filters the final institute list.
+    return this.uniqueSorted(this.instituteOptions
+      .filter(i => !this.filterModel.country || i.country === this.filterModel.country)
+      .map(i => i.city));
   }
 
   get filteredInstituteOptions(): DashboardInstituteOption[] {
