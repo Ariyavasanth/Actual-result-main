@@ -514,6 +514,8 @@ def get_institute_list(current_user=None):
     for inst in active_institutes:
         result.append({
             "institute_id": inst.institute_id,
+            # Keep the full name alongside the abbreviation so filter UIs can display it safely.
+            "institute_name": inst.name,
             "short_name": inst.short_name
         })
     json_data = {

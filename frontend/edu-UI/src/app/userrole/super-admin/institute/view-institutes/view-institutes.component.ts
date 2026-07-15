@@ -248,7 +248,7 @@ export class ViewInstitutesComponent implements OnInit, AfterViewInit, OnDestroy
     else if (key === 'country') { this.filters.country = ''; this.filters.city = ''; this.filterCityOptions = []; }
     else if (key === 'city') this.filters.city = '';
     else if (key === 'active_status') this.filters.active_status = '';
-    if (!this.filters.industry && !this.filters.sector) this.filters.name = '';
+    if (!this.filters.country && !this.filters.industry) this.filters.name = '';
     this.refreshInstituteScope();
     this.refreshAfterFilterChipChange();
   }
@@ -409,9 +409,10 @@ export class ViewInstitutesComponent implements OnInit, AfterViewInit, OnDestroy
       next: (res) => {
         try {
           const data = Array.isArray(res?.data) ? res.data : [];
+          // Use the full name in the filter and fall back to the abbreviation only if needed.
           this.instituteOptions = data.map((i: any) => ({
             id: i.institute_id || i.id || i._id || i.name || i.institute_name || '',
-            name: i.name || i.institute_name || i.short_name || ''
+            name: i.institute_name || i.name || i.short_name || ''
           })).filter((i: any) => !!i.name);
         } catch (e) {
           this.instituteOptions = [];
@@ -422,7 +423,8 @@ export class ViewInstitutesComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   filteredInstituteOptions(){
-    if (!this.filters.industry && !this.filters.sector) return [];
+    // Institute options become available when either parent scope is selected.
+    if (!this.filters.country && !this.filters.industry) return [];
     const q = String(this.filters.name || '').trim().toLowerCase();
     if (!q) return this.instituteOptions;
     return this.instituteOptions.filter(i => String(i.name || '').toLowerCase().includes(q));
@@ -535,6 +537,7 @@ export class ViewInstitutesComponent implements OnInit, AfterViewInit, OnDestroy
 
   onCountryFilterChange() {
     this.filters.city = '';
+    if (!this.filters.country && !this.filters.industry) this.filters.name = '';
     this.loadCitiesForCountry(this.filters.country);
     this.refreshInstituteScope();
   }
@@ -545,12 +548,12 @@ export class ViewInstitutesComponent implements OnInit, AfterViewInit, OnDestroy
 
   onIndustryFilterChange() {
     this.filters.sector = '';
-    if (!this.filters.industry && !this.filters.sector) this.filters.name = '';
+    if (!this.filters.country && !this.filters.industry) this.filters.name = '';
     this.refreshInstituteScope();
   }
 
   onSectorFilterChange() {
-    if (!this.filters.industry && !this.filters.sector) this.filters.name = '';
+    if (!this.filters.country && !this.filters.industry) this.filters.name = '';
     this.refreshInstituteScope();
   }
 
@@ -575,7 +578,7 @@ export class ViewInstitutesComponent implements OnInit, AfterViewInit, OnDestroy
           const data = Array.isArray(res?.data) ? res.data : [];
           this.instituteOptions = data.map((r: any) => ({
             id: r.institute_id || r.id || r._id || r.name || '',
-            name: r.name || r.institute_name || r.short_name || ''
+            name: r.institute_name || r.name || r.short_name || ''
           })).filter((i: any) => !!i.name);
         } catch (e) {
           this.instituteOptions = [];

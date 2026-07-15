@@ -89,7 +89,7 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   private loginInstituteId: string | null = null;
   private _globalInstituteSub: Subscription | null = null;
   private activeInstituteId = '';
-  institutes: Array<{ institute_id: string; short_name: string }> = [];
+  institutes: Array<{ institute_id: string; institute_name: string; short_name: string }> = [];
   departments: Array<{ id: string; name: string }> = [];
   teams: Array<{ id: string; name: string }> = [];
 
@@ -283,7 +283,7 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   private getInstituteLabel(id: any): string {
     if (!id) return '';
     const found = this.institutes.find(i => String(i.institute_id) === String(id));
-    return found?.short_name || String(id);
+    return found?.institute_name || found?.short_name || String(id);
   }
 
   private getSelectedName(list: Array<{ id: string; name: string }>, selectedId: string): string {
@@ -332,7 +332,8 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   private loadInstituteOptions(onLoaded?: () => void){
     this.http.get<any>(`${API_BASE}/get-institute-list`).subscribe({ next: (res) => {
         const data = Array.isArray(res) ? res : (res?.data || []);
-        this.institutes = (data || []).map((i: any) => ({ institute_id: i.institute_id || i.id || i.instituteId || null, short_name: i.short_name || i.name || i.institute_name || '' }));
+        // Prefer the full institute name while retaining the abbreviation as a fallback.
+        this.institutes = (data || []).map((i: any) => ({ institute_id: i.institute_id || i.id || i.instituteId || null, institute_name: i.institute_name || i.name || i.short_name || '', short_name: i.short_name || i.institute_name || i.name || '' }));
         this.syncInstituteSearch();
         if (onLoaded) onLoaded();
       }, error: () => {} });
@@ -514,7 +515,8 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
         const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
         this.institutes = (data || []).map((r: any) => ({
           institute_id: r.institute_id || r.id || r._id || null,
-          short_name: r.short_name || r.name || r.institute_name || ''
+          institute_name: r.institute_name || r.name || r.short_name || '',
+          short_name: r.short_name || r.institute_name || r.name || ''
         })).filter((i: any) => !!i.institute_id);
         this.syncInstituteSearch();
         clearStaleInstituteSelection();
@@ -548,13 +550,13 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   displayInstitute = (value: string | null): string => {
     if (!value) return '';
     const found = this.institutes.find(i => String(i.institute_id) === String(value));
-    return found ? found.short_name : String(value);
+    return found ? found.institute_name : String(value);
   };
 
   filteredInstitutes() {
     const q = (this.instituteSearch || '').trim().toLowerCase();
     if (!q) return this.institutes;
-    return this.institutes.filter((i: any) => (i.short_name || '').toLowerCase().includes(q));
+    return this.institutes.filter((i: any) => (i.institute_name || i.short_name || '').toLowerCase().includes(q));
   }
 
   onInstituteAutocompleteSelected(id: string | null) {
@@ -568,7 +570,7 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
 
   private syncInstituteSearch() {
     const found = this.institutes.find(i => String(i.institute_id) === String(this.selectedInstitute || ''));
-    this.instituteSearch = found ? found.short_name : '';
+    this.instituteSearch = found ? found.institute_name : '';
   }
 
   onInstituteChange(iid: any) {

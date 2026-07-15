@@ -71,7 +71,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   // filter model and lists (match fields in the filters panel)
   filters: any = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '', industry: '', sector: '' };
   // institutes: Array<{ id: string; name: string }> = [];
-  institutes: Array<{ short_name: string; institute_id?: string }> = [];
+  institutes: Array<{ institute_name: string; short_name: string; institute_id?: string }> = [];
   countries: Array<{ code: string; name: string }> = [];
   states: Array<{ code: string; name: string }> = [];
   cities: Array<{ code: string; name: string }> = [];
@@ -333,7 +333,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
 
   private getInstituteLabel(id: any): string {
     const found = this.institutes.find(i => String(i.institute_id) === String(id));
-    return found?.short_name || String(id || '');
+    return found?.institute_name || found?.short_name || String(id || '');
   }
 
   private getSelectedName(list: any[], selectedId: any, idKey: string = 'id'): string {
@@ -547,7 +547,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
     this.http.get<any>(url).subscribe({ next: (res) => {
       const data = res?.data||[];
       // ensure each institute object includes an institute_id property so session-based lookup works
-      this.institutes = data.map((i:any)=>({ institute_id: i.institute_id || i.id || i._id || '', short_name: i.short_name || i.institute_name || i.name || '' }));
+      this.institutes = data.map((i:any)=>({ institute_id: i.institute_id || i.id || i._id || '', institute_name: i.institute_name || i.name || i.short_name || '', short_name: i.short_name || i.institute_name || i.name || '' }));
           // If a selectedInstitute is already set (e.g. via route/session), prefer that
           try {
             if (this.selectedInstitute) {
@@ -597,7 +597,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   filteredInstitutes() {
     const q = (this.instituteSearch || '').trim().toLowerCase();
     if (!q) return this.institutes;
-    return this.institutes.filter((i: any) => (i.short_name || '').toLowerCase().includes(q));
+    return this.institutes.filter((i: any) => (i.institute_name || i.short_name || '').toLowerCase().includes(q));
   }
 
   onInstituteAutocompleteSelected(id: string) {
@@ -609,7 +609,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
 
   private syncInstituteSearch() {
     const found = this.institutes.find(i => String(i.institute_id) === String(this.selectedInstitute || ''));
-    this.instituteSearch = found ? found.short_name : '';
+    this.instituteSearch = found ? found.institute_name : '';
   }
 
   // Populate the Country filter only from countries used by registered institutes.
@@ -775,7 +775,8 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
           const data = Array.isArray(res?.data) ? res.data : [];
           this.institutes = data.map((r: any) => ({
             institute_id: r.institute_id || r.id || r._id || '',
-            short_name: r.short_name || r.name || r.institute_name || ''
+            institute_name: r.institute_name || r.name || r.short_name || '',
+            short_name: r.short_name || r.institute_name || r.name || ''
           }));
         } catch (e) {
           this.institutes = [];

@@ -327,7 +327,8 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
     this.http!.get<any>(this.institutesUrl).subscribe({
       next: (res) => {
         const arr = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
-        this.institutes = arr.map((r: any) => ({ name: r.name || r.institute_name || r.short_name || '', institute_id: r.institute_id || r.id }));
+        // Prefer the full API name; short_name remains a fallback for legacy responses.
+        this.institutes = arr.map((r: any) => ({ name: r.institute_name || r.name || r.short_name || '', institute_id: r.institute_id || r.id }));
           // If a selectedInstitute is already set (e.g. via route/session), prefer that
           try {
             if (this.selectedInstitute) {
@@ -545,7 +546,7 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
       next: (res) => {
         const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
         this.institutes = (data || []).map((r: any) => ({
-          name: r.name || r.institute_name || r.short_name || '',
+          name: r.institute_name || r.name || r.short_name || '',
           institute_id: r.institute_id || r.id || r._id || ''
         })).filter((i: any) => !!i.institute_id);
         clearStaleInstituteSelection();

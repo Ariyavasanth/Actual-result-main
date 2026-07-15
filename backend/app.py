@@ -206,8 +206,9 @@ def institutes_list_route():
     for i in arr:
         try:
             iid = i.get('institute_id') or i.get('id') or i.get('institute_id') or i.get('instituteId')
-            name = i.get('name') or i.get('institute') or i.get('short_name')
-            out.append({'id': iid, 'name': name})
+            # Prefer the full institute name while retaining the short name for older consumers.
+            name = i.get('institute_name') or i.get('name') or i.get('institute') or i.get('short_name')
+            out.append({'id': iid, 'name': name, 'short_name': i.get('short_name')})
         except Exception:
             continue
     return jsonify(out), 200

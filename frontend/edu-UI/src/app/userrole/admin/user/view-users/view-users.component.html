@@ -93,7 +93,7 @@
             <mat-select [(ngModel)]="selectedInstitute" (selectionChange)="onInstituteChange($event.value)">
               <!-- [disabled]="!isSuperAdmin"> -->
               <mat-option value="">Any</mat-option>
-              <mat-option *ngFor="let i of institutes" [value]="i.institute_id">{{i.short_name}}</mat-option>
+              <mat-option *ngFor="let i of institutes" [value]="i.institute_id">{{i.institute_name}}</mat-option>
             </mat-select>
           </mat-form-field>
 

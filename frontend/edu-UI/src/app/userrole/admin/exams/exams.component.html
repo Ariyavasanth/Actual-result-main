@@ -80,7 +80,7 @@
                             (optionSelected)="onInstituteAutocompleteSelected($event.option.value)">
                             <mat-option value="">All Institutes</mat-option>
                             <mat-option *ngFor="let inst of filteredInstitutes()"
-                                [value]="inst.institute_id">{{inst.short_name}}</mat-option>
+                                [value]="inst.institute_id">{{inst.institute_name}}</mat-option>
                         </mat-autocomplete>
                     </mat-form-field>
 

@@ -41,7 +41,7 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./exams.component.scss']
 })
 export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
-  institutes: Array<{ short_name: string; institute_id?: string }> = [];
+  institutes: Array<{ institute_name: string; short_name: string; institute_id?: string }> = [];
   selectedInstitute = '';
   instituteSearch = '';
   filter = '';
@@ -186,7 +186,7 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
 
   clearAppliedFilters() { this.onReset(); }
   private refreshAfterFilterChipChange() { if (this.appliedFilterChips.length) this.loadExamsForInstitute(this.selectedInstitute || undefined); else { this.hasAppliedFilters = false; this.exams = []; this.dataSource.data = []; } }
-  private getInstituteLabel(id: any): string { const found = this.institutes.find(i => String(i.institute_id) === String(id)); return found?.short_name || String(id || ''); }
+  private getInstituteLabel(id: any): string { const found = this.institutes.find(i => String(i.institute_id) === String(id)); return found?.institute_name || found?.short_name || String(id || ''); }
   private getSelectedName(list: any[], selectedId: any): string { const found = (list || []).find(item => String(item?.id) === String(selectedId)); return found?.name || String(selectedId || ''); }
   private formatFilterDate(value: Date): string { try { return value.toISOString().slice(0, 10); } catch (e) { return String(value || ''); } }
   private toNumber(value: any): number | null {
@@ -441,7 +441,8 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
     this.http.get<any>(this.apiUrl).subscribe({
       next: (res) => {
         if (res && res.data && Array.isArray(res.data)) {
-          this.institutes = res.data.map((r: any) => ({ short_name: r.name || r.institute_name || r.short_name || '', institute_id: r.institute_id }));
+          // Prefer the full institute name while retaining the abbreviation as a fallback.
+          this.institutes = res.data.map((r: any) => ({ institute_name: r.institute_name || r.name || r.short_name || '', short_name: r.short_name || r.institute_name || r.name || '', institute_id: r.institute_id }));
           // If a selectedInstitute is already set (e.g. via route/session), prefer that
           try {
             if (this.selectedInstitute) {
@@ -494,12 +495,12 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
   displayInstitute = (value: string | null): string => {
     if (!value) return '';
     const found = this.institutes.find(i => String(i.institute_id) === String(value));
-    return found ? found.short_name : String(value);
+    return found ? found.institute_name : String(value);
   };
   filteredInstitutes() {
     const q = (this.instituteSearch || '').trim().toLowerCase();
     if (!q) return this.institutes;
-    return this.institutes.filter((i: any) => (i.short_name || '').toLowerCase().includes(q));
+    return this.institutes.filter((i: any) => (i.institute_name || i.short_name || '').toLowerCase().includes(q));
   }
 
   onInstituteAutocompleteSelected(id: string) {
@@ -510,7 +511,7 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
 
   private syncInstituteSearch() {
     const found = this.institutes.find(i => String(i.institute_id) === String(this.selectedInstitute || ''));
-    this.instituteSearch = found ? found.short_name : '';
+    this.instituteSearch = found ? found.institute_name : '';
   }
   private hasFilterValues(): boolean {
     return !!(
