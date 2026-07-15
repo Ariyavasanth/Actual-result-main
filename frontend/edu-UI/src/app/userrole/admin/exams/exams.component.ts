@@ -29,6 +29,8 @@ import { ConfirmService } from 'src/app/shared/services/confirm.service';
 import { PortalModule } from '@angular/cdk/portal';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { DirectivesModule } from 'src/app/shared/directives/directives.module';
+import { GlobalInstituteContextService } from 'src/app/shared/services/global-institute-context.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-admin-exams',
@@ -62,10 +64,12 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
   dataSource = new MatTableDataSource<any>([]);
   hasAppliedFilters = false;
   private shouldLoadTestsAfterInstitutes = false;
+  private activeInstituteId = '';
+  private globalInstituteSub: Subscription | null = null;
   private apiUrl = `${API_BASE}/get-institute-list`;
 
   isSuperAdmin = false;
-  constructor(private http: HttpClient, private auth: AuthService, private loader: LoaderService, private overlay: Overlay, private vcr: ViewContainerRef, private pageMeta: PageMetaService, private confirmService: ConfirmService, private router: Router) {
+  constructor(private http: HttpClient, private auth: AuthService, private loader: LoaderService, private overlay: Overlay, private vcr: ViewContainerRef, private pageMeta: PageMetaService, private confirmService: ConfirmService, private router: Router, private globalInstituteContext: GlobalInstituteContextService) {
     // initialize isSuperAdmin from AuthService (synchronous helper)
     try {
       this.isSuperAdmin = !!this.auth.currentUserValue && ['super_admin', 'superadmin', 'super-admin'].includes((this.auth.currentUserValue.role || '').toLowerCase());
@@ -101,6 +105,16 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
   private filtersOverlayRef: OverlayRef | null = null;
   ngOnInit(): void {
     this.pageMeta.setMeta('Tests', 'Browse and review tests');
+    this.loadInstitutes();
+    this.globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(context => {
+      const instituteId = context?.institute_id || '';
+      if (instituteId) {
+        if (instituteId === this.activeInstituteId) return;
+        this.resetForInstituteChange(instituteId);
+        return;
+      }
+      if (this.activeInstituteId) this.resetAfterGlobalInstituteClear();
+    });
     const restoredReturnState = this.restoreTestsReturnState();
     try {
       if (!restoredReturnState && sessionStorage.getItem('exams_return_state') === 'true') {
@@ -109,8 +123,6 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
         this.shouldLoadTestsAfterInstitutes = true;
       }
     } catch (e) { }
-    this.loadInstitutes();
-    this.applyGlobalInstituteScopeIfActive();
   }
 
   openFiltersOverlay() {
@@ -141,6 +153,7 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+  this.globalInstituteSub?.unsubscribe();
   this.saveTestsReturnState();
 }
 
@@ -450,7 +463,7 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
           // Fallback: try reading user's institute from sessionStorage and apply it
           try {
             const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
-            if (raw) {
+            if (!this.isSuperAdmin && raw) {
               const u = JSON.parse(raw);
               const instId = u?.institute_id || u?.instituteId || u?.institute || '';
               if (instId) {
@@ -662,6 +675,8 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
   saveTestsReturnState(): void {
     try {
       sessionStorage.setItem('exams_table_return_state', JSON.stringify({
+        instituteId: this.globalInstituteContext.activeInstituteId || this.selectedInstitute || '',
+        globalInstituteActive: this.globalInstituteContext.isGlobalFilterActive(),
         filter: this.filter,
         selectedInstitute: this.selectedInstitute,
         instituteSearch: this.instituteSearch,
@@ -685,6 +700,11 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
       sessionStorage.removeItem('exams_table_return_state');
       sessionStorage.removeItem('exams_return_state');
       const state = JSON.parse(raw);
+      const activeInstituteId = this.globalInstituteContext.activeInstituteId;
+      if (activeInstituteId && String(state?.instituteId || '') !== String(activeInstituteId)) return false;
+      if (activeInstituteId && state?.globalInstituteActive !== true) return false;
+      if (!activeInstituteId && state?.globalInstituteActive === true) return false;
+      if (!activeInstituteId && typeof state?.globalInstituteActive === 'undefined' && state?.instituteId) return false;
       this.filter = state?.filter || '';
       this.selectedInstitute = state?.selectedInstitute || '';
       this.instituteSearch = state?.instituteSearch || '';
@@ -706,14 +726,38 @@ export class AdminExamsComponent implements AfterViewInit, OnInit, OnDestroy {
     }
   }
 
-  private applyGlobalInstituteScopeIfActive(): void {
-    const iid = sessionStorage.getItem('global_institute_id') || '';
-    if (!iid) return;
-    this.selectedInstitute = iid;
-    this.hasAppliedFilters = false;
-    try { this.loadDepartments(iid); } catch (e) {}
-    try { this.loadTeams(iid); } catch (e) {}
-    this.exams = []; this.dataSource.data = [];
+  private resetForInstituteChange(instituteId: string): void {
+    this.activeInstituteId = instituteId;
+    this.selectedInstitute = instituteId;
+    this.instituteSearch = '';
+    // Clear institute-specific UI immediately so previous test data cannot remain visible.
+    this.exams = []; this.dataSource.data = []; this.departments = []; this.teams = [];
+    this.selectedDepartments = []; this.selectedTeams = []; this.filter = ''; this.dataSource.filter = '';
+    this.filterName = ''; this.filterCreationDateAfter = null; this.filterCreationDate = null;
+    this.filterActiveStatus = null; this.filterCreatedByMe = false; this.hasAppliedFilters = false;
+    this.selectedExam = null; this.showModal = false;
+    if (this.paginator) { this.paginator.firstPage(); this.paginator.length = 0; }
+    this.closeFiltersOverlay();
+    try { sessionStorage.removeItem('exams_table_return_state'); } catch (e) {}
+    this.loadDepartments(instituteId);
+    this.loadTeams(instituteId);
+    this.syncInstituteSearch();
+  }
+
+  private resetAfterGlobalInstituteClear(): void {
+    this.activeInstituteId = '';
+    this.selectedInstitute = '';
+    this.instituteSearch = '';
+    // Clear all global-scope UI data while preserving the normal filter workflow.
+    this.exams = []; this.dataSource.data = []; this.departments = []; this.teams = [];
+    this.selectedDepartments = []; this.selectedTeams = []; this.filter = ''; this.dataSource.filter = '';
+    this.filterName = ''; this.filterCreationDateAfter = null; this.filterCreationDate = null;
+    this.filterActiveStatus = null; this.filterCreatedByMe = false; this.hasAppliedFilters = false;
+    this.selectedExam = null; this.showModal = false;
+    if (this.paginator) { this.paginator.firstPage(); this.paginator.length = 0; }
+    this.closeFiltersOverlay();
+    try { sessionStorage.removeItem('exams_table_return_state'); } catch (e) {}
+    this.loadInstitutes();
   }
 }
 

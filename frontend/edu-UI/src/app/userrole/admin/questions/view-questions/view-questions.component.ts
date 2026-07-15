@@ -94,6 +94,7 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
 
   private _subs: Subscription | null = null;
   private _globalInstituteSub: Subscription | null = null;
+  private activeInstituteId = '';
 
   private institutesUrl = `${API_BASE}/get-institute-list`;
   private examsUrl = `${API_BASE}/get-exams-list`;
@@ -187,9 +188,15 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
     if (this.http) this.loadInstitutes();
     if (this.http) this.loadCountries();
     try {
-      this._globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(() => {
+      this._globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(context => {
         this.isGlobalInstituteActive = this.globalInstituteContext.isGlobalFilterActive();
-        this.applyGlobalInstituteScopeIfActive();
+        const instituteId = context?.institute_id || '';
+        if (instituteId) {
+          if (instituteId === this.activeInstituteId) return;
+          this.resetForInstituteChange(instituteId);
+          return;
+        }
+        if (this.activeInstituteId) this.resetAfterGlobalInstituteClear();
       });
     } catch (e) { /* ignore in tests */ }
     // also load categories list for the Category filter, scoped for admins
@@ -341,7 +348,7 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
           // Fallback: try reading user's institute from sessionStorage and apply it
           try {
             const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
-            if (raw) {
+            if (!this.isSuperAdmin && raw) {
               const u = JSON.parse(raw);
               const instId = sessionStorage.getItem('global_institute_id') || u?.institute_id || u?.instituteId || u?.institute?.institute_id || u?.institute?.id || (typeof u?.institute === 'string' ? u.institute : '');
               if (instId) {
@@ -921,7 +928,7 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
       try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
       return;
     }
-    this.hasAppliedFilters = true;
+    this.hasAppliedFilters = false;
     this.loadQuestions();
     this.closeFiltersOverlay();
   }
@@ -1022,6 +1029,8 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
   saveQuestionsReturnState(): void {
     try {
       const state = {
+        instituteId: this.globalInstituteContext.activeInstituteId || this.selectedInstitute || '',
+        globalInstituteActive: this.globalInstituteContext.isGlobalFilterActive(),
         filter: this.filter,
         filterCountry: this.filterCountry,
         filterCity: this.filterCity,
@@ -1051,6 +1060,12 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
       if (!raw) return;
       const state = JSON.parse(raw);
       sessionStorage.removeItem(this.questionsReturnStateKey);
+      const activeInstituteId = this.globalInstituteContext.activeInstituteId;
+      if (activeInstituteId && String(state?.instituteId || '') !== String(activeInstituteId)) return;
+      if (activeInstituteId && state?.globalInstituteActive !== true) return;
+      if (!activeInstituteId && state?.globalInstituteActive === true) return;
+      // Discard legacy institute-bound cache once; newly saved normal-filter state remains restorable.
+      if (!activeInstituteId && typeof state?.globalInstituteActive === 'undefined' && state?.instituteId) return;
 
       this.filterCountry = state?.filterCountry || '';
       this.filterCity = state?.filterCity || '';
@@ -1087,16 +1102,41 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
     }
   }
 
-  private applyGlobalInstituteScopeIfActive(): void {
-    const iid = this.globalInstituteContext.activeInstituteId;
-    if (!iid) return;
-    this.selectedInstitute = iid;
+  private resetForInstituteChange(instituteId: string): void {
+    this.activeInstituteId = instituteId;
+    this.selectedInstitute = instituteId;
+    // Clear institute-specific state immediately to prevent cross-institute data leakage.
+    this.questions = []; this.dataSource.data = []; this.selectedQuestionIds.clear();
+    this.selectedCategories = []; this.selectedDepartments = []; this.selectedTeams = [];
+    this.departments = []; this.teams = []; this.categoryFilterName = ''; this.categorySearch = '';
     this.hasAppliedFilters = false;
-    try { this.categoryCtrl.enable({ emitEvent: false }); } catch (e) {}
-    try { this.loadDepartments(iid); } catch (e) {}
-    try { this.loadTeams(iid); } catch (e) {}
-    try { this.loadCategories(iid); } catch (e) {}
-    this.questions = []; this.dataSource.data = [];
+    try { sessionStorage.removeItem(this.questionsReturnStateKey); } catch (e) {}
+    this.categoryCtrl.enable({ emitEvent: false });
+    // Reload filter options only; records remain empty until the user applies filters.
+    this.loadDepartments(instituteId); this.loadTeams(instituteId); this.loadCategories(instituteId);
+  }
+
+  private resetAfterGlobalInstituteClear(): void {
+    this.activeInstituteId = '';
+    this.selectedInstitute = '';
+    this.instituteSearch = '';
+    // Clear only global-scope UI state so normal Super Admin filtering remains available.
+    this.questions = []; this.dataSource.data = []; this.selectedQuestionIds.clear();
+    this.selectedCategories = []; this.selectedDepartments = []; this.selectedTeams = [];
+    this.categories = []; this.departments = []; this.teams = [];
+    this.filter = ''; this.dataSource.filter = ''; this.categoryFilterName = ''; this.categorySearch = '';
+    this.filterCountry = ''; this.filterCity = ''; this.filterIndustry = ''; this.filterSector = '';
+    this.filterCityOptions = []; this.countrySearch = ''; this.industrySearch = ''; this.sectorSearch = '';
+    this.filterCreationDateAfter = null; this.filterCreationDate = null; this.filterActiveStatus = null;
+    this.filterCreatedByMe = false; this.filterPublicAccess = null; this.hasAppliedFilters = false;
+    this.viewedQuestion = null;
+    this.categoryCtrl.setValue('', { emitEvent: false });
+    this.categoryCtrl.disable({ emitEvent: false });
+    if (this.paginator) { this.paginator.firstPage(); this.paginator.length = 0; }
+    this.closeFiltersOverlay();
+    try { sessionStorage.removeItem(this.questionsReturnStateKey); } catch (e) {}
+    this.loadInstitutes();
+    this.loadCategories();
   }
 }
 

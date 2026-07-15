@@ -28,6 +28,8 @@ import { TemplatePortal } from '@angular/cdk/portal';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ConfirmService } from 'src/app/shared/services/confirm.service';
 import { notify } from 'src/app/shared/global-notify';
+import { GlobalInstituteContextService } from 'src/app/shared/services/global-institute-context.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-view-schedule-exam',
@@ -60,6 +62,8 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
 
   private baseUrl = API_BASE;
   private apiUrl = `${API_BASE}/get-institutes`;
+  private activeInstituteId = '';
+  private globalInstituteSub: Subscription | null = null;
 
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -68,7 +72,7 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
 
   isSuperAdmin = false;
 
-  constructor(private http: HttpClient, private router: Router, private auth: AuthService, private loader: LoaderService, private overlay: Overlay, private vcr: ViewContainerRef, private pageMeta: PageMetaService, private confirmService: ConfirmService) {
+  constructor(private http: HttpClient, private router: Router, private auth: AuthService, private loader: LoaderService, private overlay: Overlay, private vcr: ViewContainerRef, private pageMeta: PageMetaService, private confirmService: ConfirmService, private globalInstituteContext: GlobalInstituteContextService) {
     // initialize isSuperAdmin from AuthService (synchronous helper)
     try {
       this.isSuperAdmin = !!this.auth.currentUserValue && ['super_admin', 'superadmin', 'super-admin'].includes((this.auth.currentUserValue.role || '').toLowerCase());
@@ -84,7 +88,15 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
   ngOnInit(): void {
     this.pageMeta.setMeta('Scheduled Tests', 'Browse and review scheduled tests');
     this.loadInstitutes();
-    this.applyGlobalInstituteScopeIfActive();
+    this.globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(context => {
+      const instituteId = context?.institute_id || '';
+      if (instituteId) {
+        if (instituteId === this.activeInstituteId) return;
+        this.resetForInstituteChange(instituteId);
+        return;
+      }
+      if (this.activeInstituteId) this.resetAfterGlobalInstituteClear();
+    });
     this.restoreScheduleReturnState();
   }
 
@@ -176,7 +188,7 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
           // Fallback: try reading user's institute from sessionStorage and apply it
           try {
             const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
-            if (raw) {
+            if (!this.isSuperAdmin && raw) {
               const u = JSON.parse(raw);
               const instId = u?.institute_id || u?.instituteId || u?.institute || '';
               if (instId) {
@@ -312,6 +324,7 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
   }
 
   ngOnDestroy(): void {
+  this.globalInstituteSub?.unsubscribe();
   this.saveScheduleReturnState();
 }
 
@@ -579,6 +592,8 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
   saveScheduleReturnState(): void {
     try {
       sessionStorage.setItem('schedule_return_state', JSON.stringify({
+        instituteId: this.globalInstituteContext.activeInstituteId || this.selectedInstitute || '',
+        globalInstituteActive: this.globalInstituteContext.isGlobalFilterActive(),
         search: this.search,
         selectedInstitute: this.selectedInstitute,
         instituteSearch: this.instituteSearch,
@@ -601,6 +616,11 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
       if (!raw) return;
       sessionStorage.removeItem('schedule_return_state');
       const state = JSON.parse(raw);
+      const activeInstituteId = this.globalInstituteContext.activeInstituteId;
+      if (activeInstituteId && String(state?.instituteId || '') !== String(activeInstituteId)) return;
+      if (activeInstituteId && state?.globalInstituteActive !== true) return;
+      if (!activeInstituteId && state?.globalInstituteActive === true) return;
+      if (!activeInstituteId && typeof state?.globalInstituteActive === 'undefined' && state?.instituteId) return;
       this.search = state?.search || '';
       this.selectedInstitute = state?.selectedInstitute || '';
       this.instituteSearch = state?.instituteSearch || '';
@@ -620,14 +640,38 @@ export class ViewScheduleExamComponent implements OnInit, OnDestroy, AfterViewIn
     }
   }
 
-  private applyGlobalInstituteScopeIfActive(): void {
-    const iid = sessionStorage.getItem('global_institute_id') || '';
-    if (!iid) return;
-    this.selectedInstitute = iid;
-    this.hasAppliedFilters = false;
-    try { this.loadDepartments(iid); } catch (e) {}
-    try { this.loadTeams(iid); } catch (e) {}
-    this.schedules = []; this.dataSource.data = [];
+  private resetForInstituteChange(instituteId: string): void {
+    this.activeInstituteId = instituteId;
+    this.selectedInstitute = instituteId;
+    this.instituteSearch = '';
+    // Clear institute-specific UI immediately so the previous institute cannot remain visible.
+    this.schedules = []; this.dataSource.data = []; this.departments = []; this.teams = []; this.categories = [];
+    this.selectedDepartments = []; this.selectedTeams = []; this.search = ''; this.dataSource.filter = '';
+    this.filterName = ''; this.filterCreationDateAfter = null; this.filterCreationDate = null;
+    this.filterActiveStatus = null; this.filterCreatedByMe = false; this.hasAppliedFilters = false;
+    this.selectedSchedule = null;
+    if (this.paginator) { this.paginator.firstPage(); this.paginator.length = 0; }
+    this.closeFiltersOverlay();
+    try { sessionStorage.removeItem('schedule_return_state'); } catch (e) {}
+    this.loadDepartments(instituteId);
+    this.loadTeams(instituteId);
+    this.syncInstituteSearch();
+  }
+
+  private resetAfterGlobalInstituteClear(): void {
+    this.activeInstituteId = '';
+    this.selectedInstitute = '';
+    this.instituteSearch = '';
+    // Clear all global-scope UI data; normal filters remain available for a fresh Apply.
+    this.schedules = []; this.dataSource.data = []; this.departments = []; this.teams = []; this.categories = [];
+    this.selectedDepartments = []; this.selectedTeams = []; this.search = ''; this.dataSource.filter = '';
+    this.filterName = ''; this.filterCreationDateAfter = null; this.filterCreationDate = null;
+    this.filterActiveStatus = null; this.filterCreatedByMe = false; this.hasAppliedFilters = false;
+    this.selectedSchedule = null;
+    if (this.paginator) { this.paginator.firstPage(); this.paginator.length = 0; }
+    this.closeFiltersOverlay();
+    try { sessionStorage.removeItem('schedule_return_state'); } catch (e) {}
+    this.loadInstitutes();
   }
 }
 

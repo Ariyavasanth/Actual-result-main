@@ -109,6 +109,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
 
   private _subs: Subscription | null = null;
   private _globalInstituteSub: Subscription | null = null;
+  private activeInstituteId = '';
   constructor(private http: HttpClient, private router: Router, private loading: LoaderService, private auth: AuthService, private overlay: Overlay, private vcr: ViewContainerRef,private pageMeta: PageMetaService, private confirmService: ConfirmService, private globalInstituteContext: GlobalInstituteContextService) {
     // initialize isSuperAdmin from AuthService (synchronous helper)
     try {
@@ -120,9 +121,15 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
       });
     } catch (e) { /* ignore in tests */ }
     try {
-      this._globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(() => {
+      this._globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(context => {
         this.isGlobalInstituteActive = this.globalInstituteContext.isGlobalFilterActive();
-        this.applyGlobalInstituteScopeIfActive();
+        const instituteId = context?.institute_id || '';
+        if (instituteId) {
+          if (instituteId === this.activeInstituteId) return;
+          this.resetForInstituteChange(instituteId);
+          return;
+        }
+        if (this.activeInstituteId) this.resetAfterGlobalInstituteClear();
       });
     } catch (e) { /* ignore in tests */ }
   }
@@ -561,7 +568,7 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
           // Fallback: try reading user's institute from sessionStorage and apply it
           try {
             const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
-            if (raw) {
+            if (!this.isSuperAdmin && raw) {
               const u = JSON.parse(raw);
               const instId = u?.institute_id || u?.instituteId || u?.institute || '';
               if (instId) {
@@ -1025,6 +1032,8 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
   saveUsersReturnState(): void {
     try {
       sessionStorage.setItem('users_return_state', JSON.stringify({
+        instituteId: this.globalInstituteContext.activeInstituteId || this.selectedInstitute || '',
+        globalInstituteActive: this.globalInstituteContext.isGlobalFilterActive(),
         filter: this.filter,
         selectedInstitute: this.selectedInstitute,
         instituteSearch: this.instituteSearch,
@@ -1045,33 +1054,68 @@ export class ViewUsersComponent implements OnDestroy, OnInit {
       if (!raw) return;
       sessionStorage.removeItem('users_return_state');
       const state = JSON.parse(raw);
+      const activeInstituteId = this.globalInstituteContext.activeInstituteId;
+      if (activeInstituteId && String(state?.instituteId || '') !== String(activeInstituteId)) return;
+      if (activeInstituteId && state?.globalInstituteActive !== true) return;
+      if (!activeInstituteId && state?.globalInstituteActive === true) return;
+      if (!activeInstituteId && typeof state?.globalInstituteActive === 'undefined' && state?.instituteId) return;
+      const restoredInstitute = state?.filters?.institute || state?.selectedInstitute || '';
+      const globalInstitute = this.globalInstituteContext.activeContext;
+      const globalInstituteChanged = !!globalInstitute?.institute_id &&
+        String(restoredInstitute) !== String(globalInstitute.institute_id);
       this.filter = state?.filter || '';
       this.selectedInstitute = state?.selectedInstitute || '';
       this.instituteSearch = state?.instituteSearch || '';
       this.filters = state?.filters || this.filters;
-      this.users = Array.isArray(state?.users) ? state.users : [];
-      this.rawRecords = Array.isArray(state?.rawRecords) ? state.rawRecords : [];
+      if (globalInstitute?.institute_id) {
+        // The active Global Institute must override stale Users-page return state.
+        this.selectedInstitute = globalInstitute.institute_id;
+        this.filters.institute = globalInstitute.institute_id;
+        this.instituteSearch = globalInstitute.institute_name || '';
+      }
+      this.users = !globalInstituteChanged && Array.isArray(state?.users) ? state.users : [];
+      this.rawRecords = !globalInstituteChanged && Array.isArray(state?.rawRecords) ? state.rawRecords : [];
       this.hasAppliedFilters = !!state?.hasAppliedFilters;
       this.pageSize = Number(state?.pageSize || this.pageSize);
       this.pageIndex = Number(state?.pageIndex || 0);
       this.totalCount = Number(state?.totalCount || this.users.length || 0);
       this.dataSource.data = this.users;
       this.applyFilter(this.filter || '');
+      if (globalInstituteChanged && this.hasAppliedFilters) this.loadUsers(globalInstitute!.institute_id);
     } catch (e) {
       try { sessionStorage.removeItem('users_return_state'); } catch (_) { }
     }
   }
 
-  private applyGlobalInstituteScopeIfActive(): void {
-    const iid = this.globalInstituteContext.activeInstituteId;
-    if (!iid) return;
-    this.selectedInstitute = iid;
-    try { this.filters.institute = iid; } catch (e) {}
-    this.hasAppliedFilters = false;
-    try { this.loadDepartments(iid); } catch (e) {}
-    try { this.loadTeams(iid); } catch (e) {}
-    try { this.loadCountries(iid); } catch (e) {}
+  private resetForInstituteChange(instituteId: string): void {
+    this.activeInstituteId = instituteId;
+    this.selectedInstitute = instituteId;
+    this.filters = { ...this.filters, institute: instituteId, name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '', industry: '', sector: '' };
+    // Clear institute-specific state immediately to prevent cross-institute data leakage.
     this.users = []; this.rawRecords = []; this.dataSource.data = []; this.totalCount = 0;
+    this.departments = []; this.teams = []; this.departmentSearch = ''; this.teamSearch = '';
+    this.filter = ''; this.dataSource.filter = ''; this.pageIndex = 0; this.hasAppliedFilters = false;
+    this.selectedUser = null; this.editing = false; this.editableUser = null;
+    try { sessionStorage.removeItem('users_return_state'); } catch (e) {}
+    this.loadDepartments(instituteId); this.loadTeams(instituteId); this.loadCountries(instituteId);
+    // Primary records remain empty until the user applies filters.
+  }
+
+  private resetAfterGlobalInstituteClear(): void {
+    this.activeInstituteId = '';
+    this.selectedInstitute = '';
+    this.instituteSearch = '';
+    // Clear all global-scope UI data while preserving the normal filter workflow.
+    this.users = []; this.rawRecords = []; this.dataSource.data = []; this.totalCount = 0;
+    this.filters = { institute: '', name: '', department: '', team: '', joining_from: '', joining_to: '', active_status: '', country: '', city: '', industry: '', sector: '' };
+    this.departments = []; this.teams = []; this.countries = []; this.states = []; this.cities = [];
+    this.departmentSearch = ''; this.teamSearch = ''; this.filter = ''; this.dataSource.filter = '';
+    this.pageIndex = 0; this.hasAppliedFilters = false; this.selectedUser = null; this.editing = false; this.editableUser = null;
+    if (this.paginator) { this.paginator.firstPage(); this.paginator.length = 0; }
+    this.closeFiltersOverlay();
+    try { sessionStorage.removeItem('users_return_state'); } catch (e) {}
+    this.loadInstitutes();
+    this.loadCountries();
   }
 }
 

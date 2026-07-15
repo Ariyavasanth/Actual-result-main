@@ -88,6 +88,7 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   }
   private loginInstituteId: string | null = null;
   private _globalInstituteSub: Subscription | null = null;
+  private activeInstituteId = '';
   institutes: Array<{ institute_id: string; short_name: string }> = [];
   departments: Array<{ id: string; name: string }> = [];
   teams: Array<{ id: string; name: string }> = [];
@@ -124,9 +125,15 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
     this.loadFilterLists();
     this.loadCountries();
     try {
-      this._globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(() => {
+      this._globalInstituteSub = this.globalInstituteContext.activeInstitute$.subscribe(context => {
         this.isGlobalInstituteActive = this.globalInstituteContext.isGlobalFilterActive();
-        this.applyGlobalInstituteScopeIfActive();
+        const instituteId = context?.institute_id || '';
+        if (instituteId) {
+          if (instituteId === this.activeInstituteId) return;
+          this.resetForInstituteChange(instituteId);
+          return;
+        }
+        if (this.activeInstituteId) this.resetAfterGlobalInstituteClear();
       });
     } catch (e) { /* ignore in tests */ }
     this.restoreCategoryReturnState();
@@ -827,6 +834,8 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
   saveCategoryReturnState(): void {
     try {
       sessionStorage.setItem('category_return_state', JSON.stringify({
+        instituteId: this.globalInstituteContext.activeInstituteId || this.selectedInstitute || '',
+        globalInstituteActive: this.globalInstituteContext.isGlobalFilterActive(),
         filter: this.filter,
         filterCountry: this.filterCountry,
         filterCity: this.filterCity,
@@ -854,6 +863,11 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
       if (!raw) return;
       sessionStorage.removeItem('category_return_state');
       const state = JSON.parse(raw);
+      const activeInstituteId = this.globalInstituteContext.activeInstituteId;
+      if (activeInstituteId && String(state?.instituteId || '') !== String(activeInstituteId)) return;
+      if (activeInstituteId && state?.globalInstituteActive !== true) return;
+      if (!activeInstituteId && state?.globalInstituteActive === true) return;
+      if (!activeInstituteId && typeof state?.globalInstituteActive === 'undefined' && state?.instituteId) return;
       this.filter = state?.filter || '';
       this.filterCountry = state?.filterCountry || '';
       this.filterCity = state?.filterCity || '';
@@ -880,13 +894,36 @@ export class CategoryComponent implements OnInit, AfterViewInit,OnDestroy  {
     }
   }
 
-  private applyGlobalInstituteScopeIfActive(): void {
-    const iid = this.globalInstituteContext.activeInstituteId;
-    if (!iid) return;
-    this.selectedInstitute = iid;
+  private resetForInstituteChange(instituteId: string): void {
+    this.activeInstituteId = instituteId;
+    this.selectedInstitute = instituteId;
+    // Clear institute-specific state immediately to prevent cross-institute data leakage.
+    this.categories = []; this.dataSource.data = []; this.departments = []; this.teams = [];
+    this.selectedDepartments = []; this.selectedTeams = []; this.filter = ''; this.filterName = '';
     this.hasAppliedFilters = false;
-    try { this.onInstituteChange(iid); } catch (e) {}
-    this.categories = []; this.dataSource.data = [];
+    try { sessionStorage.removeItem('category_return_state'); } catch (e) {}
+    // Reload filter options only; records remain empty until the user applies filters.
+    this.onInstituteChange(instituteId);
+  }
+
+  private resetAfterGlobalInstituteClear(): void {
+    this.activeInstituteId = '';
+    this.selectedInstitute = null;
+    this.instituteSearch = '';
+    // Clear every institute-derived UI value so no global-scope data remains visible.
+    this.categories = []; this.dataSource.data = []; this.categoryOptions = [];
+    this.departments = []; this.teams = []; this.selectedDepartments = []; this.selectedTeams = [];
+    this.filter = ''; this.filterName = ''; this.dataSource.filter = '';
+    this.filterCountry = ''; this.filterCity = ''; this.filterIndustry = ''; this.filterSector = '';
+    this.filterCityOptions = []; this.countrySearch = ''; this.industrySearch = ''; this.sectorSearch = '';
+    this.filterCreationDateAfter = null; this.filterCreationDate = null; this.filterActiveStatus = null;
+    this.filterCreatedByMe = false; this.filterPublicAccess = null;
+    this.hasAppliedFilters = false; this.selectedCategory = null; this.editing = false;
+    if (this.paginator) { this.paginator.firstPage(); this.paginator.length = 0; }
+    this.closeFiltersOverlay();
+    try { sessionStorage.removeItem('category_return_state'); } catch (e) {}
+    this.loadFilterLists();
+    this.loadCategoryOptions();
   }
 }
 

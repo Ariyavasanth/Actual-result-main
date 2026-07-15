@@ -75,23 +75,25 @@ export class GlobalInstituteContextService {
     const normalized = this.normalizeContext(context);
     if (!normalized.institute_id) return;
 
-    this.activeInstituteSubject.next(normalized);
-    this.pendingInstituteSubject.next(normalized);
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
       sessionStorage.setItem('global_institute_id', normalized.institute_id);
       sessionStorage.setItem('global_institute_name', normalized.institute_name);
     } catch (e) {}
+    // Persist the complete context before emitting so synchronous subscribers cannot read stale scope.
+    this.pendingInstituteSubject.next(normalized);
+    this.activeInstituteSubject.next(normalized);
   }
 
   clearContext(): void {
-    this.pendingInstituteSubject.next(null);
-    this.activeInstituteSubject.next(null);
     try {
       sessionStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('global_institute_id');
       sessionStorage.removeItem('global_institute_name');
     } catch (e) {}
+    // Remove persisted scope before emitting so clear subscribers cannot read the old institute.
+    this.pendingInstituteSubject.next(null);
+    this.activeInstituteSubject.next(null);
   }
 
   private normalizeContext(context: GlobalInstituteContext): GlobalInstituteContext {
