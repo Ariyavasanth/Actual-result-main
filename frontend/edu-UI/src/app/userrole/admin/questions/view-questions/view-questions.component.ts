@@ -209,13 +209,17 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
      this.saveQuestionsReturnState();
   }
   get appliedFilterChips(): Array<{ key: string; label: string; removable: boolean }> {
-    if (!this.hasAppliedFilters) return [];
+    // The context subscription populates this ID whenever the Global Institute Filter is selected.
+    const globalInstituteId = this.activeInstituteId;
+    // A normal Admin's login institute becomes an applied chip only after Apply is clicked.
+    if (!this.hasAppliedFilters && !globalInstituteId) return [];
     const chips: Array<{ key: string; label: string; removable: boolean }> = [];
     if (this.filterCountry) chips.push({ key: 'country', label: `Country: ${this.getSelectedName(this.countries.map(c => ({ id: c.code, name: c.name })), this.filterCountry)}`, removable: true });
     if (this.filterCity) chips.push({ key: 'city', label: `City: ${this.filterCity}`, removable: true });
     if (this.filterIndustry) chips.push({ key: 'industry', label: `Industry: ${this.filterIndustry}`, removable: true });
     if (this.filterSector) chips.push({ key: 'sector', label: `Sector: ${this.filterSector}`, removable: true });
-    if (this.selectedInstitute) chips.push({ key: 'institute', label: `Institute: ${this.getInstituteLabel(this.selectedInstitute)}`, removable: this.isSuperAdmin });
+    const instituteId = globalInstituteId || this.selectedInstitute;
+    if (instituteId) chips.push({ key: 'institute', label: `Institute: ${this.getInstituteLabel(instituteId)}`, removable: this.isSuperAdmin && !globalInstituteId });
     if (this.categoryFilterName) chips.push({ key: 'category_name', label: `Category: ${this.categoryFilterName}`, removable: true });
     (this.selectedCategories || []).forEach(id => chips.push({ key: `category:${id}`, label: `Category: ${this.getCategoryLabel(id)}`, removable: true }));
     (this.selectedDepartments || []).forEach(id => chips.push({ key: `department:${id}`, label: `Department: ${this.getSelectedName(this.departments, id)}`, removable: true }));
