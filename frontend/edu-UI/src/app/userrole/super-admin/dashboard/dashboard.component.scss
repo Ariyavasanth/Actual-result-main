@@ -224,10 +224,24 @@ $grad-cyan: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%);
 }
 
 .filter-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(150px, 1fr)) minmax(19.5rem, auto);
+  display: flex;
+  flex-direction: column;
   gap: 0.875rem;
-  align-items: start;
+}
+
+.filter-row {
+  width: 100%;
+
+  &--location {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.875rem;
+  }
+
+  // Give long institute names the full panel width on their own row.
+  &--institute {
+    display: block;
+  }
 }
 
 .filter-field {
@@ -1186,7 +1200,7 @@ $grad-cyan: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%);
     width: 100%;
   }
 
-  .filter-grid {
+  .filter-row--location {
     grid-template-columns: 1fr;
   }
 

@@ -49,7 +49,9 @@
       </div>
 
       <div class="filter-grid">
-        <mat-form-field appearance="outline" class="filter-field">
+        <!-- Keep the primary location filters together in the first row. -->
+        <div class="filter-row filter-row--location">
+          <mat-form-field appearance="outline" class="filter-field">
           <mat-label>Industry</mat-label>
           <mat-select [(ngModel)]="filterModel.industry" (selectionChange)="onIndustryChange()" [disabled]="isFilterLoading">
             <mat-option value="">All Industries</mat-option>
@@ -73,13 +75,18 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="filter-field filter-field--institute">
-          <mat-label>Institute Name</mat-label>
+        </div>
+
+        <div class="filter-row filter-row--institute">
+          <mat-form-field appearance="outline" class="filter-field filter-field--institute">
+            <mat-label>Institute Name</mat-label>
           <mat-select [(ngModel)]="filterModel.institute_id" (selectionChange)="onInstituteSelectionChange()" [disabled]="isFilterLoading">
             <mat-option value="">Select Institute</mat-option>
             <mat-option *ngFor="let institute of filteredInstituteOptions" [value]="institute.id">{{ institute.name }}</mat-option>
           </mat-select>
         </mat-form-field>
+
+        </div>
 
         <div class="global-filter-actions">
           <button type="button" class="filter-action-btn filter-action-btn--primary" (click)="applyGlobalFilter()" [disabled]="!canApplyFilter">
