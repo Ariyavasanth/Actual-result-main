@@ -36,7 +36,7 @@
                               <p class="section-desc">{{ isSuperAdmin ? 'Select institute and test to schedule.' : 'Select test to schedule.' }}</p>
                            </div>
                            <button #filtersBtn mat-stroked-button color="primary" type="button"
-                              (click)="openFiltersOverlay(); $event.stopPropagation()" [disabled]="readOnly"
+                              (click)="openFiltersOverlay(); $event.stopPropagation()" [disabled]="readOnly || scheduleFieldsLocked"
                               aria-haspopup="true" [attr.aria-expanded]="filterEnabled">
                               <mat-icon>filter_list</mat-icon>
                               Filters
@@ -45,7 +45,8 @@
 
                         <!-- Institute + Filters toggle -->
                         <div class="field-row">
-                           <mat-form-field *ngIf="isSuperAdmin" appearance="outline" class="field-half local-institute-field">
+                           <mat-form-field *ngIf="isSuperAdmin" appearance="outline" class="field-half local-institute-field"
+                              [class.institute-disabled]="instituteDisabled">
                               <mat-icon matPrefix>apartment</mat-icon>
                               <mat-label>Institute*</mat-label>
                               <input matInput [formControl]="instituteCtrl" [matAutocomplete]="instAuto" placeholder="Pick an institute" [readonly]="instituteDisabled" [matAutocompleteDisabled]="instituteDisabled" />
@@ -59,7 +60,8 @@
                            <mat-form-field appearance="outline" [ngClass]="isSuperAdmin ? 'field-half' : 'field-full'">
                               <mat-icon matPrefix>assignment</mat-icon>
                               <mat-label>Test*</mat-label>
-                              <input #testInput matInput [formControl]="examCtrl" [matAutocomplete]="examAuto" placeholder="Pick a test" required />
+                              <input #testInput matInput [formControl]="examCtrl" [matAutocomplete]="examAuto" placeholder="Pick a test" required
+                                 [readonly]="readOnly || scheduleFieldsLocked" [matAutocompleteDisabled]="readOnly || scheduleFieldsLocked" />
                               <mat-autocomplete #examAuto="matAutocomplete" [displayWith]="displayExam.bind(this)" (optionSelected)="onExamAutocompleteSelected($event.option.value)">
                                  <mat-option *ngFor="let ex of (filteredExams$ | async)" [value]="ex">{{ ex.title }}</mat-option>
                               </mat-autocomplete>
@@ -88,7 +90,7 @@
                               <mat-icon matPrefix>person</mat-icon>
                               <mat-label>Schedule name*</mat-label>
                               <input matInput id="schedulerName" [(ngModel)]="model.schedulerName" (ngModelChange)="onSchedulerNameInput()" name="schedulerName"
-                                 placeholder="E.g. Weekly Math Test Batch A" [disabled]="readOnly" required />
+                                 placeholder="E.g. Weekly Math Test Batch A" [disabled]="readOnly || scheduleFieldsLocked" required />
                               <mat-hint align="start">Name used to identify this schedule.</mat-hint>
                               <mat-error *ngIf="!model.schedulerName">Schedule name is required.</mat-error>
                            </mat-form-field>
@@ -113,8 +115,8 @@
                            <mat-form-field appearance="outline" class="schedule-field date-field">
                               <mat-label>Start date*</mat-label>
                               <input matInput [matDatepicker]="startDatePicker" formControlName="startDate"
-                                 placeholder="Select start date" required [readonly]="readOnly" />
-                              <mat-datepicker-toggle matSuffix [for]="startDatePicker"></mat-datepicker-toggle>
+                                 placeholder="Select start date" required [readonly]="readOnly || scheduleFieldsLocked" />
+                              <mat-datepicker-toggle matSuffix [for]="startDatePicker" [disabled]="readOnly || scheduleFieldsLocked"></mat-datepicker-toggle>
                               <mat-datepicker #startDatePicker></mat-datepicker>
                               <mat-hint align="start">Required</mat-hint>
                               <mat-error *ngIf="!model.startDate">Start date is required.</mat-error>
@@ -123,7 +125,7 @@
                            <mat-form-field appearance="outline" class="schedule-field time-field">
                               <mat-icon matPrefix>schedule</mat-icon>
                               <mat-label>Start time*</mat-label>
-                              <input matInput type="time" formControlName="startTime" placeholder="HH:MM" required [readonly]="readOnly" />
+                              <input matInput type="time" formControlName="startTime" placeholder="HH:MM" required [readonly]="readOnly || scheduleFieldsLocked" />
                               <mat-hint align="start">Required</mat-hint>
                               <mat-error *ngIf="!model.startTime">Start time is required.</mat-error>
                            </mat-form-field>
@@ -134,15 +136,15 @@
                            <mat-form-field appearance="outline" class="schedule-field date-field">
                               <mat-label>End date (optional)</mat-label>
                               <input matInput [matDatepicker]="endDatePicker" formControlName="endDate"
-                                 placeholder="Select end date" [readonly]="readOnly" />
-                              <mat-datepicker-toggle matSuffix [for]="endDatePicker"></mat-datepicker-toggle>
+                                 placeholder="Select end date" [readonly]="readOnly || scheduleFieldsLocked" />
+                              <mat-datepicker-toggle matSuffix [for]="endDatePicker" [disabled]="readOnly || scheduleFieldsLocked"></mat-datepicker-toggle>
                               <mat-datepicker #endDatePicker></mat-datepicker>
                            </mat-form-field>
 
                            <mat-form-field appearance="outline" class="schedule-field time-field">
                               <mat-icon matPrefix>schedule</mat-icon>
                               <mat-label>End time (optional)</mat-label>
-                              <input matInput type="time" formControlName="endTime" placeholder="HH:MM" [readonly]="readOnly" />
+                              <input matInput type="time" formControlName="endTime" placeholder="HH:MM" [readonly]="readOnly || scheduleFieldsLocked" />
                            </mat-form-field>
                         </div>
                         <div *ngIf="scheduleDateError" class="schedule-error" role="alert">
@@ -242,7 +244,7 @@
                      </div>
                      <button #userFiltersBtn mat-stroked-button color="primary" type="button"
                         (click)="openUserFiltersOverlay(); $event.stopPropagation()" aria-haspopup="true"
-                        [attr.aria-expanded]="userFilterOpen">
+                        [attr.aria-expanded]="userFilterOpen" [disabled]="readOnly || scheduleFieldsLocked">
                         <mat-icon>filter_list</mat-icon>
                         Filters
                      </button>
@@ -350,10 +352,10 @@
                   <!-- User list -->
                   <div class="user-list">
                      <div class="user-list-header">
-                        <mat-checkbox [(ngModel)]="selectAll" (change)="toggleSelectAll($event.checked)">
+                        <mat-checkbox [(ngModel)]="selectAll" (change)="toggleSelectAll($event.checked)" [disabled]="readOnly || scheduleFieldsLocked">
                            Select all ({{ users.length }})
                         </mat-checkbox>
-                        <button mat-button type="button" class="refresh-action-btn" (click)="loadUsers()">
+                        <button mat-button type="button" class="refresh-action-btn" (click)="loadUsers()" [disabled]="readOnly || scheduleFieldsLocked">
                            <mat-icon>refresh</mat-icon>
                            Refresh
                         </button>
@@ -361,7 +363,7 @@
 
                      <mat-list class="user-selection-list">
                         <mat-list-item *ngFor="let u of users">
-                           <mat-checkbox [checked]="selectedUsers.indexOf(u.id) >= 0"
+                           <mat-checkbox [checked]="selectedUsers.indexOf(u.id) >= 0" [disabled]="readOnly || scheduleFieldsLocked"
                               (change)="toggleUserSelection(u.id, $event.checked)">
                               {{ u.name }}
                               <span class="muted">&nbsp;({{ u.email }})</span>

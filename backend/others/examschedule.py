@@ -175,27 +175,31 @@ def update_exam_schedule(request):
         if not sched:
             return {"statusMessage": "Schedule not found", "status": False}, 404
 
+        # An attempt row is created when a student launches the schedule. Once
+        # present, preserve schedule identity/timing/assignments server-side.
+        has_attendance = session.query(Exam_Attempt.attempt_id).filter_by(schedule_id=schedule_id).first() is not None
+
         # Update basic fields if provided
-        if 'title' in data:
+        if 'title' in data and not has_attendance:
             sched.title = data.get('title')
-        if 'exam_id' in data:
+        if 'exam_id' in data and not has_attendance:
             sched.exam_id = data.get('exam_id')
-        if 'institute_id' in data:
+        if 'institute_id' in data and not has_attendance:
             sched.institute_id = data.get('institute_id')
-        if 'duration_mins' in data:
+        if 'duration_mins' in data and not has_attendance:
             try:
                 sched.duration_mins = int(data.get('duration_mins') or 0)
             except Exception:
                 pass
         
         # Automatically update attempts and pass_mark from selected Test, ignoring any attempts field in request payload
-        if sched.exam_id:
+        if sched.exam_id and not has_attendance:
             exam = session.query(Exam).filter_by(exam_id=sched.exam_id).first()
             if exam:
                 sched.number_of_attempts = exam.number_of_attempts
                 sched.pass_mark = exam.pass_mark
 
-        if 'total_questions' in data:
+        if 'total_questions' in data and not has_attendance:
             try:
                 sched.total_questions = int(data.get('total_questions') or 0)
             except Exception:
@@ -233,11 +237,12 @@ def update_exam_schedule(request):
             sched.show_student_answers = settings['show_student_answers']
             sched.show_explanations = settings['show_explanations']
 
-        # times
-        try:
-            sched.start_time, sched.end_time = _schedule_times(data, sched.start_time, sched.end_time)
-        except ValueError as error:
-            return {"statusMessage": str(error), "status": False}, 400
+        # Timing remains editable until the first attempt exists.
+        if not has_attendance:
+            try:
+                sched.start_time, sched.end_time = _schedule_times(data, sched.start_time, sched.end_time)
+            except ValueError as error:
+                return {"statusMessage": str(error), "status": False}, 400
 
         # updated_by
         if data.get('updated_by'):
@@ -246,7 +251,7 @@ def update_exam_schedule(request):
             sched.updated_by = data.get('current_user')
 
         # Rebuild assigned user mappings if provided
-        if 'assigned_user_ids' in data:
+        if 'assigned_user_ids' in data and not has_attendance:
             try:
                 # Delete existing mappings for this schedule
                 session.query(ExamScheduleMapping).filter_by(schedule_id=schedule_id).delete()
@@ -304,6 +309,8 @@ def get_exam_schedule_details(request):
 
         exam_list = []
         for schedule in schedules:
+            # Existing attempts are the authoritative attendance signal.
+            has_attendance = session.query(Exam_Attempt.attempt_id).filter_by(schedule_id=schedule.schedule_id).first() is not None
             #  get Exam details
             exam_title = None
             exam = session.query(Exam).filter_by(exam_id=schedule.exam_id).first()
@@ -353,6 +360,7 @@ def get_exam_schedule_details(request):
                 "show_correct_answers": True if schedule.show_correct_answers is None else bool(schedule.show_correct_answers),
                 "show_student_answers": True if schedule.show_student_answers is None else bool(schedule.show_student_answers),
                 "show_explanations": True if schedule.show_explanations is None else bool(schedule.show_explanations),
+                "has_attendance": has_attendance,
             })
     # institute_id	start_time	end_time	created_by	created_date	updated_by	updated_date	published
         json_data = {

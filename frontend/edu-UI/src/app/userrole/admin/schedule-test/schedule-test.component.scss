@@ -137,3 +137,9 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 /* ── Responsive ── */
 @media (max-width:56.25rem) { .schedule-row{flex-direction:column;} .time-field{flex:1 1 100%;max-width:100%;} .form-col-2{flex:1 1 100%;} .section-block{padding:0.875rem 1rem;} .review-grid{grid-template-columns:1fr;} .review-summary .row{grid-template-columns:1fr;} .review-summary .label{margin-bottom:0.25rem;} }
 @media (max-width:45rem) { .page{padding:0.75rem 0.75rem 2rem;} .step-content{padding:1rem;} .field-row{flex-direction:column;gap:0;} .review-schedule-fields,.review-content-options{grid-template-columns:1fr;} .review-schedule-fields{margin-left:0;} .toggle-setting{grid-template-columns:1fr;} .review-preview{margin-left:0;text-align:left;} :host ::ng-deep .mat-horizontal-stepper-header-container{overflow-x:auto;} }
+
+.local-institute-field.institute-disabled {
+  // Match disabled Material fields while retaining the selected autocomplete label.
+  opacity: 0.6;
+  pointer-events: none;
+}
