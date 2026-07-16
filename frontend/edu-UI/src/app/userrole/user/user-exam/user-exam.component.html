@@ -20,7 +20,7 @@
           </div>
           <span *ngIf="remaining <= 300" class="timer-alert" aria-hidden="true">!</span>
         </div>
-        <button type="button" class="btn btn-submit" (click)="openConfirm()" [disabled]="submitting" [attr.aria-busy]="submitting">
+        <button type="button" class="btn btn-submit" (click)="openConfirm()" [disabled]="submitting || testStopped" [attr.aria-busy]="submitting">
           <mat-icon>send</mat-icon>
           <span>{{ submitting ? 'Submitting...' : 'Submit' }}</span>
         </button>
@@ -125,7 +125,7 @@
             <label class="opt" *ngFor="let o of q.options; let oi = index" 
               [class.selected]="answers[q.id || i] === (o.id || o.text)">
               <span class="opt-letter">{{ 'ABCDEFGH'[oi] }}</span>
-              <input type="radio" name="q-{{q.id || i}}" [value]="o.id || o.text" [(ngModel)]="answers[q.id || i]"
+              <input type="radio" name="q-{{q.id || i}}" [value]="o.id || o.text" [(ngModel)]="answers[q.id || i]" [disabled]="testStopped"
                 (change)="selectOne(q.id || i, o.id || o.text)" />
               <span class="opt-text">{{ o.text }}</span>
               <mat-icon class="opt-check" *ngIf="answers[q.id || i] === (o.id || o.text)">check_circle</mat-icon>
@@ -138,7 +138,7 @@
             <label class="opt" *ngFor="let o of q.options; let oi = index"
               [class.selected]="(answers[q.id || i] || []).indexOf(o.id || o.text) !== -1">
               <span class="opt-letter">{{ 'ABCDEFGH'[oi] }}</span>
-              <input type="checkbox" [value]="o.id || o.text" (change)="toggleMulti(q.id || i, o.id || o.text)"
+              <input type="checkbox" [value]="o.id || o.text" (change)="toggleMulti(q.id || i, o.id || o.text)" [disabled]="testStopped"
                 [checked]="(answers[q.id || i] || []).indexOf(o.id || o.text) !== -1" />
               <span class="opt-text">{{ o.text }}</span>
               <mat-icon class="opt-check" *ngIf="(answers[q.id || i] || []).indexOf(o.id || o.text) !== -1">check_circle</mat-icon>
@@ -150,8 +150,8 @@
             <label class="sr-only" [for]="'fill-' + i">Your answer</label>
             <div class="input-wrapper">
               <mat-icon class="input-icon">edit</mat-icon>
-              <input type="text" [id]="'fill-' + i" [(ngModel)]="answers[q.id || i]" placeholder="Type your answer here..." />
-              <mat-icon class="input-clear" *ngIf="answers[q.id || i]" (click)="answers[q.id || i] = ''">close</mat-icon>
+              <input type="text" [id]="'fill-' + i" [(ngModel)]="answers[q.id || i]" [disabled]="testStopped" placeholder="Type your answer here..." />
+              <mat-icon class="input-clear" *ngIf="answers[q.id || i] && !testStopped" (click)="answers[q.id || i] = ''">close</mat-icon>
             </div>
           </div>
 
@@ -159,8 +159,8 @@
           <div *ngIf="q.type === 'descriptive' || q.type === 'Paragraph'" class="q-input descriptive-input">
             <div class="textarea-wrapper">
               <label class="sr-only" [for]="'desc-' + i">Your answer</label>
-              <textarea [id]="'desc-' + i" rows="6" [(ngModel)]="answers[q.id || i]" placeholder="Write your detailed answer here..."></textarea>
-              <button type="button" class="voice-btn" *ngIf="speechSupported"
+              <textarea [id]="'desc-' + i" rows="6" [(ngModel)]="answers[q.id || i]" [disabled]="testStopped" placeholder="Write your detailed answer here..."></textarea>
+              <button type="button" class="voice-btn" *ngIf="speechSupported" [disabled]="testStopped"
                 (click)="toggleVoiceInput(q.id || i)" 
                 [class.recording]="isRecording(q.id || i)"
                 [attr.aria-label]="isRecording(q.id || i) ? 'Stop voice input' : 'Start voice input'"
@@ -192,6 +192,18 @@
       <button type="button" class="fab" (click)="scrollToQuestion(questions.length - 1)" aria-label="Go to last question" title="Last question">
         <mat-icon>vertical_align_bottom</mat-icon>
       </button>
+    </div>
+
+    <!-- A stopped test is terminal: the student can only acknowledge and leave. -->
+    <div *ngIf="testStopped" class="confirm-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="stopped-title">
+      <div class="confirm-dialog">
+        <div class="confirm-icon"><mat-icon>block</mat-icon></div>
+        <h2 id="stopped-title" class="confirm-title">Test Stopped</h2>
+        <p class="confirm-body">This test has been stopped by the administrator.</p>
+        <div class="confirm-actions">
+          <button type="button" class="btn btn-primary" (click)="acknowledgeStoppedTest()">OK</button>
+        </div>
+      </div>
     </div>
 
     <!-- Confirmation Dialog -->

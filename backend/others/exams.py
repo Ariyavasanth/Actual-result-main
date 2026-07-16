@@ -853,7 +853,38 @@ def launch_exam_details(schedule_id, user_id):
         }
         return json_data, 500
 
-def submit_exam_answers(data):
+def get_active_exam_status(attempt_id, user_id):
+    db = SQLiteDB()
+    session = db.connect()
+    if not session:
+        return {"statusMessage": "Error connecting to database", "status": False}, 500
+
+    try:
+        # Bind the lightweight publication check to the JWT-authenticated attempt owner.
+        exam_attempt = session.query(Exam_Attempt).filter(
+            Exam_Attempt.attempt_id == attempt_id,
+            Exam_Attempt.user_id == user_id
+        ).first()
+        if not exam_attempt:
+            return {"statusMessage": "Attempt not found", "status": False}, 404
+
+        exam_schedule = session.query(ExamSchedule).filter_by(schedule_id=exam_attempt.schedule_id).first()
+        if not exam_schedule:
+            return {"statusMessage": "Schedule not found", "status": False}, 404
+
+        return {
+            "statusMessage": "Exam status retrieved successfully",
+            "status": True,
+            "published": bool(exam_schedule.published)
+        }, 200
+    except Exception as e:
+        print(f"{e} occurred while retrieving active exam status at line {sys.exc_info()[-1].tb_lineno}")
+        return {"statusMessage": "Error retrieving exam status", "status": False}, 500
+    finally:
+        session.close()
+
+
+def submit_exam_answers(data, authenticated_user_id=None):
     db = SQLiteDB()
     session = db.connect()
     if not session:
@@ -872,6 +903,9 @@ def submit_exam_answers(data):
         # exists, bind this check to its actual schedule as well as the
         # request's schedule_id so a different published ID cannot bypass it.
         exam_attempt = session.query(Exam_Attempt).filter_by(attempt_id=attempt_id).first()
+        if not exam_attempt or (authenticated_user_id and str(exam_attempt.user_id) != str(authenticated_user_id)):
+            session.close()
+            return {"statusMessage": "Attempt not found", "status": False}, 404
         attempt_schedule_id = exam_attempt.schedule_id if exam_attempt else schedule_id
         exam_schedule = session.query(ExamSchedule).filter(
             ExamSchedule.schedule_id == schedule_id,
@@ -880,7 +914,11 @@ def submit_exam_answers(data):
         ).first()
         if not exam_schedule:
             session.close()
-            return {"statusMessage": "Schedule not found", "status": False}, 404
+            return {
+                "statusMessage": "This test has been stopped by the administrator.",
+                "status": False,
+                "errorCode": "EXAM_UNPUBLISHED"
+            }, 409
         
         submitted_date = datetime.fromisoformat(submitted_date.replace("Z", "+00:00"))
 
