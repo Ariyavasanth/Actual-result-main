@@ -2213,13 +2213,14 @@ class GlobalInstituteContextService {
     this.activeInstituteSubject.next(normalized);
   }
   clearContext() {
-    this.pendingInstituteSubject.next(null);
-    this.activeInstituteSubject.next(null);
     try {
       sessionStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('global_institute_id');
       sessionStorage.removeItem('global_institute_name');
     } catch (e) {}
+    // Remove persisted scope before emitting so clear subscribers cannot read the old institute.
+    this.pendingInstituteSubject.next(null);
+    this.activeInstituteSubject.next(null);
   }
   normalizeContext(context) {
     return {

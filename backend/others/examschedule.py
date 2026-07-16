@@ -305,10 +305,12 @@ def get_exam_schedule_details(request):
         exam_list = []
         for schedule in schedules:
             #  get Exam details
+            exam_title = None
             exam = session.query(Exam).filter_by(exam_id=schedule.exam_id).first()
             if exam:
                 exam_title = exam.title
             # get institute details
+            institute_name = None
             institute = session.query(Institute).filter_by(institute_id=schedule.institute_id).first()
             if institute:
                 institute_name = institute.name
