@@ -331,8 +331,10 @@ export class UserExamComponent{
         const isCompleted = ['complete', 'completed', 'done'].includes(normalizedType)
           || (expired && attempted)
           || reviewAvailable;
-        const startVal = fmtDate(isCompleted ? x.user_start_time : (x.start_time || x.start));
-        const endVal = fmtDate(isCompleted ? x.user_end_time : (x.end_time || x.end));
+        // Expired (inactive) tests must show the configured schedule window, not attempt timestamps.
+        const useAttemptTimes = isCompleted && !expired;
+        const startVal = fmtDate(useAttemptTimes ? x.user_start_time : (x.start_time || x.start));
+        const endVal = fmtDate(useAttemptTimes ? x.user_end_time : (x.end_time || x.end));
         const completedScheduleTest = startVal ? `${startVal} - ${endVal || '--'}` : '--';
         const scheduleTest = (startVal || endVal) ? `${startVal || '—'} - ${endVal || '—'}` : '—';
         return {

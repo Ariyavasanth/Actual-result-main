@@ -17,6 +17,15 @@ def safe_isoformat(val):
     return str(val)
 
 
+def safe_utc_isoformat(val):
+    value = safe_isoformat(val)
+    if value and not value.endswith(('Z', '+00:00')):
+        # Schedule datetimes are stored as UTC; retain that timezone when serializing them.
+        return f'{value}Z'
+    return value
+
+
+
 def _category_pool_question_ids(session, category_id):
     rows = session.query(QuestionMapping.question_id).filter(
         QuestionMapping.category_id == category_id
@@ -634,8 +643,8 @@ def get_user_exam_details(request):
                 "pass_mark": getattr(exam_obj, "pass_mark", None),
                 "number_of_attempts": getattr(schedule_obj, "number_of_attempts", None),
                 "user_review" :user_review,
-                "start_time": safe_isoformat(getattr(schedule_obj, "start_time", getattr(exam_obj, "start_time", None))),
-                "end_time": safe_isoformat(getattr(schedule_obj, "end_time", getattr(exam_obj, "end_time", None))),
+                "start_time": safe_utc_isoformat(getattr(schedule_obj, "start_time", getattr(exam_obj, "start_time", None))),
+                "end_time": safe_utc_isoformat(getattr(schedule_obj, "end_time", getattr(exam_obj, "end_time", None))),
                 "created_by": getattr(schedule_obj, "created_by", getattr(exam_obj, "created_by", None)),
                 "created_date": getattr(schedule_obj, "created_date", getattr(exam_obj, "created_date", None)),
                 "updated_by": getattr(schedule_obj, "updated_by", None),
