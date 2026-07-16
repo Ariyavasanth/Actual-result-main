@@ -933,7 +933,8 @@ export class ViewQuestionsComponent implements OnDestroy,OnInit{
       try { notify('Please add filters in the filter form.', 'info'); } catch (e) {}
       return;
     }
-    this.hasAppliedFilters = false;
+    // Mark these values as applied so the existing Applied Filters chips are rendered.
+    this.hasAppliedFilters = true;
     this.loadQuestions();
     this.closeFiltersOverlay();
   }
