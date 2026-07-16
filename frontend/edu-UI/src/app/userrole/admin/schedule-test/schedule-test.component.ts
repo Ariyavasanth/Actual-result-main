@@ -32,12 +32,13 @@ import { LoaderService } from 'src/app/shared/services/loader.service';
   styleUrls: ['./schedule-test.component.scss']
 })
 export class AdminScheduleTestComponent {
+  @ViewChild('testInput') testInput?: ElementRef<HTMLInputElement>;
   // institute list will be fetched from backend
   institutes: Array<{ name: string; institute_id?: string; short_name?: string }> = [];
   // autocomplete controls for institute/exam
   instituteCtrl: FormControl = new FormControl('');
   filteredInstitutes$: Observable<any[]> = of([]);
-  examCtrl: FormControl = new FormControl('');
+  examCtrl: FormControl = new FormControl('', Validators.required);
   filteredExams$: Observable<any[]> = of([]);
   batches = ['Batch A', 'Batch B', 'Batch C'];
 
@@ -264,6 +265,14 @@ export class AdminScheduleTestComponent {
     this.initializeDefaults();
     this.initializeValidationForms();
     this.refreshPersistedReviewSettings();
+    this.examCtrl.valueChanges.subscribe(value => {
+      const selectedId = value && typeof value === 'object' ? (value.id || value.exam_id || value.test_id || value._id) : '';
+      if (!selectedId || String(selectedId) !== String(this.model.exam_id || '')) {
+        // Typed, cleared, or otherwise invalid text is not a selected Test.
+        this.model.exam_id = '';
+        this.selectedExam = null;
+      }
+    });
     // try to infer super-admin status from session storage user profile
     try {
       const raw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
@@ -620,7 +629,30 @@ export class AdminScheduleTestComponent {
     this.model.exam_id = id;
     try{ this.examCtrl.setValue(exam); }catch(e){}
     this.onExamChange(this.model.exam_id);
+    this.examCtrl.setErrors(null);
     this.applyDefaultSchedulerName();
+  }
+
+  goToNextStep(stepper: any): void {
+    const value = this.examCtrl.value;
+    const selectedId = value && typeof value === 'object' ? (value.id || value.exam_id || value.test_id || value._id) : '';
+    const validSelection = !!selectedId && String(selectedId) === String(this.model.exam_id || '') &&
+      (this.examsList || []).some(exam => String(exam.id) === String(selectedId));
+
+    if (!validSelection) {
+      // Keep Next clickable, but block navigation until an autocomplete option is selected.
+      this.model.exam_id = '';
+      this.selectedExam = null;
+      this.examCtrl.setErrors({ required: true });
+      this.examCtrl.markAsTouched();
+      // Return the user to the invalid Test field without opening its autocomplete panel.
+      setTimeout(() => {
+        this.testInput?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      return;
+    }
+
+    stepper.next();
   }
 
   // Called when the Enable Filters checkbox toggles
