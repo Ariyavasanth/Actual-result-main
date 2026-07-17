@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, ViewChild, OnInit } from '@angular/core';
+import { Component, AfterViewInit, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -126,7 +126,7 @@ export class ConfirmStartTestDialogComponent {}
   templateUrl: './exam.component.html',
   styleUrls: ['./exam.component.scss']
 })
-export class UserExamComponent{
+export class UserExamComponent implements OnInit, AfterViewInit, OnDestroy{
   exams: UserTestRow[] = [];
   loading = false;
   instituteId = '';
@@ -143,6 +143,7 @@ export class UserExamComponent{
 
   private examsUrl = `${API_BASE}/get-user-exams-details`;
   private launchUrl = `${API_BASE}/launch-exam`;
+  private reviewRefreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(private http: HttpClient,private pageMeta: PageMetaService, private loader: LoaderService, private router: Router, private dialog: MatDialog ){
     // try to read institute id from sessionStorage
@@ -285,11 +286,15 @@ export class UserExamComponent{
   ngOnInit(): void{
 
     this.pageMeta.setMeta('User Tests', 'Explore and manage your tests');
+    // Refresh server-calculated review availability without interrupting the student UI.
+    this.reviewRefreshTimer = setInterval(() => this.loadExams(false), 60000);
     
   }
-  loadExams(){
-    this.loader.show();
+  loadExams(showLoader = true){
     if(!this.instituteId) return;
+    // Skip a polling cycle while another exam-list request is still active.
+    if(this.loading) return;
+    if(showLoader) this.loader.show();
     this.loading = true;
     // include session user data as a payload in the query string
     const userRaw = sessionStorage.getItem('user_profile') || sessionStorage.getItem('user');
@@ -393,9 +398,17 @@ export class UserExamComponent{
         configureSorting(this.activeSource);
         configureSorting(this.completeSource);
       }catch(e){}
-      this.loader.hide();
+      if(showLoader) this.loader.hide();
       },
-      error: (err) => { console.warn('Failed to load tests', err); this.loading = false; this.exams = []; this.loader.hide(); }
+      error: (err) => {
+        console.warn('Failed to load tests', err);
+        this.loading = false;
+        // Preserve the current table if only the background availability refresh fails.
+        if(showLoader) {
+          this.exams = [];
+          this.loader.hide();
+        }
+      }
     });
 
   }
@@ -514,5 +527,9 @@ export class UserExamComponent{
 
   ngAfterViewInit(): void {
     try{ this.dataSource.sort = this.sort; }catch(e){}
+  }
+
+  ngOnDestroy(): void {
+    if(this.reviewRefreshTimer) clearInterval(this.reviewRefreshTimer);
   }
 }

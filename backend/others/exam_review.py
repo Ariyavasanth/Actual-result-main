@@ -4,6 +4,34 @@ from db.db import SQLiteDB
 from db.models import User, Exam, ExamSchedule, Question, Option, Answer,Exam_Attempt, ExamScheduleMapping, ExamReviewComments,ExamReviewCommentsHistory, MarksHistory
 from others.llm import descriptive_evaluation, openai_client
 
+def is_review_eligible_attempt(attempt):
+    """Only finalized attempts can participate in student review flows."""
+    return getattr(attempt, 'status', None) in ('submitted', 'evaluated')
+
+def finalize_expired_attempts(session, exam_schedule, attempts, now=None):
+    """Finalize timed-out attempts even when the student's browser never submitted."""
+    now = now or datetime.datetime.utcnow()
+    exam = session.query(Exam).filter(Exam.exam_id == exam_schedule.exam_id).first()
+    duration_mins = int(getattr(exam, 'duration_mins', 0) or 0)
+    finalized_ids = []
+    for attempt in attempts:
+        if attempt.status != 'in_progress' or not attempt.started_date:
+            continue
+        duration_deadline = attempt.started_date + datetime.timedelta(minutes=duration_mins) if duration_mins > 0 else None
+        deadlines = [value for value in (duration_deadline, exam_schedule.end_time) if value]
+        if not deadlines:
+            continue
+        deadline = min(deadlines)
+        if now >= deadline:
+            # The effective deadline is authoritative when a browser closes or loses connectivity.
+            attempt.status = 'submitted'
+            attempt.submitted_date = deadline
+            session.add(attempt)
+            finalized_ids.append(attempt.attempt_id)
+    if finalized_ids:
+        session.commit()
+    return finalized_ids
+
 def is_after_everyone_finished_available(session, exam_schedule, now=None):
     """Unlock when all currently assigned students submitted, or time expired."""
     now = now or datetime.datetime.utcnow()
@@ -62,7 +90,10 @@ def review_user_exam(request, current_user=None):
         if not exam_schedule:
             return {"statusMessage": "Schedule not found", "status": False}, 404
 
-        completed_attempts = [attempt for attempt in attempts if attempt.submitted_date or attempt.status in ('submitted', 'evaluated')]
+        finalized_ids = finalize_expired_attempts(session, exam_schedule, attempts)
+        for finalized_id in finalized_ids:
+            validate_answers(finalized_id)
+        completed_attempts = [attempt for attempt in attempts if is_review_eligible_attempt(attempt)]
         completed_attempts.sort(key=lambda attempt: attempt.attempt_number or 0)
         review_mode = exam_schedule.review_mode or ('instant' if exam_schedule.user_review == 1 else 'no_review')
 

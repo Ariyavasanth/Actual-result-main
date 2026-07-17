@@ -1,6 +1,6 @@
 from db.models import Exam, ExamSchedule, Question, Option, Answer,Exam_Attempt, ExamMapping, Categories, ExamScheduleMapping, QuestionMapping, ExamQuestionMapping
 from db.db import SQLiteDB
-from others.exam_review import is_after_everyone_finished_available, validate_answers
+from others.exam_review import finalize_expired_attempts, is_after_everyone_finished_available, is_review_eligible_attempt, validate_answers
 import sys
 from datetime import datetime
 from db.models import Institute, User
@@ -24,6 +24,23 @@ def safe_utc_isoformat(val):
         return f'{value}Z'
     return value
 
+def _replace_attempt_answers(session, exam_attempt, answers):
+    """Persist the latest browser answer snapshot without creating duplicates."""
+    session.query(Answer).filter(Answer.attempt_id == exam_attempt.attempt_id).delete(synchronize_session=False)
+    for question_id, answer_value in (answers or {}).items():
+        values = answer_value if isinstance(answer_value, list) else [answer_value]
+        for value in values:
+            if value is None or value == '':
+                continue
+            is_option = isinstance(value, str) and len(value) == 36 and '-' in value
+            session.add(Answer(
+                user_id=exam_attempt.user_id,
+                schedule_id=exam_attempt.schedule_id,
+                question_id=question_id,
+                attempt_id=exam_attempt.attempt_id,
+                selected_option_id=value if is_option else None,
+                written_answer=None if is_option else str(value)
+            ))
 
 
 def _category_pool_question_ids(session, category_id):
@@ -581,7 +598,12 @@ def get_user_exam_details(request):
             current_time = datetime.utcnow()
             attempted = user_attempt > 0
             expired = bool(schedule_obj.end_time and current_time > schedule_obj.end_time)
-            submitted_attempts = [attempt for attempt in attempts if attempt.submitted_date or attempt.status in ('submitted', 'evaluated')]
+            # Finalize expired browser-abandoned attempts before calculating review eligibility.
+            finalized_ids = finalize_expired_attempts(session, schedule_obj, attempts, current_time)
+            for finalized_id in finalized_ids:
+                validate_answers(finalized_id)
+            # Review eligibility follows persisted attempt status, never the frontend Completed label.
+            submitted_attempts = [attempt for attempt in attempts if is_review_eligible_attempt(attempt)]
             review_mode = schedule_obj.review_mode or ('instant' if user_review_data == 1 else 'no_review')
             if submitted_attempts:
                 if review_mode == 'instant':
@@ -881,10 +903,15 @@ def get_active_exam_status(attempt_id, user_id):
         if not exam_schedule:
             return {"statusMessage": "Schedule not found", "status": False}, 404
 
+        finalized_ids = finalize_expired_attempts(session, exam_schedule, [exam_attempt])
+        for finalized_id in finalized_ids:
+            validate_answers(finalized_id)
+
         return {
             "statusMessage": "Exam status retrieved successfully",
             "status": True,
-            "published": bool(exam_schedule.published)
+            "published": bool(exam_schedule.published),
+            "attempt_status": exam_attempt.status
         }, 200
     except Exception as e:
         print(f"{e} occurred while retrieving active exam status at line {sys.exc_info()[-1].tb_lineno}")
@@ -892,6 +919,27 @@ def get_active_exam_status(attempt_id, user_id):
     finally:
         session.close()
 
+
+def autosave_exam_answers(data, authenticated_user_id=None):
+    db = SQLiteDB()
+    session = db.connect()
+    if not session:
+        return {"statusMessage": "Error connecting to database", "status": False}, 500
+    try:
+        attempt = session.query(Exam_Attempt).filter_by(attempt_id=data.get("attempt_id")).first()
+        if not attempt or (authenticated_user_id and str(attempt.user_id) != str(authenticated_user_id)):
+            return {"statusMessage": "Attempt not found", "status": False}, 404
+        if attempt.status != 'in_progress':
+            return {"statusMessage": "Attempt is already finalized", "status": False}, 409
+        _replace_attempt_answers(session, attempt, data.get("answers", {}))
+        session.commit()
+        return {"statusMessage": "Answers saved", "status": True}, 200
+    except Exception as e:
+        session.rollback()
+        print(f"{e} occurred while autosaving exam answers at line {sys.exc_info()[-1].tb_lineno}")
+        return {"statusMessage": "Error saving answers", "status": False}, 500
+    finally:
+        session.close()
 
 def submit_exam_answers(data, authenticated_user_id=None):
     db = SQLiteDB()
@@ -903,7 +951,6 @@ def submit_exam_answers(data, authenticated_user_id=None):
         user_id = data.get("user_id")
         schedule_id = data.get("schedule_id")
         answers = data.get("answers", {})
-        submitted_date = data.get("submitted_at")
         time_taken_mins = data.get("time_taken_mins")
         attempt_id = data.get("attempt_id")
 
@@ -915,9 +962,10 @@ def submit_exam_answers(data, authenticated_user_id=None):
         if not exam_attempt or (authenticated_user_id and str(exam_attempt.user_id) != str(authenticated_user_id)):
             session.close()
             return {"statusMessage": "Attempt not found", "status": False}, 404
-        attempt_schedule_id = exam_attempt.schedule_id if exam_attempt else schedule_id
+        # The authenticated attempt is authoritative; client identifiers are compatibility hints only.
+        user_id = exam_attempt.user_id
+        attempt_schedule_id = exam_attempt.schedule_id
         exam_schedule = session.query(ExamSchedule).filter(
-            ExamSchedule.schedule_id == schedule_id,
             ExamSchedule.schedule_id == attempt_schedule_id,
             ExamSchedule.published == 1
         ).first()
@@ -929,58 +977,14 @@ def submit_exam_answers(data, authenticated_user_id=None):
                 "errorCode": "EXAM_UNPUBLISHED"
             }, 409
         
-        submitted_date = datetime.fromisoformat(submitted_date.replace("Z", "+00:00"))
+        # Store server UTC so malformed or timezone-aware client dates cannot block submission.
+        submitted_date = datetime.utcnow()
+        schedule_id = attempt_schedule_id
 
-        # update records in Exam_Attempt
-        # Update the Exam_Attempt record for the given attempt_id
-        if exam_attempt:
-            exam_attempt.submitted_date = submitted_date
-            exam_attempt.status = "submitted"
-            session.commit()
-
-        for question_id, answer_value in answers.items():
-            if isinstance(answer_value, list):
-                # Multiple choice (multi-select)
-                for option_id in answer_value:
-                    new_answer = Answer(
-                    user_id=user_id,
-                    schedule_id=schedule_id,
-                    question_id=question_id,
-                    attempt_id=attempt_id,
-                    selected_option_id=option_id,
-                    written_answer=None,
-                    # submitted_at=submitted_at,
-                    # time_taken_mins=time_taken_mins
-                    )
-                    session.add(new_answer)
-            elif isinstance(answer_value, str):
-                if len(answer_value) == 36 and '-' in answer_value:
-                    # Single choice (option id)
-                    new_answer = Answer(
-                    user_id=user_id,
-                    schedule_id=schedule_id,
-                    question_id=question_id,
-                    attempt_id=attempt_id,
-                    selected_option_id=answer_value,
-                    written_answer=None,
-                    # submitted_at=submitted_at,
-                    # time_taken_mins=time_taken_mins
-                    )
-                    session.add(new_answer)
-                else:
-                    # Written answer
-                    new_answer = Answer(
-                    user_id=user_id,
-                    schedule_id=schedule_id,
-                    question_id=question_id,
-                    attempt_id=attempt_id,
-                    selected_option_id=None,
-                    written_answer=answer_value,
-                    # submitted_at=submitted_at,
-                    # time_taken_mins=time_taken_mins
-                    )
-                    session.add(new_answer)
-
+        # Save the final snapshot and status atomically so retries cannot duplicate answers.
+        _replace_attempt_answers(session, exam_attempt, answers)
+        exam_attempt.submitted_date = submitted_date
+        exam_attempt.status = "submitted"
         session.commit()
         session.close()
         validate_answers(attempt_id)

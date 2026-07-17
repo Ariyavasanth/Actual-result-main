@@ -7,7 +7,7 @@ from werkzeug.datastructures import ImmutableMultiDict
 
 from others.institute import insert_institute, get_institute_details, get_institute_list, get_campus_list, delete_institute, manage_institute, update_institute
 from others.users import insert_user, get_user_page_access, get_user_details, get_user_list, get_user_limit, user_bulk_upload, update_user_details, delete_user
-from others.exams import add_exam, get_active_exam_status, get_exam_details, get_exam_list, launch_exam_details, submit_exam_answers,get_user_exam_details
+from others.exams import add_exam, autosave_exam_answers, get_active_exam_status, get_exam_details, get_exam_list, launch_exam_details, submit_exam_answers,get_user_exam_details
 from others.examschedule import add_exam_schedule, get_exam_schedule_details, delete_exam_schedule
 from others.examschedule import update_exam_schedule
 from others.category import add_categories, get_categories_list, get_category_details
@@ -419,6 +419,15 @@ def launch_exam_route():
     schedule_id = request.args.get('schedule_id')
     user_id = request.args.get('user_id')
     response_data, status_code = launch_exam_details(schedule_id, user_id)
+    return jsonify(response_data), status_code
+
+@edu_blueprint.route('/autosave-exam', methods=['POST'])
+@jwt_required
+def autosave_exam_route():
+    current_user = get_current_user_from_request()
+    if not current_user:
+        return jsonify({"statusMessage": "Authenticated user not found", "status": False}), 401
+    response_data, status_code = autosave_exam_answers(request.json or {}, current_user.user_id)
     return jsonify(response_data), status_code
 
 @edu_blueprint.route('/submit-exam', methods=['POST'])

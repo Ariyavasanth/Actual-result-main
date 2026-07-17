@@ -175,6 +175,9 @@ def update_exam_schedule(request):
         if not sched:
             return {"statusMessage": "Schedule not found", "status": False}, 404
 
+        previous_review_mode = sched.review_mode
+        previous_review_at = sched.review_at
+
         # An attempt row is created when a student launches the schedule. Once
         # present, preserve schedule identity/timing/assignments server-side.
         has_attendance = session.query(Exam_Attempt.attempt_id).filter_by(schedule_id=schedule_id).first() is not None
@@ -236,6 +239,23 @@ def update_exam_schedule(request):
             sched.show_correct_answers = settings['show_correct_answers']
             sched.show_student_answers = settings['show_student_answers']
             sched.show_explanations = settings['show_explanations']
+
+            scheduled_review_changed = (
+                settings['review_mode'] == 'scheduled'
+                and not bool(sched.multiple_review)
+                and (
+                    previous_review_mode != 'scheduled'
+                    or previous_review_at != settings['review_at']
+                )
+            )
+            if scheduled_review_changed:
+                # A newly scheduled review window grants each submitted attempt one fresh opening.
+                session.query(Exam_Attempt).filter(
+                    Exam_Attempt.schedule_id == schedule_id
+                ).update(
+                    {Exam_Attempt.review_opened_at: None},
+                    synchronize_session=False
+                )
 
         # Timing remains editable until the first attempt exists.
         if not has_attendance:

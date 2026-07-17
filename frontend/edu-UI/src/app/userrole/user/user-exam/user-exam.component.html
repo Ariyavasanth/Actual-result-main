@@ -150,8 +150,8 @@
             <label class="sr-only" [for]="'fill-' + i">Your answer</label>
             <div class="input-wrapper">
               <mat-icon class="input-icon">edit</mat-icon>
-              <input type="text" [id]="'fill-' + i" [(ngModel)]="answers[q.id || i]" [disabled]="testStopped" placeholder="Type your answer here..." />
-              <mat-icon class="input-clear" *ngIf="answers[q.id || i] && !testStopped" (click)="answers[q.id || i] = ''">close</mat-icon>
+              <input type="text" [id]="'fill-' + i" [(ngModel)]="answers[q.id || i]" (ngModelChange)="scheduleAutosave()" [disabled]="testStopped" placeholder="Type your answer here..." />
+              <mat-icon class="input-clear" *ngIf="answers[q.id || i] && !testStopped" (click)="answers[q.id || i] = ''; scheduleAutosave()">close</mat-icon>
             </div>
           </div>
 
@@ -159,7 +159,7 @@
           <div *ngIf="q.type === 'descriptive' || q.type === 'Paragraph'" class="q-input descriptive-input">
             <div class="textarea-wrapper">
               <label class="sr-only" [for]="'desc-' + i">Your answer</label>
-              <textarea [id]="'desc-' + i" rows="6" [(ngModel)]="answers[q.id || i]" [disabled]="testStopped" placeholder="Write your detailed answer here..."></textarea>
+              <textarea [id]="'desc-' + i" rows="6" [(ngModel)]="answers[q.id || i]" (ngModelChange)="scheduleAutosave()" [disabled]="testStopped" placeholder="Write your detailed answer here..."></textarea>
               <button type="button" class="voice-btn" *ngIf="speechSupported" [disabled]="testStopped"
                 (click)="toggleVoiceInput(q.id || i)" 
                 [class.recording]="isRecording(q.id || i)"

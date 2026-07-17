@@ -62,6 +62,8 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
   testStopped = false;
   private statusIntervalRef: any = null;
   private submitUrl = `${API_BASE}/submit-exam`;
+  private autosaveUrl = `${API_BASE}/autosave-exam`;
+  private autosaveTimer: any = null;
   private statusUrl = `${API_BASE}/active-exam-status`;
 
   constructor(private http: HttpClient, private confirmService: ConfirmService, private ngZone: NgZone, private router: Router){
@@ -91,6 +93,7 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
             if (this.testStopped) return;
             const currentAnswer = this.answers[this.recordingQuestionId] || '';
             this.answers[this.recordingQuestionId] = currentAnswer + (currentAnswer ? ' ' : '') + finalTranscript;
+            this.scheduleAutosave();
           }
         });
       };
@@ -174,7 +177,7 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
     }
   }
 
-  ngOnDestroy(){ this.stopTimer(); this.stopStatusPolling(); this.stopSpeechRecognition(); }
+  ngOnDestroy(){ this.stopTimer(); this.stopStatusPolling(); this.stopSpeechRecognition(); if (this.autosaveTimer) clearTimeout(this.autosaveTimer); }
 
   startTimer(){
     this.stopTimer();
@@ -206,7 +209,14 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
   checkActiveExamStatus() {
     if (this.testStopped || !this.attempt_id) return;
     this.http.get<any>(this.statusUrl, { params: { attempt_id: this.attempt_id } }).subscribe({
-      next: (res) => { if (res?.published === false) this.stopActiveTest(); },
+      next: (res) => {
+        if (res?.published === false) this.stopActiveTest();
+        if (['submitted', 'evaluated'].includes(res?.attempt_status)) {
+          this.stopTimer();
+          this.stopStatusPolling();
+          this.ngZone.run(() => this.router.navigate(['/user-dashboard']));
+        }
+      },
       error: (err) => {
         if (err?.error?.errorCode === 'EXAM_UNPUBLISHED') this.stopActiveTest();
       }
@@ -240,8 +250,19 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
 
   formatTime(sec:number){ const m = Math.floor(sec/60); const s = sec%60; return `${m}:${s.toString().padStart(2,'0')}`; }
 
-  toggleMulti(qid: any, optId: any){ if (this.testStopped) return; const key = String(qid); const set = Array.isArray(this.answers[key]) ? this.answers[key] : []; const idx = set.indexOf(String(optId)); if (idx>=0) set.splice(idx,1); else set.push(String(optId)); this.answers[key]=set; }
-  selectOne(qid: any, optId: any){ if (this.testStopped) return; this.answers[String(qid)]=String(optId); }
+  toggleMulti(qid: any, optId: any){ if (this.testStopped) return; const key = String(qid); const set = Array.isArray(this.answers[key]) ? this.answers[key] : []; const idx = set.indexOf(String(optId)); if (idx>=0) set.splice(idx,1); else set.push(String(optId)); this.answers[key]=set; this.scheduleAutosave(); }
+  selectOne(qid: any, optId: any){ if (this.testStopped) return; this.answers[String(qid)]=String(optId); this.scheduleAutosave(); }
+
+  scheduleAutosave() {
+    if (this.testStopped || !this.attempt_id) return;
+    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
+    // Debounce snapshots so typing does not create one request per keystroke.
+    this.autosaveTimer = setTimeout(() => {
+      this.http.post<any>(this.autosaveUrl, { attempt_id: this.attempt_id, answers: this.answers }).subscribe({
+        error: (err) => { if (err?.status !== 409) console.warn('Answer autosave failed', err); }
+      });
+    }, 500);
+  }
 
   // scroll to a specific question card by index
   scrollToQuestion(index: number){
@@ -301,7 +322,8 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
       exam_id: this.examId || this.exam?.exam_id || this.exam?.data?.exam_detail?.exam_id,
       schedule_id: resolvedScheduleId,
       user_id: userId,
-      attempt_id: this.exam?.attempt_id || this.attempt_id,
+      // Prefer the normalized launch response ID used by status polling.
+      attempt_id: this.attempt_id || this.exam?.attempt_id,
       answers: this.answers,
       submitted_at: new Date().toISOString(),
       time_taken_mins: timeTakenMins
@@ -323,7 +345,8 @@ export class UserExamRunnerComponent implements OnInit, OnDestroy{
           this.stopActiveTest();
           return;
         }
-        try { notify('Failed to submit test. Please try again.', 'error'); } catch(e) { console.warn('Failed to submit test. Please try again.'); }
+        const message = err?.error?.statusMessage || 'Failed to submit test. Please try again.';
+        try { notify(message, 'error'); } catch(e) { console.warn(message); }
       }
     });
   }
