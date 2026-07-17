@@ -67,12 +67,17 @@ def add_exam_schedule(request):
     total_questions = data.get("total_questions")
     number_of_attempts = data.get("number_of_attempts")
     published = data.get("published", False)
-    multiple_review = _as_bool(data.get('multiple_review', data.get('multiplereview')), False)
     try:
         review_settings = _review_settings(data)
         start_time, end_time = _schedule_times(data)
     except ValueError as error:
         return {"statusMessage": str(error), "status": False}, 400
+    # Multiple Review only applies to Manual Review; reject it for every other
+    # mode (including No Review) so a stale or tampered request can't enable it.
+    multiple_review = (
+        review_settings['review_mode'] == 'manual'
+        and _as_bool(data.get('multiple_review', data.get('multiplereview')), False)
+    )
     created_by = data.get("created_by")
 
     db = SQLiteDB()
@@ -211,8 +216,9 @@ def update_exam_schedule(request):
         # published / review settings
         if 'published' in data:
             sched.published = 1 if data.get('published') else 0
+        multiple_review_requested = None
         if 'multiple_review' in data or 'multiplereview' in data:
-            sched.multiple_review = _as_bool(data.get('multiple_review', data.get('multiplereview')), False)
+            multiple_review_requested = _as_bool(data.get('multiple_review', data.get('multiplereview')), False)
         if 'userreview' in data:
             sched.user_review = 1 if data.get('userreview') else 0
         if 'user_review' in data:
@@ -240,6 +246,15 @@ def update_exam_schedule(request):
             sched.show_student_answers = settings['show_student_answers']
             sched.show_explanations = settings['show_explanations']
 
+            # Multiple Review only applies to Manual Review; force it off for
+            # every other mode so a stale or tampered request can't enable it
+            # elsewhere. Must run before scheduled_review_changed below so that
+            # switching away from Manual Review also resets any stale opening.
+            if multiple_review_requested is not None:
+                sched.multiple_review = multiple_review_requested and sched.review_mode == 'manual'
+            elif sched.review_mode != 'manual':
+                sched.multiple_review = False
+
             scheduled_review_changed = (
                 settings['review_mode'] == 'scheduled'
                 and not bool(sched.multiple_review)
@@ -256,6 +271,10 @@ def update_exam_schedule(request):
                     {Exam_Attempt.review_opened_at: None},
                     synchronize_session=False
                 )
+        elif multiple_review_requested is not None:
+            # review_mode wasn't part of this request; gate against the schedule's
+            # existing mode so Multiple Review still can't be enabled outside Manual Review.
+            sched.multiple_review = multiple_review_requested and (sched.review_mode == 'manual')
 
         # Timing remains editable until the first attempt exists.
         if not has_attendance:

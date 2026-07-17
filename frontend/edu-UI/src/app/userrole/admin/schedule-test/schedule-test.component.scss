@@ -72,6 +72,7 @@ $shadow-md: 0 4px 12px rgba(0,0,0,0.06);
 .toggle-setting { display:grid; grid-template-columns:minmax(9rem,auto) 1fr; align-items:center; gap:0.75rem; padding:0.75rem 0; border-top:1px solid var(--theme-3-border); }
 .toggle-setting > span { color:var(--theme-3-text-3); font-size:0.78rem; line-height:1.4; }
 .toggle-setting--review { margin-top:0.25rem; }
+.toggle-setting--multiple-review { margin:0 0 0 1.75rem; padding:0.5rem 0; border-top:none; }
 .review-settings-panel { margin-top:1rem; padding:1rem; border:1px solid var(--theme-3-border); border-radius:$radius; background:var(--bg-2); }
 .review-settings-panel h3 { margin:0 0 0.75rem; font:600 0.9rem/1.2 inherit; color:var(--theme-3-text-1); }
 .review-options,.review-content-options { display:grid; gap:0.75rem; margin-top:0.875rem; }

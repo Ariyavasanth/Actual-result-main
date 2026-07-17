@@ -165,10 +165,6 @@
                               <mat-slide-toggle [(ngModel)]="model.publish" name="publish" [disabled]="readOnly">Publish</mat-slide-toggle>
                               <span>Make this schedule visible to assigned students.</span>
                            </div>
-                           <div class="toggle-setting">
-                              <mat-slide-toggle [formControl]="multipleReviewControl">Multiple Review</mat-slide-toggle>
-                              <span>Allow students to reopen the review for the same submitted attempt. This does not allow retakes.</span>
-                           </div>
                            <div class="toggle-setting toggle-setting--review">
                               <mat-slide-toggle [formControl]="instantReviewControl">Instant Review</mat-slide-toggle>
                               <span>Make the selected review content available immediately after submission.</span>
@@ -178,6 +174,10 @@
                                  [disabled]="readOnly">No Review</mat-checkbox>
                               <mat-checkbox [checked]="manualReviewChecked" (change)="onManualReviewChange($event.checked)"
                                  [disabled]="readOnly">Manual Review</mat-checkbox>
+                              <div class="toggle-setting toggle-setting--multiple-review">
+                                 <mat-slide-toggle [formControl]="multipleReviewControl">Multiple Review</mat-slide-toggle>
+                                 <span>Allow students to reopen the manually evaluated review.</span>
+                              </div>
                               <mat-radio-group [ngModel]="radioReviewMode" (ngModelChange)="onRadioReviewModeChange($event)"
                                  name="reviewMode" [disabled]="readOnly" aria-label="Timed review availability">
                                  <mat-radio-button value="after_schedule_ends">After Test Schedule Ends</mat-radio-button>

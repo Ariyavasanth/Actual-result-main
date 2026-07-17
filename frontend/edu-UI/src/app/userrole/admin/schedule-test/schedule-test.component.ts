@@ -330,6 +330,7 @@ export class AdminScheduleTestComponent {
       this.examCtrl.disable({ emitEvent: false });
       this.scheduleTimingForm.disable({ emitEvent: false });
     }
+    this.syncMultipleReviewAvailability();
   }
 
   private normalizeBoolean(value: any): boolean {
@@ -366,6 +367,7 @@ export class AdminScheduleTestComponent {
 
   onNoReviewChange(checked: boolean): void {
     this.model.reviewMode = checked ? 'no_review' : 'manual';
+    this.syncMultipleReviewAvailability();
     this.markDirty();
   }
 
@@ -376,13 +378,33 @@ export class AdminScheduleTestComponent {
       // No Review depends on Manual Review; clear both to a valid legacy mode.
       this.model.reviewMode = 'after_schedule_ends';
     }
+    this.syncMultipleReviewAvailability();
     this.markDirty();
   }
 
   onRadioReviewModeChange(value: string): void {
     if (!['after_schedule_ends', 'after_everyone_finishes', 'scheduled'].includes(value)) return;
     this.model.reviewMode = value;
+    this.syncMultipleReviewAvailability();
     this.markDirty();
+  }
+
+  // Multiple Review only applies to Manual Review: it lets a student reopen a
+  // manually evaluated attempt more than once. Every other mode (including No
+  // Review) must keep it off and disabled so stale toggles can't leak through.
+  private syncMultipleReviewAvailability(): void {
+    const control = this.multipleReviewControl;
+    if (!control) return;
+    const allowed = this.model.reviewMode === 'manual';
+    if (!allowed) {
+      if (control.value) {
+        control.setValue(false, { emitEvent: false });
+      }
+      this.model.multiplereview = false;
+      if (!control.disabled) control.disable({ emitEvent: false });
+    } else if (!this.readOnly && control.disabled) {
+      control.enable({ emitEvent: false });
+    }
   }
 
   /** Reload review flags from the persisted schedule when editing. */
@@ -420,6 +442,7 @@ export class AdminScheduleTestComponent {
           reviewDate: this.reviewDateAsPickerValue(),
           reviewTime: this.model.reviewTime
         }, { emitEvent: false });
+        this.syncMultipleReviewAvailability();
         try { this.cd.detectChanges(); } catch (e) { /* noop */ }
       },
       error: (error) => console.warn('Failed to refresh persisted review settings', error)
@@ -1140,7 +1163,11 @@ export class AdminScheduleTestComponent {
       published: this.model.publish || false,
       userreview: this.normalizeBoolean(this.reviewBehaviorForm.get('instantReview')?.value),
       instant_review: this.normalizeBoolean(this.reviewBehaviorForm.get('instantReview')?.value),
-      multiple_review: this.normalizeBoolean(this.reviewBehaviorForm.get('multipleReview')?.value),
+      // Multiple Review only ever applies to Manual Review; every other mode
+      // (including No Review) must be sent as false regardless of toggle state.
+      multiple_review: !this.model.userreview
+        && this.model.reviewMode === 'manual'
+        && this.normalizeBoolean(this.reviewBehaviorForm.get('multipleReview')?.value),
       review_mode: this.model.userreview ? 'instant' : (this.model.reviewMode || 'no_review'),
       review_at: reviewAtIso,
       show_score: !!this.model.showScore,
